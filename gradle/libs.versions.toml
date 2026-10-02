@@ -13,6 +13,11 @@ serialization = "1.7.3"
 exifinterface = "1.4.0"
 coroutines = "1.9.0"
 junit = "4.13.2"
+testExtJunit = "1.2.1"
+testRunner = "1.6.2"
+testRules = "1.6.1"
+espresso = "3.6.1"
+uiautomator = "2.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +35,12 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testRunner" }
+androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "testRules" }
+androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+androidx-test-espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espresso" }
+androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

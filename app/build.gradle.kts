@@ -14,6 +14,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -43,6 +44,16 @@ kotlin {
     }
 }
 
+// release 产物文件名固定为中文名，便于分发（内部类只因 AGP 未公开该设置项）
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            (output as? com.android.build.api.variant.impl.VariantOutputImpl)
+                ?.outputFileName?.set("七日-看房拍照测日照时间.apk")
+        }
+    }
+}
+
 dependencies {
     implementation(project(":core"))
 
@@ -61,4 +72,11 @@ dependencies {
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.androidx.test.espresso.intents)
+    androidTestImplementation(libs.androidx.test.uiautomator)
 }
