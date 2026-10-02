@@ -32,6 +32,11 @@ class Pose(
     /** 同一读数的低通平滑值，用于数字显示；拍摄记录取瞬时值。 */
     val smoothAzDeg: Double,
     val smoothElDeg: Double,
+    /**
+     * 屏幕左右倾斜（滚转）角：屏幕「上」方向相对世界竖直的偏转角，不是航向。
+     * 竖持取景时为正表示机顶向右倒（从机主视角看顺时针），单位度。
+     */
+    val rollDeg: Double,
     /** 罗盘精度：SensorManager.SENSOR_STATUS_*；ACCURACY_UNKNOWN 表示尚未收到系统精度回调。 */
     val accuracy: Int,
 )
@@ -90,6 +95,9 @@ class OrientationSensor(
         val forward = floatArrayOf(-worldZ[0], -worldZ[1], -worldZ[2])
         val (right, up) = screenAxes(displayRotation(), worldX, worldY)
 
+        // 滚转：屏幕「上」相对世界竖直（天）的偏转；机顶向右倒为正
+        val rollDeg = atan2(-right[2].toDouble(), up[2].toDouble()) * 180.0 / PI
+
         val frontAz = Angles.normalize360(
             atan2(worldZ[0].toDouble(), worldZ[1].toDouble()) * 180.0 / PI,
         )
@@ -122,6 +130,7 @@ class OrientationSensor(
                 frontElDeg = frontEl,
                 smoothAzDeg = smoothAz,
                 smoothElDeg = smoothEl,
+                rollDeg = rollDeg,
                 accuracy = accuracy,
             ),
         )

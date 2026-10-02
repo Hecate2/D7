@@ -82,6 +82,9 @@ class CaptureActivity : AppCompatActivity() {
     private var lastUiAt = 0L
     private var capturing = false
 
+    /** 滚转角显示用的低通值（NaN 表示尚未初始化）。 */
+    private var smoothRoll = Double.NaN
+
     private val jitterAz = ArrayDeque<Double>()
     private val jitterEl = ArrayDeque<Double>()
     private var jitterLevel = LEVEL_UNKNOWN
@@ -283,6 +286,8 @@ class CaptureActivity : AppCompatActivity() {
             Format.elevation(aimEl(pose, smoothed = true)),
             Format.azimuth(aimAz(pose, smoothed = true)),
         )
+        smoothRoll = if (smoothRoll.isNaN()) pose.rollDeg else smoothRoll * 0.7 + pose.rollDeg * 0.3
+        binding.rollText.text = getString(R.string.capture_roll, Format.signedDegree(smoothRoll))
     }
 
     private fun updateMeta() {

@@ -64,6 +64,9 @@ object Format {
     /** 仰角写法：18.4°。 */
     fun elevation(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
 
+    /** 滚转角等有正负的角度写法：-3.2°。 */
+    fun signedDegree(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
+
     /** 整度写法：236°。 */
     fun degreeInt(deg: Double): String = String.format(Locale.US, "%.0f°", deg)
 }
