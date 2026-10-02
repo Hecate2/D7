@@ -14,8 +14,26 @@ import kotlin.math.roundToInt
 fun List<PointRecord>.toShotPoints(): List<ShotPoint> =
     map { ShotPoint(it.az, it.el, it.gapAfter) }
 
+/** 照片组卡片的数据汇总。 */
+data class CardSummary(
+    val group: GroupRecord,
+    /** 冬至（南半球为 6-21）默认档位直射分钟；null 表示两区都未拍。 */
+    val winterMinutes: Int?,
+    val externalCount: Int,
+    val externalCoveredPercent: Int,
+    val ceilingCount: Int,
+)
+
 /** 卡片与覆盖条用的派生数据。 */
 object Summaries {
+
+    fun cardSummary(group: GroupRecord): CardSummary = CardSummary(
+        group = group,
+        winterMinutes = winterSolsticeMinutes(group),
+        externalCount = group.external.size,
+        externalCoveredPercent = coveragePercent(group.lat, group.external),
+        ceilingCount = group.ceiling.size,
+    )
 
     /** 主方向半圆：北半球取 90..270 度，南半球取 270..360 与 0..90 度。 */
     fun isMainHalf(azDeg: Double, latDeg: Double): Boolean =

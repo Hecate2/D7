@@ -9,6 +9,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import androidx.core.content.ContextCompat
 import java.time.ZoneId
@@ -46,15 +47,31 @@ class LocationProvider(private val context: Context) {
         return location?.toFix()
     }
 
-    /** 请求单次定位；成功回调在主线程。 */
+    /**
+     * 请求单次定位；成功回调在主线程，超时（默认 20 秒）或 GPS 被关闭也会回调失败。
+     */
     @SuppressLint("MissingPermission")
-    fun requestSingleUpdate(onResult: (FixLocation) -> Unit, onTimeout: () -> Unit = {}) {
+    fun requestSingleUpdate(
+        onResult: (FixLocation) -> Unit,
+        onTimeout: () -> Unit = {},
+        timeoutMillis: Long = 20_000L,
+    ) {
         if (!hasPermission()) return
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val listener = object : LocationListener {
+        val handler = Handler(Looper.getMainLooper())
+        var finished = false
+        lateinit var listener: LocationListener
+        val finish = { action: () -> Unit ->
+            if (!finished) {
+                finished = true
+                handler.removeCallbacksAndMessages(null)
+                manager.removeUpdates(listener)
+                action()
+            }
+        }
+        listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                manager.removeUpdates(this)
-                onResult(location.toFix())
+                finish { onResult(location.toFix()) }
             }
 
             @Deprecated("Deprecated in Java")
@@ -63,18 +80,18 @@ class LocationProvider(private val context: Context) {
             override fun onProviderEnabled(provider: String) = Unit
 
             override fun onProviderDisabled(provider: String) {
-                manager.removeUpdates(this)
-                onTimeout()
+                finish { onTimeout() }
             }
         }
         try {
             manager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER, 0L, 0f, listener, Looper.getMainLooper(),
             )
+            handler.postDelayed({ finish { onTimeout() } }, timeoutMillis)
         } catch (_: SecurityException) {
-            onTimeout()
+            finish { onTimeout() }
         } catch (_: IllegalArgumentException) {
-            onTimeout()
+            finish { onTimeout() }
         }
     }
 

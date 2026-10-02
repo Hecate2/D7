@@ -36,6 +36,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.capture.CaptureActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|uiMode"
+            android:exported="false"
+            android:resizeableActivity="true" />
+
+        <activity
+            android:name=".ui.result.ResultActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|uiMode"
+            android:exported="false"
+            android:resizeableActivity="true" />
     </application>
 
 </manifest>
