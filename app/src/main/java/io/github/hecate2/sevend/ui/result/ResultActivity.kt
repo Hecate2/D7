@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -11,7 +12,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.hecate2.sevend.R
 import io.github.hecate2.sevend.core.Angles
 import io.github.hecate2.sevend.core.CalcMode
@@ -370,7 +370,7 @@ class ResultActivity : AppCompatActivity() {
             if (region == Region.EXTERNAL) R.string.result_region_external
             else R.string.result_region_ceiling,
         )
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(getString(R.string.point_edit_title, index + 1, regionTag))
             .setView(view.root)
             .setNegativeButton(R.string.cancel, null)
@@ -437,7 +437,7 @@ class ResultActivity : AppCompatActivity() {
             )
         }
 
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.bulk_edit_title)
             .setView(view.root)
             .setNegativeButton(R.string.cancel, null)

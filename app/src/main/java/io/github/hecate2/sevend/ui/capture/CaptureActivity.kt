@@ -16,13 +16,13 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.hecate2.sevend.R
 import io.github.hecate2.sevend.camera.CameraController
 import io.github.hecate2.sevend.camera.PhotoMeta
@@ -523,7 +523,7 @@ class CaptureActivity : AppCompatActivity() {
             getString(R.string.line_horizon),
             getString(R.string.line_vertical),
         )
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.lines_title)
             .setMultiChoiceItems(labels, settings.lineChecked()) { _, which, checked ->
                 settings.setLineChecked(which, checked)

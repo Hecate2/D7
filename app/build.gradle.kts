@@ -15,6 +15,14 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 真机只需 arm64-v8a 与 armeabi-v7a，裁掉 x86/x86_64 的 native 库
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
+
+        // 只保留中文与英文资源，剔除各家库自带的几十种语言翻译，显著缩减 resources.arsc
+        resConfigs("zh", "en")
     }
 
     buildTypes {
@@ -63,7 +71,6 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.material)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.exifinterface)

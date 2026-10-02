@@ -17,7 +17,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.hecate2.sevend.R
 import io.github.hecate2.sevend.core.CalcMode
 import io.github.hecate2.sevend.data.GroupRecord
@@ -122,7 +121,7 @@ class GroupsActivity : AppCompatActivity() {
     private fun showRenameDialog(group: GroupRecord) {
         val nameBinding = DialogGroupNameBinding.inflate(layoutInflater)
         nameBinding.nameInput.setText(group.name)
-        val dialog = MaterialAlertDialogBuilder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.rename_group_title)
             .setView(nameBinding.root)
             .setNegativeButton(R.string.cancel, null)
@@ -150,7 +149,7 @@ class GroupsActivity : AppCompatActivity() {
         if (photos.isNotEmpty()) {
             view.deletePhotos.text = getString(R.string.delete_group_with_photos, photos.size)
         }
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.delete_group_title)
             .setView(view.root)
             .setNegativeButton(R.string.cancel, null)
@@ -185,7 +184,7 @@ class GroupsActivity : AppCompatActivity() {
             toast(getString(R.string.result_no_data))
             return
         }
-        MaterialAlertDialogBuilder(this)
+        AlertDialog.Builder(this)
             .setTitle(R.string.menu_export)
             .setItems(
                 arrayOf(
@@ -249,7 +248,7 @@ class GroupsActivity : AppCompatActivity() {
             )
         }
 
-        val dialog = MaterialAlertDialogBuilder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.new_group_title)
             .setView(view.root)
             .setNegativeButton(R.string.cancel, null)
