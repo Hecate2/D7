@@ -32,7 +32,7 @@ class Pose(
     /** 同一读数的低通平滑值，用于数字显示；拍摄记录取瞬时值。 */
     val smoothAzDeg: Double,
     val smoothElDeg: Double,
-    /** 罗盘精度：SensorManager.SENSOR_STATUS_*。 */
+    /** 罗盘精度：SensorManager.SENSOR_STATUS_*；ACCURACY_UNKNOWN 表示尚未收到系统精度回调。 */
     val accuracy: Int,
 )
 
@@ -49,13 +49,18 @@ class OrientationSensor(
     private val onPose: (Pose) -> Unit,
 ) : SensorEventListener {
 
+    companion object {
+        /** 尚未收到系统精度回调时的哨兵值（SensorManager 的精度常量均为非负）。 */
+        const val ACCURACY_UNKNOWN = -1
+    }
+
     private val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val sensor: Sensor? = manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
     private val rotationMatrix = FloatArray(9)
     private val smoothFront = FloatArray(3)
     private var smoothInit = false
-    private var accuracy = SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+    private var accuracy = ACCURACY_UNKNOWN
 
     /** 本机是否有旋转矢量传感器。 */
     val available: Boolean get() = sensor != null

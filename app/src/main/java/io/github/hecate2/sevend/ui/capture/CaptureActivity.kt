@@ -3,6 +3,7 @@ package io.github.hecate2.sevend.ui.capture
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +13,7 @@ import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -52,6 +54,15 @@ class CaptureActivity : AppCompatActivity() {
     companion object {
         private const val LONG_PRESS_MS = 450L
         private const val POSE_THROTTLE_MS = 30L
+
+        // 读数精度（抖动）：最近窗口内极差的阈值与档位
+        private const val JITTER_WINDOW = 24
+        private const val JITTER_STEADY_DEG = 0.8
+        private const val JITTER_OK_DEG = 2.5
+        private const val LEVEL_UNKNOWN = -1
+        private const val LEVEL_LOW = 1
+        private const val LEVEL_MEDIUM = 2
+        private const val LEVEL_HIGH = 3
     }
 
     private lateinit var binding: ActivityCaptureBinding
@@ -66,9 +77,13 @@ class CaptureActivity : AppCompatActivity() {
     private var region = Region.EXTERNAL
     private var regionPoints: List<PointRecord> = emptyList()
     private var latestPose: Pose? = null
-    private var lastAccuracy = SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM
+    private var lastAccuracy = OrientationSensor.ACCURACY_UNKNOWN
     private var lastUiAt = 0L
     private var capturing = false
+
+    private val jitterAz = ArrayDeque<Double>()
+    private val jitterEl = ArrayDeque<Double>()
+    private var jitterLevel = LEVEL_UNKNOWN
 
     private val deleteHandler = Handler(Looper.getMainLooper())
 
@@ -103,6 +118,7 @@ class CaptureActivity : AppCompatActivity() {
         applyHemisphere(group)
         updatePlus180Ui()
         applyLineSettings()
+        updatePrecisionUi()
         setRegion(Region.EXTERNAL)
         setupShutter()
         setupDelete()
@@ -127,6 +143,9 @@ class CaptureActivity : AppCompatActivity() {
         orientation?.stop()
         sensorRunning = false
         deleteHandler.removeCallbacksAndMessages(null)
+        jitterAz.clear()
+        jitterEl.clear()
+        jitterLevel = LEVEL_UNKNOWN
     }
 
     override fun onDestroy() {
@@ -224,13 +243,19 @@ class CaptureActivity : AppCompatActivity() {
 
     private fun onPose(pose: Pose) {
         latestPose = pose
+        sampleJitter(pose)
         if (pose.accuracy != lastAccuracy) {
             lastAccuracy = pose.accuracy
-            updateMeta()
+            updatePrecisionUi()
         }
         val now = SystemClock.uptimeMillis()
         if (now - lastUiAt < POSE_THROTTLE_MS) return
         lastUiAt = now
+        val level = computeJitterLevel()
+        if (level != jitterLevel) {
+            jitterLevel = level
+            updatePrecisionUi()
+        }
         updateReading(pose)
         binding.overlay.pose = pose
         binding.overlay.aimAzDeg = aimAz(pose, smoothed = true)
@@ -264,18 +289,81 @@ class CaptureActivity : AppCompatActivity() {
         binding.metaText.text = getString(
             R.string.capture_meta,
             Format.coordinate(group.lat, group.lon),
-            accuracyText(lastAccuracy),
         )
     }
 
-    private fun accuracyText(accuracy: Int): String = getString(
-        when (accuracy) {
-            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> R.string.capture_accuracy_high
-            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> R.string.capture_accuracy_medium
-            SensorManager.SENSOR_STATUS_ACCURACY_LOW -> R.string.capture_accuracy_low
-            else -> R.string.capture_accuracy_unreliable
-        },
-    )
+    // ---------- 精度指示（罗盘校准 + 读数抖动） ----------
+
+    /** 把每个原始样本的机身朝向角放进滑动窗口，供抖动评估。 */
+    private fun sampleJitter(pose: Pose) {
+        jitterAz.addLast(pose.frontAzDeg)
+        jitterEl.addLast(pose.frontElDeg)
+        while (jitterAz.size > JITTER_WINDOW) jitterAz.removeFirst()
+        while (jitterEl.size > JITTER_WINDOW) jitterEl.removeFirst()
+    }
+
+    /** 窗口内方位/仰角相对最新样点的极差（度）取大者定档；样本不足返回未知档。方位差走短弧以处理环绕。 */
+    private fun computeJitterLevel(): Int {
+        if (jitterAz.size < JITTER_WINDOW) return LEVEL_UNKNOWN
+        val baseAz = jitterAz.last()
+        val baseEl = jitterEl.last()
+        var azMin = 0.0
+        var azMax = 0.0
+        var elMin = 0.0
+        var elMax = 0.0
+        for (i in jitterAz.indices) {
+            val dAz = Angles.shortArcDelta(baseAz, jitterAz.elementAt(i))
+            if (dAz < azMin) azMin = dAz
+            if (dAz > azMax) azMax = dAz
+            val dEl = jitterEl.elementAt(i) - baseEl
+            if (dEl < elMin) elMin = dEl
+            if (dEl > elMax) elMax = dEl
+        }
+        val jitter = maxOf(azMax - azMin, elMax - elMin)
+        return when {
+            jitter <= JITTER_STEADY_DEG -> LEVEL_HIGH
+            jitter <= JITTER_OK_DEG -> LEVEL_MEDIUM
+            else -> LEVEL_LOW
+        }
+    }
+
+    /** 刷新两枚精度药丸：罗盘校准取系统精度回调（未回调前为未知），读数精度取抖动档位。 */
+    private fun updatePrecisionUi() {
+        val calibText = when (lastAccuracy) {
+            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> R.string.capture_calib_high
+            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> R.string.capture_calib_medium
+            SensorManager.SENSOR_STATUS_ACCURACY_LOW -> R.string.capture_calib_low
+            SensorManager.SENSOR_STATUS_UNRELIABLE -> R.string.capture_calib_unreliable
+            else -> R.string.capture_calib_unknown
+        }
+        val calibColor = when (lastAccuracy) {
+            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> R.color.precision_high
+            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> R.color.precision_mid
+            SensorManager.SENSOR_STATUS_ACCURACY_LOW,
+            SensorManager.SENSOR_STATUS_UNRELIABLE -> R.color.precision_low
+            else -> R.color.precision_unknown
+        }
+        paintPill(binding.calibPill, calibText, calibColor)
+
+        val jitterText = when (jitterLevel) {
+            LEVEL_HIGH -> R.string.capture_jitter_high
+            LEVEL_MEDIUM -> R.string.capture_jitter_medium
+            LEVEL_LOW -> R.string.capture_jitter_low
+            else -> R.string.capture_jitter_unknown
+        }
+        val jitterColor = when (jitterLevel) {
+            LEVEL_HIGH -> R.color.precision_high
+            LEVEL_MEDIUM -> R.color.precision_mid
+            LEVEL_LOW -> R.color.precision_low
+            else -> R.color.precision_unknown
+        }
+        paintPill(binding.jitterPill, jitterText, jitterColor)
+    }
+
+    private fun paintPill(view: TextView, textRes: Int, colorRes: Int) {
+        view.setText(textRes)
+        view.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, colorRes))
+    }
 
     // ---------- 快门（短按连线 / 长按经地平线断开） ----------
 

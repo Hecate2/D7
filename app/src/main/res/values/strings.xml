@@ -50,7 +50,7 @@
 
     <!-- 采集页 -->
     <string name="capture_title">采集</string>
-    <string name="capture_meta">%1$s · 真北已校正 · %2$s</string>
+    <string name="capture_meta">%1$s · 真北已校正</string>
     <string name="capture_reading">仰角 %1$s · 方位 %2$s</string>
     <string name="capture_plus180">+180°</string>
     <string name="capture_chip_external">外部建筑</string>
@@ -79,10 +79,15 @@
     <string name="capture_photo_failed">照片保存失败，已仅记录角度</string>
     <string name="capture_deleted">已删除第 %1$d 点（照片保留在相册）</string>
     <string name="capture_delete_no_candidate">右侧没有可删除的点</string>
-    <string name="capture_accuracy_high">罗盘精度高</string>
-    <string name="capture_accuracy_medium">罗盘精度中</string>
-    <string name="capture_accuracy_low">罗盘精度低·请悬空画 8 字校准</string>
-    <string name="capture_accuracy_unreliable">罗盘未校准·请悬空画 8 字校准</string>
+    <string name="capture_calib_unknown">罗盘校准 未知</string>
+    <string name="capture_calib_high">罗盘校准 高</string>
+    <string name="capture_calib_medium">罗盘校准 中</string>
+    <string name="capture_calib_low">罗盘校准 低 · 画8字</string>
+    <string name="capture_calib_unreliable">罗盘未校准 · 画8字</string>
+    <string name="capture_jitter_unknown">读数精度 未知</string>
+    <string name="capture_jitter_high">读数精度 高</string>
+    <string name="capture_jitter_medium">读数精度 中</string>
+    <string name="capture_jitter_low">读数精度 低 · 请持稳</string>
     <string name="lines_title">显示线</string>
     <string name="line_summer">夏至轨迹</string>
     <string name="line_equinox">春秋分轨迹</string>
