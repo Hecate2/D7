@@ -164,3 +164,11 @@
 - 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、Material3 暗色主题、图标由根目录 PNG 生成自适应图标。
 
 实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛，最后 `installDebug` 到真机（当前连接设备为 vivo PD2164PA，Android 11 / API 30）实测。
+
+## 附录 B：国际化（internationalization，缩写 i18n）设计
+
+界面文案一律只从资源文件 `res/values/strings.xml` 读取，Kotlin 代码中不写死任何面向用户的中文文本；这条约定覆盖的不只是布局里的标签，还包括 Toast 提示、导出逗号分隔值（comma-separated values，缩写 CSV）文件的表头与字段名、导出参考图 PNG 内绘制的文字、自绘视图画布上的刻度与提示文字。中文是默认资源（`values/` 目录），因此新增文案先以中文写进默认资源；格式化型文案（时长、日期档位名、方位刻度等）同样进资源，用带位置参数（如 `%1$s`、`%2$02d`）的格式串在代码侧填充，避免在代码里拼接语序。
+
+第二语言的落地流程是纯机械的：新建 `res/values-<语言>/strings.xml`（例如 `values-en/`，当前已建好目录但只含 `app_name` 一条作为桩），补齐需要翻译的条目即可，未翻译的条目自动回退到中文默认值。系统级「按应用设置语言」入口由两部分提供：`res/xml/locales_config.xml` 声明支持的语言清单（`zh-Hans` 与 `en`），`AndroidManifest.xml` 的 `android:localeConfig` 属性把它挂到应用上，Android 13 及以上即可在系统设置中为应用单独选语言。
+
+当前处于脚手架阶段，明确不做的部分：不维护中文以外的完整翻译；不做应用内自有的语言切换界面（交给系统设置）；导出文件名与 CSV 内容随当前系统语言变化，不追求跨语言的稳定一致。以 `Format` 工具类为例，时长类函数全部改为接收 `Resources` 后从字符串资源取词（`durationShort` 与 `durationLong`），它在列表页、结果页与导出模块的三个调用场景共用同一套资源。

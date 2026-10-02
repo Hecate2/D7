@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  英文（脚手架）：values/ 是中文默认资源，本目录目前只是一份桩。
+  新增界面文案的流程：先写入 values/strings.xml（中文，默认语言），
+  需要英文时再在本文件补同名条目；未翻译的条目自动回退到中文。
+  导出（CSV / PNG）与画布上绘制的文案同样统一走 strings.xml，不要在 Kotlin 里写死。
+  约定详见 docs/ARCHITECTURE.md 的「国际化（i18n）」小节。
+-->
+<resources>
+    <string name="app_name">7D</string>
+</resources>

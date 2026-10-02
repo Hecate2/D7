@@ -105,7 +105,7 @@ class YearCurveView @JvmOverloads constructor(
         }
 
         textPaint.textSize = sp(10f)
-        canvas.drawText("看最凹处", 4f, topPad + textPaint.textSize, textPaint)
+        canvas.drawText(context.getString(R.string.result_year_tip), 4f, topPad + textPaint.textSize, textPaint)
         textPaint.textSize = sp(11f)
         drawMonthTicks(canvas, n, w, h)
     }
@@ -117,7 +117,7 @@ class YearCurveView @JvmOverloads constructor(
             val index = dayIndex.coerceAtMost(n - 1)
             val px = if (n <= 1) 0f else index.toFloat() / (n - 1) * w
             val cx = px.coerceIn(16f, w - 16f)
-            canvas.drawText("${month}月", cx, baseline, textPaint)
+            canvas.drawText(context.getString(R.string.result_year_month, month), cx, baseline, textPaint)
         }
         textPaint.textAlign = Paint.Align.LEFT
     }

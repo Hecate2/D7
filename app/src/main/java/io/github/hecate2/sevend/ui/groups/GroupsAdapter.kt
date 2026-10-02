@@ -51,7 +51,7 @@ class GroupsAdapter(
                 binding.winterResult.setTextColor(ContextCompat.getColor(context, R.color.smoke))
             } else {
                 binding.winterResult.text =
-                    context.getString(R.string.group_winter, Format.durationShort(winter))
+                    context.getString(R.string.group_winter, Format.durationShort(context.resources, winter))
                 binding.winterResult.setTextColor(ContextCompat.getColor(context, R.color.paper))
             }
 

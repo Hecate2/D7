@@ -129,4 +129,61 @@
     <string name="result_export_done">已保存到 %1$s</string>
     <string name="result_export_failed">导出失败：请检查存储空间或权限</string>
     <string name="result_no_data">先拍摄再导出</string>
+
+    <!-- 结果页：日期档位名 / 时区 / 年曲线 -->
+    <string name="result_date_winter">冬至日</string>
+    <string name="result_date_dahan">大寒日</string>
+    <string name="result_date_equinox">春分日</string>
+    <string name="result_date_summer">夏至日</string>
+    <string name="result_timezone_beijing">北京时间</string>
+    <string name="result_year_tip">看最凹处</string>
+    <string name="result_year_month">%1$d月</string>
+
+    <!-- 通用格式（时长 / 方位） -->
+    <string name="duration_minutes_short">%1$d分</string>
+    <string name="duration_hours_short">%1$dh%2$02d</string>
+    <string name="duration_minutes_long">%1$d 分</string>
+    <string name="duration_hours_minutes_long">%1$d 小时 %2$02d 分</string>
+    <string name="compass_north">北</string>
+    <string name="compass_south">南</string>
+    <string name="compass_west">西</string>
+    <string name="compass_east">东</string>
+
+    <!-- 导出：保存位置与文件名 -->
+    <string name="export_location_downloads">下载/7D</string>
+    <string name="export_location_pictures">相册 Pictures/7D</string>
+    <string name="export_file_name">%1$s-日照-%2$s.%3$s</string>
+
+    <!-- 导出 CSV -->
+    <string name="export_csv_title">七日 7D 日照数据</string>
+    <string name="export_csv_row_group_name">组名</string>
+    <string name="export_csv_row_latitude">纬度</string>
+    <string name="export_csv_row_longitude">经度</string>
+    <string name="export_csv_row_timezone">时区</string>
+    <string name="export_csv_row_mode">计算档</string>
+    <string name="export_csv_row_date">日期</string>
+    <string name="export_csv_row_direct_duration">直射时长</string>
+    <string name="export_csv_row_direct_minutes">直射分钟</string>
+    <string name="export_csv_row_sunrise">日出</string>
+    <string name="export_csv_row_sunset">日落</string>
+    <string name="export_csv_row_all_from_gap">全部来自空隙</string>
+    <string name="export_polar_day_short">极昼</string>
+    <string name="export_yes">是</string>
+    <string name="export_no">否</string>
+    <string name="export_csv_section_points">拍摄点</string>
+    <string name="export_csv_points_header">分区,序号,方位角,仰角,与左邻点连线,拍摄时间</string>
+    <string name="export_region_external">外部</string>
+    <string name="export_region_ceiling">天花板</string>
+    <string name="export_seg_via_horizon">走地平线</string>
+    <string name="export_seg_direct">直接连线</string>
+    <string name="export_csv_section_visibility">逐分钟可见性（1 = 有直射）</string>
+    <string name="export_csv_visibility_header">分钟,时刻,可见</string>
+
+    <!-- 导出图片（PNG） -->
+    <string name="export_png_title">%1$s · 日照参考图</string>
+    <string name="export_png_direct">%1$s 直射 %2$s</string>
+    <string name="export_png_gap_note">（全部来自空隙）</string>
+    <string name="export_png_winter">冬至日（当地最低）直射 %1$s</string>
+    <string name="export_png_gb">大寒日 8–16 时有效直射 %1$s</string>
+    <string name="export_png_footer">七日 7D · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告</string>
 </resources>

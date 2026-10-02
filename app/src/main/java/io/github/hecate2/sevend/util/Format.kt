@@ -1,27 +1,29 @@
 package io.github.hecate2.sevend.util
 
+import android.content.res.Resources
+import io.github.hecate2.sevend.R
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 
-/** 界面文本格式化。 */
+/** 界面文本格式化；时长等语言相关文案取自 strings.xml，便于本地化。 */
 object Format {
 
     /** 时长的紧凑写法：不足一小时写「45分」，否则写「1h00」。 */
-    fun durationShort(minutes: Int): String {
-        if (minutes < 60) return "${minutes}分"
+    fun durationShort(resources: Resources, minutes: Int): String {
+        if (minutes < 60) return resources.getString(R.string.duration_minutes_short, minutes)
         val h = minutes / 60
         val m = minutes % 60
-        return String.format(Locale.US, "%dh%02d", h, m)
+        return resources.getString(R.string.duration_hours_short, h, m)
     }
 
-    /** 时长的中文写法：2 小时 05 分。 */
-    fun durationCn(minutes: Int): String {
-        if (minutes < 60) return "${minutes} 分"
+    /** 时长的完整写法：2 小时 05 分。 */
+    fun durationLong(resources: Resources, minutes: Int): String {
+        if (minutes < 60) return resources.getString(R.string.duration_minutes_long, minutes)
         val h = minutes / 60
         val m = minutes % 60
-        return String.format(Locale.US, "%d 小时 %02d 分", h, m)
+        return resources.getString(R.string.duration_hours_minutes_long, h, m)
     }
 
     /** 时钟分钟（0..1440）转「07:32」。 */

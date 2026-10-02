@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
@@ -14,6 +15,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
+import io.github.hecate2.sevend.R
 import io.github.hecate2.sevend.core.Angles
 import io.github.hecate2.sevend.core.DailySunlight
 import io.github.hecate2.sevend.core.Solar
@@ -54,8 +56,8 @@ object Exporter {
         daily: DailySunlight,
         modeLabel: String,
     ): Outcome {
-        val text = "\uFEFF" + buildCsv(group, modeLabel, date, daily)
-        val name = fileName(group.name, "csv")
+        val text = "\uFEFF" + buildCsv(context, group, modeLabel, date, daily)
+        val name = fileName(context, group.name, "csv")
         return publish(
             context = context,
             bytes = text.toByteArray(Charsets.UTF_8),
@@ -71,42 +73,55 @@ object Exporter {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                 "7D",
             ),
-            locationLabel = "下载/7D",
+            locationLabel = context.getString(R.string.export_location_downloads),
             scan = false,
         )
     }
 
     private fun buildCsv(
+        context: Context,
         group: GroupRecord,
         modeLabel: String,
         date: LocalDate,
         daily: DailySunlight,
     ): String {
+        val res = context.resources
         val sb = StringBuilder()
-        sb.append("七日 7D 日照数据\n")
-        sb.append("组名,").append(escape(group.name)).append('\n')
-        sb.append("纬度,").append(group.lat).append('\n')
-        sb.append("经度,").append(group.lon).append('\n')
-        sb.append("时区,").append(group.zoneId).append('\n')
-        sb.append("计算档,").append(escape(modeLabel)).append('\n')
-        sb.append("日期,").append(date).append('\n')
-        sb.append("直射时长,").append(Format.durationCn(daily.directMinutes)).append('\n')
-        sb.append("直射分钟,").append(daily.directMinutes).append('\n')
-        sb.append(
-            "日出,",
-        ).append(daily.sunriseMinute?.let(Format::clockMinute) ?: "极昼").append('\n')
-        sb.append("日落,").append(daily.sunsetMinute?.let(Format::clockMinute) ?: "极昼").append('\n')
-        sb.append("全部来自空隙,").append(if (daily.allFromGap) "是" else "否").append('\n')
+        sb.append(res.getString(R.string.export_csv_title)).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_group_name)).append(',')
+            .append(escape(group.name)).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_latitude)).append(',')
+            .append(group.lat).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_longitude)).append(',')
+            .append(group.lon).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_timezone)).append(',')
+            .append(group.zoneId).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_mode)).append(',')
+            .append(escape(modeLabel)).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_date)).append(',')
+            .append(date).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_direct_duration)).append(',')
+            .append(Format.durationLong(res, daily.directMinutes)).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_direct_minutes)).append(',')
+            .append(daily.directMinutes).append('\n')
+        val polarDay = res.getString(R.string.export_polar_day_short)
+        sb.append(res.getString(R.string.export_csv_row_sunrise)).append(',')
+            .append(daily.sunriseMinute?.let(Format::clockMinute) ?: polarDay).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_sunset)).append(',')
+            .append(daily.sunsetMinute?.let(Format::clockMinute) ?: polarDay).append('\n')
+        sb.append(res.getString(R.string.export_csv_row_all_from_gap)).append(',')
+            .append(res.getString(if (daily.allFromGap) R.string.export_yes else R.string.export_no))
+            .append('\n')
         sb.append('\n')
 
-        sb.append("拍摄点\n")
-        sb.append("分区,序号,方位角,仰角,与左邻点连线,拍摄时间\n")
-        appendPoints(sb, "外部", group.external, group.zoneId)
-        appendPoints(sb, "天花板", group.ceiling, group.zoneId)
+        sb.append(res.getString(R.string.export_csv_section_points)).append('\n')
+        sb.append(res.getString(R.string.export_csv_points_header)).append('\n')
+        appendPoints(res, sb, res.getString(R.string.export_region_external), group.external, group.zoneId)
+        appendPoints(res, sb, res.getString(R.string.export_region_ceiling), group.ceiling, group.zoneId)
         sb.append('\n')
 
-        sb.append("逐分钟可见性（1 = 有直射）\n")
-        sb.append("分钟,时刻,可见\n")
+        sb.append(res.getString(R.string.export_csv_section_visibility)).append('\n')
+        sb.append(res.getString(R.string.export_csv_visibility_header)).append('\n')
         for (m in 0 until MINUTES_PER_DAY) {
             val visible = daily.visibleIntervals.any { m >= it.first && m <= it.last }
             sb.append(m).append(',').append(Format.clockMinute(m))
@@ -116,6 +131,7 @@ object Exporter {
     }
 
     private fun appendPoints(
+        res: Resources,
         sb: StringBuilder,
         region: String,
         points: List<PointRecord>,
@@ -124,8 +140,8 @@ object Exporter {
         points.forEachIndexed { i, p ->
             val seg = when {
                 i == 0 -> ""
-                points[i - 1].gapAfter -> "走地平线"
-                else -> "直接连线"
+                points[i - 1].gapAfter -> res.getString(R.string.export_seg_via_horizon)
+                else -> res.getString(R.string.export_seg_direct)
             }
             sb.append(region).append(',').append(i + 1)
                 .append(',').append(String.format(Locale.US, "%.1f", p.az))
@@ -163,7 +179,7 @@ object Exporter {
             out.toByteArray()
         }
         bitmap.recycle()
-        val name = fileName(group.name, "png")
+        val name = fileName(context, group.name, "png")
         return publish(
             context = context,
             bytes = bytes,
@@ -175,7 +191,7 @@ object Exporter {
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                 "7D",
             ),
-            locationLabel = "相册 Pictures/7D",
+            locationLabel = context.getString(R.string.export_location_pictures),
             scan = true,
         )
     }
@@ -214,46 +230,61 @@ object Exporter {
             isFakeBoldText = true
         }
 
-        canvas.drawText("${group.name} · 日照参考图", 56f, 100f, titlePaint)
+        val res = context.resources
+        canvas.drawText(res.getString(R.string.export_png_title, group.name), 56f, 100f, titlePaint)
         canvas.drawText(
             "${Format.coordinate(group.lat, group.lon)} · $modeLabel · ${Format.dateTime(group.updatedAt, group.zoneId)}",
             56f, 150f, textPaint,
         )
 
-        drawPolarChart(canvas, 540f, 580f, 340f, group)
+        drawPolarChart(res, canvas, 540f, 580f, 340f, group)
 
         var y = 1010f
-        canvas.drawText("$dateLabel 直射 ${Format.durationCn(daily.directMinutes)}", 56f, y, bigPaint)
+        val directLine = res.getString(
+            R.string.export_png_direct, dateLabel, Format.durationLong(res, daily.directMinutes),
+        )
+        canvas.drawText(directLine, 56f, y, bigPaint)
         if (daily.allFromGap) {
-            canvas.drawText("（全部来自空隙）", 56f + bigPaint.measureText("$dateLabel 直射 ${Format.durationCn(daily.directMinutes)}") + 8f, y, moonPaint)
+            canvas.drawText(
+                res.getString(R.string.export_png_gap_note),
+                56f + bigPaint.measureText(directLine) + 8f, y, moonPaint,
+            )
         }
         y += 56f
         val sunrise = daily.sunriseMinute
         val sunLine = when {
-            sunrise == null && daily.directMinutes == 0 -> "极夜：太阳全天不升"
-            sunrise == null -> "极昼：太阳全天不落"
-            else -> "日出 ${Format.clockMinute(sunrise)} · 日落 ${Format.clockMinute(daily.sunsetMinute ?: 0)}"
+            sunrise == null && daily.directMinutes == 0 -> res.getString(R.string.result_polar_night)
+            sunrise == null -> res.getString(R.string.result_polar_day)
+            else -> res.getString(
+                R.string.result_sunrise_sunset,
+                Format.clockMinute(sunrise),
+                Format.clockMinute(daily.sunsetMinute ?: 0),
+            )
         }
         canvas.drawText(sunLine, 56f, y, textPaint)
         y += 52f
         if (winterMinutes != null) {
-            canvas.drawText("冬至日（当地最低）直射 ${Format.durationCn(winterMinutes)}", 56f, y, textPaint)
+            canvas.drawText(
+                res.getString(R.string.export_png_winter, Format.durationLong(res, winterMinutes)),
+                56f, y, textPaint,
+            )
             y += 52f
         }
         if (gbWindowMinutes != null) {
-            canvas.drawText("大寒日 8–16 时有效直射 ${Format.durationCn(gbWindowMinutes)}", 56f, y, textPaint)
+            canvas.drawText(
+                res.getString(R.string.export_png_gb, Format.durationLong(res, gbWindowMinutes)),
+                56f, y, textPaint,
+            )
             y += 52f
         }
 
         textPaint.textSize = 24f
-        canvas.drawText(
-            "七日 7D · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告",
-            56f, h - 40f, textPaint,
-        )
+        canvas.drawText(res.getString(R.string.export_png_footer), 56f, h - 40f, textPaint)
         return bitmap
     }
 
     private fun drawPolarChart(
+        res: Resources,
         canvas: Canvas,
         cx: Float,
         cy: Float,
@@ -296,12 +327,12 @@ object Exporter {
             )
         }
         label.textAlign = Paint.Align.CENTER
-        canvas.drawText("北", cx, cy - radius - 12f, label)
-        canvas.drawText("南", cx, cy + radius + 34f, label)
+        canvas.drawText(res.getString(R.string.compass_north), cx, cy - radius - 12f, label)
+        canvas.drawText(res.getString(R.string.compass_south), cx, cy + radius + 34f, label)
         label.textAlign = Paint.Align.RIGHT
-        canvas.drawText("西", cx - radius - 8f, cy + 10f, label)
+        canvas.drawText(res.getString(R.string.compass_west), cx - radius - 8f, cy + 10f, label)
         label.textAlign = Paint.Align.LEFT
-        canvas.drawText("东", cx + radius + 8f, cy + 10f, label)
+        canvas.drawText(res.getString(R.string.compass_east), cx + radius + 8f, cy + 10f, label)
 
         // 太阳轨迹三色弧：当地冬至、春秋分、当地夏至
         val winterDecl = if (group.lat >= 0) -23.44 else 23.44
@@ -489,9 +520,9 @@ object Exporter {
         ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun fileName(groupName: String, ext: String): String {
+    private fun fileName(context: Context, groupName: String, ext: String): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
-        return "${sanitize(groupName)}-日照-$stamp.$ext"
+        return context.getString(R.string.export_file_name, sanitize(groupName), stamp, ext)
     }
 
     private fun sanitize(name: String): String =

@@ -184,7 +184,8 @@ class GroupsActivity : AppCompatActivity() {
                     Exporter.exportCsv(this@GroupsActivity, group, date, daily, modeLabel)
                 } else {
                     Exporter.exportImage(
-                        this@GroupsActivity, group, "冬至日", modeLabel, daily,
+                        this@GroupsActivity, group, getString(R.string.result_date_winter),
+                        modeLabel, daily,
                         daily.directMinutes, Summaries.gbWindowMinutes(group, mode, year),
                     )
                 }

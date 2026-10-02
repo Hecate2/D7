@@ -210,15 +210,15 @@ class ResultActivity : AppCompatActivity() {
     )
 
     private fun dateLabel(date: LocalDate): String = when (preset) {
-        Preset.WINTER -> "冬至日"
-        Preset.DAHAN -> "大寒日"
-        Preset.EQUINOX -> "春分日"
-        Preset.SUMMER -> "夏至日"
+        Preset.WINTER -> getString(R.string.result_date_winter)
+        Preset.DAHAN -> getString(R.string.result_date_dahan)
+        Preset.EQUINOX -> getString(R.string.result_date_equinox)
+        Preset.SUMMER -> getString(R.string.result_date_summer)
         Preset.CUSTOM -> Format.monthDay(date)
     }
 
     private fun zoneDisplay(zoneId: String): String =
-        if (zoneId == "Asia/Shanghai") "北京时间" else zoneId
+        if (zoneId == "Asia/Shanghai") getString(R.string.result_timezone_beijing) else zoneId
 
     // ---------------- 计算 ----------------
 
@@ -276,7 +276,7 @@ class ResultActivity : AppCompatActivity() {
     private fun renderComputed(g: GroupRecord, date: LocalDate, computed: Computed) {
         val d = computed.daily
         binding.mainLabel.text = getString(R.string.result_main_label, dateLabel(date), modeLabel())
-        binding.mainValue.text = Format.durationCn(d.directMinutes)
+        binding.mainValue.text = Format.durationLong(resources, d.directMinutes)
         binding.gapNote.isVisible = d.allFromGap
         val sunrise = d.sunriseMinute
         binding.sunLine.text = when {
@@ -290,7 +290,7 @@ class ResultActivity : AppCompatActivity() {
         }
         binding.dayTimeline.submit(d.sunriseMinute, d.sunsetMinute, d.visibleIntervals)
 
-        binding.gbValue.text = Format.durationCn(computed.gbWindowMinutes)
+        binding.gbValue.text = Format.durationLong(resources, computed.gbWindowMinutes)
         val reached = computed.gbWindowMinutes >= 120
         binding.gbNote.setText(if (reached) R.string.result_gb_ok else R.string.result_gb_low)
         binding.gbNote.setTextColor(

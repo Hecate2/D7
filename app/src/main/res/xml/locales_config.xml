@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  系统级「按应用设置语言」的语言清单（Android 13+）。
+  zh-Hans 为默认语言（values/ 即中文）；en 为脚手架占位，翻译落地后再补齐条目。
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="zh-Hans" />
+    <locale android:name="en" />
+</locale-config>
