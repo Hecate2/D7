@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// 版本号集中定义：versionName 与 release 产物文件名共用
+val appVersionName = "0.1.0"
+
 android {
     namespace = "io.github.hecate2.sevend"
     compileSdk = 35
@@ -13,7 +16,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // 真机只需 arm64-v8a 与 armeabi-v7a，裁掉 x86/x86_64 的 native 库
@@ -52,12 +55,12 @@ kotlin {
     }
 }
 
-// release 产物文件名固定为中文名，便于分发（内部类只因 AGP 未公开该设置项）
+// release 产物文件名固定为中文名并带上版本号，便于分发（内部类只因 AGP 未公开该设置项）
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
             (output as? com.android.build.api.variant.impl.VariantOutputImpl)
-                ?.outputFileName?.set("七日-看房拍照测日照时间.apk")
+                ?.outputFileName?.set("七日-看房拍照测日照时间-v$appVersionName.apk")
         }
     }
 }
