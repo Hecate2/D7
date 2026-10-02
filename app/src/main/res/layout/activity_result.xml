@@ -250,6 +250,19 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/smoke"
                 android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/editPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_button_tiny"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/result_edit_points"
+                android:textColor="@color/paper"
+                android:textSize="10sp" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

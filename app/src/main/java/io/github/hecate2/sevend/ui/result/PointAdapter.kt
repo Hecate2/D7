@@ -26,6 +26,7 @@ class PointAdapter(
     private val scope: CoroutineScope,
     private val onToggleSegment: (Int) -> Unit,
     private val onDelete: (Region, Int) -> Unit,
+    private val onEdit: (Region, Int) -> Unit,
 ) : RecyclerView.Adapter<PointAdapter.Holder>() {
 
     data class Row(
@@ -95,6 +96,7 @@ class PointAdapter(
         }
 
         b.delete.setOnClickListener { onDelete(row.region, row.index) }
+        b.root.setOnClickListener { onEdit(row.region, row.index) }
 
         val uriStr = row.point.photoUri
         b.thumb.tag = uriStr

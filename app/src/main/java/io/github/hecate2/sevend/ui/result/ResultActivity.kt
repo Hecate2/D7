@@ -11,14 +11,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.hecate2.sevend.R
+import io.github.hecate2.sevend.core.Angles
 import io.github.hecate2.sevend.core.CalcMode
 import io.github.hecate2.sevend.core.DailySunlight
 import io.github.hecate2.sevend.core.SunlightEvaluator
 import io.github.hecate2.sevend.data.GroupRecord
 import io.github.hecate2.sevend.data.GroupRepository
+import io.github.hecate2.sevend.data.PointRecord
 import io.github.hecate2.sevend.data.Region
 import io.github.hecate2.sevend.databinding.ActivityResultBinding
+import io.github.hecate2.sevend.databinding.DialogPointAnglesBinding
+import io.github.hecate2.sevend.databinding.DialogPointsBulkBinding
 import io.github.hecate2.sevend.export.Exporter
 import io.github.hecate2.sevend.ui.Extras
 import io.github.hecate2.sevend.ui.capture.CaptureActivity
@@ -31,9 +36,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 
 /**
- * 结果页：日期药丸与计算档 → 主结果卡、当天时间线、国标辅助卡、全年曲线 → 点列编辑（删点、切换连线模式）→ 导出与续拍。
+ * 结果页：日期药丸与计算档 → 主结果卡、当天时间线、国标辅助卡、全年曲线 → 点列编辑（删点、切换连线、单点/批量角度编辑）→ 导出与续拍。
  * 计算在后台协程执行，数据变化（续拍、改点）经仓库 StateFlow 自动触发重算。
  */
 class ResultActivity : AppCompatActivity() {
@@ -68,6 +74,7 @@ class ResultActivity : AppCompatActivity() {
             scope = lifecycleScope,
             onToggleSegment = ::toggleSegment,
             onDelete = ::deletePoint,
+            onEdit = ::editPoint,
         )
         binding.pointList.layoutManager = LinearLayoutManager(this)
         binding.pointList.adapter = adapter
@@ -83,6 +90,7 @@ class ResultActivity : AppCompatActivity() {
         binding.exportCsvButton.setOnClickListener { export(csv = true) }
         binding.exportImageButton.setOnClickListener { export(csv = false) }
         binding.captureAgainButton.setOnClickListener { openCapture() }
+        binding.editPoints.setOnClickListener { editPointsBulk() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -347,6 +355,163 @@ class ResultActivity : AppCompatActivity() {
     private fun deletePoint(region: Region, index: Int) {
         val g = group ?: return
         repository.deletePoint(g.id, region, index)
+    }
+
+    // ---------------- 角度编辑（强行改值；允许无图点） ----------------
+
+    /** 单点编辑：改写方位与仰角，照片与拍摄时间保留。 */
+    private fun editPoint(region: Region, index: Int) {
+        val g = group ?: return
+        val point = g.regionList(region).getOrNull(index) ?: return
+        val view = DialogPointAnglesBinding.inflate(layoutInflater)
+        view.azInput.setText(String.format(Locale.US, "%.1f", point.az))
+        view.elInput.setText(String.format(Locale.US, "%.1f", point.el))
+        val regionTag = getString(
+            if (region == Region.EXTERNAL) R.string.result_region_external
+            else R.string.result_region_ceiling,
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.point_edit_title, index + 1, regionTag))
+            .setView(view.root)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.confirm) { _, _ ->
+                val az = view.azInput.text.toString().trim().toDoubleOrNull()
+                val el = view.elInput.text.toString().trim().toDoubleOrNull()
+                if (az == null || el == null || el !in 0.0..90.0) {
+                    toast(getString(R.string.point_edit_invalid))
+                    return@setPositiveButton
+                }
+                repository.updatePointAngles(g.id, region, index, az, el)
+            }
+            .show()
+    }
+
+    /**
+     * 批量编辑：两区各一段文本，逐行「方位角 仰角 [horizon]」。
+     * 行数不变时按序继承原照片与拍摄时间，增删行则新点为无图点；可先整体偏移再确认。
+     */
+    private fun editPointsBulk() {
+        val g = group ?: return
+        val view = DialogPointsBulkBinding.inflate(layoutInflater)
+        val initial = mapOf(
+            Region.EXTERNAL to renderBulk(g.external.map(::recordToRow)),
+            Region.CEILING to renderBulk(g.ceiling.map(::recordToRow)),
+        )
+        val texts = HashMap(initial)
+        var current = Region.EXTERNAL
+        view.bulkInput.setText(texts.getValue(current))
+        paintBulkChips(view, current)
+
+        fun selectRegion(next: Region) {
+            if (next == current) return
+            texts[current] = view.bulkInput.text.toString()
+            current = next
+            view.bulkInput.setText(texts.getValue(current))
+            paintBulkChips(view, current)
+        }
+        view.chipExternal.setOnClickListener { selectRegion(Region.EXTERNAL) }
+        view.chipCeiling.setOnClickListener { selectRegion(Region.CEILING) }
+
+        view.applyOffset.setOnClickListener {
+            val (rows, errLine) = parseBulk(view.bulkInput.text.toString())
+            if (rows == null) {
+                toast(getString(R.string.bulk_edit_parse_error, errLine))
+                return@setOnClickListener
+            }
+            val dAz = view.azOffsetInput.text.toString().trim().ifEmpty { "0" }.toDoubleOrNull()
+            val dEl = view.elOffsetInput.text.toString().trim().ifEmpty { "0" }.toDoubleOrNull()
+            if (dAz == null || dEl == null) {
+                toast(getString(R.string.bulk_edit_offset_invalid))
+                return@setOnClickListener
+            }
+            view.bulkInput.setText(
+                renderBulk(
+                    rows.map { r ->
+                        BulkRow(
+                            Angles.normalize360(r.az + dAz),
+                            (r.el + dEl).coerceIn(0.0, 90.0),
+                            r.horizon,
+                        )
+                    },
+                ),
+            )
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.bulk_edit_title)
+            .setView(view.root)
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.confirm) { _, _ ->
+                texts[current] = view.bulkInput.text.toString()
+                val pending = ArrayList<Pair<Region, List<PointRecord>>>()
+                for (region in listOf(Region.EXTERNAL, Region.CEILING)) {
+                    val text = texts.getValue(region)
+                    if (text == initial.getValue(region)) continue
+                    val (rows, errLine) = parseBulk(text)
+                    if (rows == null) {
+                        toast(getString(R.string.bulk_edit_parse_error, errLine))
+                        return@setPositiveButton
+                    }
+                    pending.add(region to rowsToRecords(rows, g.regionList(region)))
+                }
+                for ((region, points) in pending) {
+                    repository.setRegionPoints(g.id, region, points)
+                }
+            }
+            .show()
+    }
+
+    private fun paintBulkChips(view: DialogPointsBulkBinding, selected: Region) {
+        val chips = mapOf(
+            view.chipExternal to Region.EXTERNAL,
+            view.chipCeiling to Region.CEILING,
+        )
+        for ((chip, region) in chips) {
+            val on = region == selected
+            chip.setBackgroundResource(if (on) R.drawable.bg_pill_filled else R.drawable.bg_pill)
+            chip.setTextColor(ContextCompat.getColor(this, if (on) R.color.ink else R.color.smoke))
+        }
+    }
+
+    /** 批量文本的一行；horizon 表示该点与下一点之间经地平线。 */
+    private data class BulkRow(val az: Double, val el: Double, val horizon: Boolean)
+
+    private fun recordToRow(p: PointRecord): BulkRow = BulkRow(p.az, p.el, p.gapAfter)
+
+    private fun renderBulk(rows: List<BulkRow>): String = rows.joinToString("\n") { r ->
+        val base = String.format(Locale.US, "%.1f %.1f", r.az, r.el)
+        if (r.horizon) "$base horizon" else base
+    }
+
+    /** 解析批量文本；失败时 first 为 null、second 为出错行号（1 基）。 */
+    private fun parseBulk(text: String): Pair<List<BulkRow>?, Int> {
+        val rows = ArrayList<BulkRow>()
+        text.lineSequence().forEachIndexed { i, raw ->
+            val line = raw.trim()
+            if (line.isEmpty()) return@forEachIndexed
+            val parts = line.split(Regex("\\s+"))
+            val az = parts.getOrNull(0)?.toDoubleOrNull()
+            val el = parts.getOrNull(1)?.toDoubleOrNull()
+            if (az == null || el == null || parts.size > 3) return null to (i + 1)
+            val horizon = when {
+                parts.size == 2 -> false
+                parts[2].equals("horizon", ignoreCase = true) -> true
+                else -> return null to (i + 1)
+            }
+            rows.add(BulkRow(az, el, horizon))
+        }
+        return rows to 0
+    }
+
+    /** 文本行转点记录：行数不变时按序继承原照片与拍摄时间，否则为无图点。 */
+    private fun rowsToRecords(rows: List<BulkRow>, old: List<PointRecord>): List<PointRecord> {
+        val inherit = rows.size == old.size
+        return rows.mapIndexed { i, r ->
+            val az = Angles.normalize360(r.az)
+            val el = r.el.coerceIn(0.0, 90.0)
+            val base = if (inherit) old[i].copy(az = az, el = el) else PointRecord(az, el)
+            base.copy(gapAfter = r.horizon)
+        }
     }
 
     // ---------------- 导出与续拍 ----------------

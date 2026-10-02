@@ -186,4 +186,18 @@
     <string name="export_png_winter">冬至日（当地最低）直射 %1$s</string>
     <string name="export_png_gb">大寒日 8–16 时有效直射 %1$s</string>
     <string name="export_png_footer">七日 7D · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告</string>
+
+    <!-- 点位编辑（单点 / 批量，强行改角度、允许无图点） -->
+    <string name="result_edit_points">编辑</string>
+    <string name="point_edit_title">编辑点 %1$d · %2$s</string>
+    <string name="point_edit_az">方位角（0–360）</string>
+    <string name="point_edit_el">仰角（0–90）</string>
+    <string name="point_edit_invalid">请输入有效角度：方位角为数字，仰角 0–90</string>
+    <string name="bulk_edit_title">批量编辑点列</string>
+    <string name="bulk_edit_az_offset">方位偏移</string>
+    <string name="bulk_edit_el_offset">仰角偏移</string>
+    <string name="bulk_edit_apply_offset">应用偏移</string>
+    <string name="bulk_edit_offset_invalid">偏移量需为数字，例如 -2 或 1.5</string>
+    <string name="bulk_edit_hint">每行一个点：「方位角 仰角」，第三词写 horizon 表示与下一点之间经地平线。行数不变时按序保留照片；增删行则为无图点。清空文本会删光该区点列。</string>
+    <string name="bulk_edit_parse_error">第 %1$d 行无法解析，应形如「236.2 18.4」或「236.2 18.4 horizon」</string>
 </resources>

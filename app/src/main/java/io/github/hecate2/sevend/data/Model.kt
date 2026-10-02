@@ -1,6 +1,7 @@
 package io.github.hecate2.sevend.data
 
 import android.content.Context
+import io.github.hecate2.sevend.core.Angles
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -135,6 +136,22 @@ class GroupRepository private constructor(private val file: File) {
             list[startIndex] = list[startIndex].copy(gapAfter = viaHorizon)
             group.withRegion(region, list)
         }
+
+    /** 强行改写某点的角度（照片与拍摄时间保留）；方位规范化到 [0, 360)，仰角限制到 [0, 90]。 */
+    fun updatePointAngles(groupId: String, region: Region, index: Int, az: Double, el: Double) =
+        update(groupId) { group ->
+            val list = group.regionList(region).toMutableList()
+            if (index !in list.indices) return@update group
+            list[index] = list[index].copy(
+                az = Angles.normalize360(az),
+                el = el.coerceIn(0.0, 90.0),
+            )
+            group.withRegion(region, list)
+        }
+
+    /** 整区替换点列（批量编辑用，是否保留照片由调用方决定）。 */
+    fun setRegionPoints(groupId: String, region: Region, points: List<PointRecord>) =
+        update(groupId) { group -> group.withRegion(region, points) }
 
     private fun update(id: String, transform: (GroupRecord) -> GroupRecord) {
         val current = _groups.value

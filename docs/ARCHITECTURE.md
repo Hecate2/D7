@@ -92,9 +92,11 @@
 
 采集页自上而下：标题栏（组名、GPS 与真北校正状态、罗盘精度）、大号仰角与方位读数（加 `+180°` 药丸）、取景器（左上分区 chip：外部建筑/天花板，右侧为覆盖条与「显示线」）、方向提示（北半球「面向南，西·先拍 → 东·后拍」、南半球镜像）、底部三键（左「完成」、中快门、右「删除」）。快门短按：记录当前十字线指向为新的拍摄点并与上一点直接连线；长按（外部区）：记录并以经地平线推断段与上一点连接；天花板区仅短按，且与上一点直接连线。删除键长按：在当前分区内删除「十字线右侧、离当前瞄准方位最近」的一个点（判定为相对当前方位角的顺时针角距最小者，即 `normalize(az_point - az_now) ∈ (0°, 180°)` 中角距最小），按住一次只删一个；左侧的点不受影响。完成键保存并跳转结果页。覆盖条之外，取景器内直接画出已拍点与连线（第 9 节）。续拍：从结果页「回采集续拍」返回该组，新点按分区各自原序续接。
 
-结果页自上而下：标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与左邻点的连线模式切换按钮、删除按钮；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
+结果页自上而下：标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与左邻点的连线模式切换按钮、删除按钮；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
 
-结果页点列区的两个编辑动作直接改组数据：删除任意点；切换某点与拍摄序下一点的连线模式（直接连线 ⇄ 走地平线，仅外部点可切换）。删除点后其前后两点的连接改为直接连线（避免悬空的经地平线段），这与「删除即撤掉该点及其连接段」一致。
+结果页点列区的编辑动作直接改组数据：删除任意点；切换某点与拍摄序下一点的连线模式（直接连线 ⇄ 走地平线，仅外部点可切换）。删除点后其前后两点的连接改为直接连线（避免悬空的经地平线段），这与「删除即撤掉该点及其连接段」一致。
+
+角度编辑分两级且一律「强行」生效（不受照片限制）。单点：点击某行弹出对话框改写方位角与仰角，照片与拍摄时间保留；方位角规范化到 [0, 360)，仰角限制到 [0, 90]。批量：点列标题行右侧「编辑」按钮打开批量编辑器，外部区与天花板区各一段多行文本，逐行「方位角 仰角 [horizon]」（第三词 horizon 表示与下一点之间经地平线），可先填方位偏移与仰角偏移、点「应用偏移」对全文整体平移再确认；确认时按行数决定照片继承——行数不变则按序继承原照片与拍摄时间，增删行则新点为无图点（photoUri 为空，界面显示占位缩略图）。因此不拍照也能手工搭出完整点列，供计算、导出与测试使用。
 
 分屏适配：所有 Activity 声明 `resizeableActivity=true`，不锁定方向，`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局全部用约束与权重，分屏小窗时压缩而非截断关键控件（取景器优先占满剩余空间）。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
 
@@ -156,11 +158,11 @@
 
 `:app` 文件清单（包 `io.github.hecate2.sevend` 下）：
 
-- `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 原子写，`StateFlow<List<GroupRecord>>`，CRUD 与 `touch()`）。
+- `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 原子写，`StateFlow<List<GroupRecord>>`，CRUD、`touch()`、`updatePointAngles()` 与 `setRegionPoints()`）。
 - `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `data class Pose(camAzDeg, camElDeg, right: FloatArray, up: FloatArray, forward: FloatArray, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值（ROTATION_90 的映射需真机验证）；磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：GPS 单次定位 + `GeomagneticField` 磁偏角 + `ZoneId.systemDefault()`。
 - `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore `Pictures/7D/<组名>/`（API 29+ IS_PENDING；API 28- 公共目录+扫描）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回半视场角 32 度。
 - `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线）；`view/CoverageBarView.kt`；`view/TimelineView.kt`；`view/YearCurveView.kt`；`view/PolarSkylineView.kt`（导出图片用，极坐标天际线图）。
-- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区、导出 CSV/图片、回采集续拍）、`ui/Settings`（SharedPreferences 存线显隐与上次档位）。
+- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/Settings`（SharedPreferences 存线显隐与上次档位）。
 - 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、Material3 暗色主题、图标由根目录 PNG 生成自适应图标。
 
 实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛，最后 `installDebug` 到真机（当前连接设备为 vivo PD2164PA，Android 11 / API 30）实测。
