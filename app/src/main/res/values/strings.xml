@@ -90,9 +90,43 @@
     <string name="line_horizon">地平线</string>
     <string name="line_vertical">铅垂线</string>
 
-    <!-- 占位 -->
-    <string name="capture_placeholder">采集界面（实现中）</string>
-    <string name="result_placeholder">外部 %1$d 点 · 天花板 %2$d 点\n结果界面（实现中）</string>
+    <!-- 结果页 -->
+    <string name="result_title">结果 · %1$s</string>
+    <string name="result_meta">%1$s · %2$s 采集 · %3$s</string>
+    <string name="result_pill_winter">冬至</string>
+    <string name="result_pill_dahan">大寒</string>
+    <string name="result_pill_equinox">春分</string>
+    <string name="result_pill_summer">夏至</string>
+    <string name="result_pill_custom">自定义</string>
+    <string name="result_mode_external">仅外部</string>
+    <string name="result_mode_both">外部+天花板</string>
+    <string name="result_mode_ceiling">仅天花板</string>
+    <string name="result_mode_ceiling_locked">先拍天花板才能用这两档</string>
+    <string name="result_main_label">%1$s 直射日照 · %2$s</string>
+    <string name="result_computing">计算中…</string>
+    <string name="result_gap_note">全部来自空隙</string>
+    <string name="result_sunrise_sunset">日出 %1$s · 日落 %2$s</string>
+    <string name="result_polar_day">极昼：太阳全天不落</string>
+    <string name="result_polar_night">极夜：太阳全天不升</string>
+    <string name="result_timeline">当天时间线</string>
+    <string name="result_timeline_legend">白=直射 深灰=被挡</string>
+    <string name="result_gb_label">大寒日 8:00–16:00 有效直射</string>
+    <string name="result_gb_ok">已达 ≥2 小时</string>
+    <string name="result_gb_low">未达 ≥2 小时</string>
+    <string name="result_gb_hint">GB 50180 预设 · Ⅰ Ⅱ Ⅲ Ⅶ 区 大寒 8–16 ≥2 h（小城市 3 h）· Ⅳ 区 大寒 9–15 ≥1 h · Ⅴ Ⅵ 区 冬至 9–15 ≥1 h · 以当地规划条件为准</string>
+    <string name="result_year_label">全年直射时长（小时/天）</string>
+    <string name="result_points">拍摄点</string>
+    <string name="result_points_count">外 %1$d 点 · 天 %2$d 点</string>
+    <string name="result_point_title">%1$s%2$d · %3$s · %4$s</string>
+    <string name="result_region_external">外</string>
+    <string name="result_region_ceiling">天</string>
+    <string name="result_seg_direct">直接</string>
+    <string name="result_seg_horizon">地平线</string>
+    <string name="result_delete">删</string>
+    <string name="result_export_csv">导出 CSV</string>
+    <string name="result_export_image">导出图片</string>
     <string name="result_go_capture">回采集续拍</string>
-    <string name="back">返回</string>
+    <string name="result_export_done">已保存到 %1$s</string>
+    <string name="result_export_failed">导出失败：请检查存储空间或权限</string>
+    <string name="result_no_data">先拍摄再导出</string>
 </resources>

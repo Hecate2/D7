@@ -1,37 +1,396 @@
 package io.github.hecate2.sevend.ui.result
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
 import io.github.hecate2.sevend.R
+import io.github.hecate2.sevend.core.CalcMode
+import io.github.hecate2.sevend.core.DailySunlight
+import io.github.hecate2.sevend.core.SunlightEvaluator
+import io.github.hecate2.sevend.data.GroupRecord
 import io.github.hecate2.sevend.data.GroupRepository
-import io.github.hecate2.sevend.databinding.ActivityPlaceholderBinding
+import io.github.hecate2.sevend.data.Region
+import io.github.hecate2.sevend.databinding.ActivityResultBinding
+import io.github.hecate2.sevend.export.Exporter
 import io.github.hecate2.sevend.ui.Extras
 import io.github.hecate2.sevend.ui.capture.CaptureActivity
+import io.github.hecate2.sevend.util.Format
+import io.github.hecate2.sevend.util.Summaries
+import io.github.hecate2.sevend.util.toShotPoints
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
- * 结果界面（占位骨架，后续提交实现计算、时间线、全年曲线与点列编辑）。
+ * 结果页：日期药丸与计算档 → 主结果卡、当天时间线、国标辅助卡、全年曲线 → 点列编辑（删点、切换连线模式）→ 导出与续拍。
+ * 计算在后台协程执行，数据变化（续拍、改点）经仓库 StateFlow 自动触发重算。
  */
 class ResultActivity : AppCompatActivity() {
 
+    private enum class Preset { WINTER, DAHAN, EQUINOX, SUMMER, CUSTOM }
+
+    private lateinit var binding: ActivityResultBinding
+    private lateinit var repository: GroupRepository
+    private lateinit var adapter: PointAdapter
+
+    private var group: GroupRecord? = null
+    private var preset = Preset.WINTER
+    private var customDate: LocalDate? = null
+    private var mode = CalcMode.EXTERNAL_ONLY
+
+    private var computeJob: Job? = null
+    private var curveCacheKey: String? = null
+    private var curveCache: List<Double>? = null
+
+    private var daily: DailySunlight? = null
+    private var winterMinutes: Int? = null
+    private var gbWindowMinutes: Int? = null
+    private var selectedDateValue: LocalDate? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityPlaceholderBinding.inflate(layoutInflater)
+        binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val groupId = intent.getStringExtra(Extras.GROUP_ID).orEmpty()
-        val group = GroupRepository.get(this).get(groupId)
-
-        binding.title.text = group?.name ?: ""
-        binding.subtitle.text = getString(
-            R.string.result_placeholder,
-            group?.external?.size ?: 0,
-            group?.ceiling?.size ?: 0,
+        repository = GroupRepository.get(this)
+        adapter = PointAdapter(
+            scope = lifecycleScope,
+            onToggleSegment = ::toggleSegment,
+            onDelete = ::deletePoint,
         )
-        binding.actionButton.text = getString(R.string.result_go_capture)
-        binding.actionButton.setOnClickListener {
-            startActivity(Intent(this, CaptureActivity::class.java).putExtra(Extras.GROUP_ID, groupId))
+        binding.pointList.layoutManager = LinearLayoutManager(this)
+        binding.pointList.adapter = adapter
+
+        binding.pillWinter.setOnClickListener { choosePreset(Preset.WINTER) }
+        binding.pillDahan.setOnClickListener { choosePreset(Preset.DAHAN) }
+        binding.pillEquinox.setOnClickListener { choosePreset(Preset.EQUINOX) }
+        binding.pillSummer.setOnClickListener { choosePreset(Preset.SUMMER) }
+        binding.pillCustom.setOnClickListener { pickCustomDate() }
+        binding.chipExternalOnly.setOnClickListener { chooseMode(CalcMode.EXTERNAL_ONLY) }
+        binding.chipBoth.setOnClickListener { chooseMode(CalcMode.EXTERNAL_AND_CEILING) }
+        binding.chipCeilingOnly.setOnClickListener { chooseMode(CalcMode.CEILING_ONLY) }
+        binding.exportCsvButton.setOnClickListener { export(csv = true) }
+        binding.exportImageButton.setOnClickListener { export(csv = false) }
+        binding.captureAgainButton.setOnClickListener { openCapture() }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                repository.groups.collect { groups -> onGroups(groups) }
+            }
         }
-        binding.backButton.setOnClickListener { finish() }
+    }
+
+    private fun onGroups(groups: List<GroupRecord>) {
+        val id = intent.getStringExtra(Extras.GROUP_ID).orEmpty()
+        val g = groups.firstOrNull { it.id == id }
+        if (g == null) {
+            finish()
+            return
+        }
+        group = g
+        if (mode != CalcMode.EXTERNAL_ONLY && g.ceiling.isEmpty()) {
+            mode = CalcMode.EXTERNAL_ONLY
+        }
+        binding.titleResult.text = getString(R.string.result_title, g.name)
+        binding.resultMeta.text = getString(
+            R.string.result_meta,
+            Format.coordinate(g.lat, g.lon),
+            Format.dateShort(g.createdAt, g.zoneId),
+            zoneDisplay(g.zoneId),
+        )
+        updatePills()
+        updateChips(g)
+        rebuildPoints(g)
+        recompute()
+    }
+
+    // ---------------- 选择与状态 ----------------
+
+    private fun choosePreset(next: Preset) {
+        if (preset == next) return
+        preset = next
+        updatePills()
+        recompute()
+    }
+
+    private fun pickCustomDate() {
+        val g = group ?: return
+        val initial = selectedDate(g)
+        DatePickerDialog(
+            this,
+            { _, year, month, day ->
+                customDate = LocalDate.of(year, month + 1, day)
+                preset = Preset.CUSTOM
+                updatePills()
+                recompute()
+            },
+            initial.year, initial.monthValue - 1, initial.dayOfMonth,
+        ).show()
+    }
+
+    private fun chooseMode(next: CalcMode) {
+        val g = group ?: return
+        if (next != CalcMode.EXTERNAL_ONLY && g.ceiling.isEmpty()) {
+            toast(getString(R.string.result_mode_ceiling_locked))
+            return
+        }
+        if (mode == next) return
+        mode = next
+        updateChips(g)
+        recompute()
+    }
+
+    private fun updatePills() {
+        val pills = mapOf(
+            binding.pillWinter to Preset.WINTER,
+            binding.pillDahan to Preset.DAHAN,
+            binding.pillEquinox to Preset.EQUINOX,
+            binding.pillSummer to Preset.SUMMER,
+            binding.pillCustom to Preset.CUSTOM,
+        )
+        for ((view, value) in pills) {
+            val selected = preset == value
+            view.setBackgroundResource(
+                if (selected) R.drawable.bg_pill_filled else R.drawable.bg_pill,
+            )
+            view.setTextColor(
+                ContextCompat.getColor(this, if (selected) R.color.ink else R.color.smoke),
+            )
+        }
+    }
+
+    private fun updateChips(g: GroupRecord) {
+        val ceilingEmpty = g.ceiling.isEmpty()
+        val chips = listOf(
+            binding.chipExternalOnly to CalcMode.EXTERNAL_ONLY,
+            binding.chipBoth to CalcMode.EXTERNAL_AND_CEILING,
+            binding.chipCeilingOnly to CalcMode.CEILING_ONLY,
+        )
+        for ((view, value) in chips) {
+            val selected = mode == value
+            val locked = value != CalcMode.EXTERNAL_ONLY && ceilingEmpty
+            view.setBackgroundResource(
+                if (selected) R.drawable.bg_pill_filled else R.drawable.bg_pill,
+            )
+            view.setTextColor(
+                ContextCompat.getColor(this, if (selected) R.color.ink else R.color.smoke),
+            )
+            view.alpha = if (locked) 0.35f else 1f
+        }
+    }
+
+    private fun selectedDate(g: GroupRecord): LocalDate {
+        val year = LocalDate.now(ZoneId.of(g.zoneId)).year
+        return when (preset) {
+            Preset.WINTER -> Summaries.winterDate(year, g.lat)
+            Preset.DAHAN -> Summaries.dahanDate(year, g.lat)
+            Preset.EQUINOX -> LocalDate.of(year, 3, 21)
+            Preset.SUMMER -> if (g.lat >= 0) LocalDate.of(year, 6, 21) else LocalDate.of(year, 12, 21)
+            Preset.CUSTOM -> customDate ?: Summaries.winterDate(year, g.lat)
+        }
+    }
+
+    private fun modeLabel(): String = getString(
+        when (mode) {
+            CalcMode.EXTERNAL_ONLY -> R.string.result_mode_external
+            CalcMode.EXTERNAL_AND_CEILING -> R.string.result_mode_both
+            CalcMode.CEILING_ONLY -> R.string.result_mode_ceiling
+        },
+    )
+
+    private fun dateLabel(date: LocalDate): String = when (preset) {
+        Preset.WINTER -> "冬至日"
+        Preset.DAHAN -> "大寒日"
+        Preset.EQUINOX -> "春分日"
+        Preset.SUMMER -> "夏至日"
+        Preset.CUSTOM -> Format.monthDay(date)
+    }
+
+    private fun zoneDisplay(zoneId: String): String =
+        if (zoneId == "Asia/Shanghai") "北京时间" else zoneId
+
+    // ---------------- 计算 ----------------
+
+    private data class Computed(
+        val daily: DailySunlight,
+        val winterMinutes: Int,
+        val gbWindowMinutes: Int,
+        val curve: List<Double>,
+        val curveKey: String,
+    )
+
+    private fun recompute() {
+        val g = group ?: return
+        computeJob?.cancel()
+        binding.mainValue.text = getString(R.string.result_computing)
+        val date = selectedDate(g)
+        val modeNow = mode
+        val year = LocalDate.now(ZoneId.of(g.zoneId)).year
+        val winterDate = Summaries.winterDate(year, g.lat)
+        val key = curveKey(g, modeNow, year)
+        computeJob = lifecycleScope.launch {
+            val computed = withContext(Dispatchers.Default) {
+                val external = g.external.toShotPoints()
+                val ceiling = g.ceiling.toShotPoints()
+                val dailyNow = Summaries.evaluate(g, modeNow, date)
+                val winter = if (date == winterDate) {
+                    dailyNow.directMinutes
+                } else {
+                    Summaries.evaluate(g, modeNow, winterDate).directMinutes
+                }
+                val gb = Summaries.gbWindowMinutes(g, modeNow, year)
+                val curve = curveCache?.takeIf { key == curveCacheKey }
+                    ?: SunlightEvaluator.yearlyCurve(
+                        g.lat, g.lon, g.zoneId, external, ceiling, modeNow, year,
+                    )
+                Computed(dailyNow, winter, gb, curve, key)
+            }
+            curveCache = computed.curve
+            curveCacheKey = computed.curveKey
+            daily = computed.daily
+            winterMinutes = computed.winterMinutes
+            gbWindowMinutes = computed.gbWindowMinutes
+            selectedDateValue = date
+            renderComputed(g, date, computed)
+        }
+    }
+
+    private fun curveKey(g: GroupRecord, mode: CalcMode, year: Int): String = buildString {
+        append(mode.name).append('|').append(year)
+        for (p in g.external) append('|').append(p.az).append(',').append(p.el).append(',').append(p.gapAfter)
+        append('#')
+        for (p in g.ceiling) append('|').append(p.az).append(',').append(p.el)
+    }
+
+    private fun renderComputed(g: GroupRecord, date: LocalDate, computed: Computed) {
+        val d = computed.daily
+        binding.mainLabel.text = getString(R.string.result_main_label, dateLabel(date), modeLabel())
+        binding.mainValue.text = Format.durationCn(d.directMinutes)
+        binding.gapNote.isVisible = d.allFromGap
+        val sunrise = d.sunriseMinute
+        binding.sunLine.text = when {
+            sunrise == null && d.directMinutes == 0 -> getString(R.string.result_polar_night)
+            sunrise == null -> getString(R.string.result_polar_day)
+            else -> getString(
+                R.string.result_sunrise_sunset,
+                Format.clockMinute(sunrise),
+                Format.clockMinute(d.sunsetMinute ?: 0),
+            )
+        }
+        binding.dayTimeline.submit(d.sunriseMinute, d.sunsetMinute, d.visibleIntervals)
+
+        binding.gbValue.text = Format.durationCn(computed.gbWindowMinutes)
+        val reached = computed.gbWindowMinutes >= 120
+        binding.gbNote.setText(if (reached) R.string.result_gb_ok else R.string.result_gb_low)
+        binding.gbNote.setTextColor(
+            ContextCompat.getColor(this, if (reached) R.color.paper else R.color.moon),
+        )
+
+        val year = LocalDate.now(ZoneId.of(g.zoneId)).year
+        val marker = if (date.year == year) date.dayOfYear - 1 else -1
+        binding.yearCurve.submit(computed.curve, marker)
+    }
+
+    // ---------------- 点列 ----------------
+
+    private fun rebuildPoints(g: GroupRecord) {
+        val rows = ArrayList<PointAdapter.Row>(g.external.size + g.ceiling.size)
+        g.external.forEachIndexed { i, p ->
+            rows.add(
+                PointAdapter.Row(
+                    region = Region.EXTERNAL,
+                    index = i,
+                    point = p,
+                    hasPrev = i > 0,
+                    segViaHorizon = i > 0 && g.external[i - 1].gapAfter,
+                    toggleEnabled = i > 0,
+                ),
+            )
+        }
+        g.ceiling.forEachIndexed { i, p ->
+            rows.add(
+                PointAdapter.Row(
+                    region = Region.CEILING,
+                    index = i,
+                    point = p,
+                    hasPrev = i > 0,
+                    segViaHorizon = false,
+                    toggleEnabled = false,
+                ),
+            )
+        }
+        adapter.submit(rows)
+        binding.pointsCount.text = getString(
+            R.string.result_points_count, g.external.size, g.ceiling.size,
+        )
+    }
+
+    /** 切换该点与左邻点（拍摄序前一点）的连线模式，作用于前一点的 gapAfter。 */
+    private fun toggleSegment(externalIndex: Int) {
+        val g = group ?: return
+        if (externalIndex !in 1 until g.external.size) return
+        val prev = g.external[externalIndex - 1]
+        repository.setSegmentViaHorizon(g.id, Region.EXTERNAL, externalIndex - 1, !prev.gapAfter)
+    }
+
+    private fun deletePoint(region: Region, index: Int) {
+        val g = group ?: return
+        repository.deletePoint(g.id, region, index)
+    }
+
+    // ---------------- 导出与续拍 ----------------
+
+    private fun export(csv: Boolean) {
+        val g = group ?: return
+        if (g.external.isEmpty() && g.ceiling.isEmpty()) {
+            toast(getString(R.string.result_no_data))
+            return
+        }
+        val d = daily ?: return
+        val date = selectedDateValue ?: selectedDate(g)
+        binding.exportCsvButton.isEnabled = false
+        binding.exportImageButton.isEnabled = false
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                if (csv) {
+                    Exporter.exportCsv(this@ResultActivity, g, date, d, modeLabel())
+                } else {
+                    Exporter.exportImage(
+                        this@ResultActivity, g, dateLabel(date), modeLabel(),
+                        d, winterMinutes, gbWindowMinutes,
+                    )
+                }
+            }
+            binding.exportCsvButton.isEnabled = true
+            binding.exportImageButton.isEnabled = true
+            if (outcome.error == null) {
+                toast(getString(R.string.result_export_done, outcome.location.orEmpty()))
+            } else {
+                toast(getString(R.string.result_export_failed))
+            }
+        }
+    }
+
+    private fun openCapture() {
+        val g = group ?: return
+        startActivity(
+            Intent(this, CaptureActivity::class.java).putExtra(Extras.GROUP_ID, g.id),
+        )
+        finish()
+    }
+
+    private fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

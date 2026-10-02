@@ -16,12 +16,12 @@ object Format {
         return String.format(Locale.US, "%dh%02d", h, m)
     }
 
-    /** 时长的中文写法：2 时 05 分。 */
+    /** 时长的中文写法：2 小时 05 分。 */
     fun durationCn(minutes: Int): String {
         if (minutes < 60) return "${minutes} 分"
         val h = minutes / 60
         val m = minutes % 60
-        return String.format(Locale.US, "%d 时 %02d 分", h, m)
+        return String.format(Locale.US, "%d 小时 %02d 分", h, m)
     }
 
     /** 时钟分钟（0..1440）转「07:32」。 */
@@ -40,8 +40,12 @@ object Format {
     /** 日期短写：10-02。 */
     fun dateShort(millis: Long, zoneId: String): String {
         val date = Instant.ofEpochMilli(millis).atZone(ZoneId.of(zoneId)).toLocalDate()
-        return String.format(Locale.US, "%02d-%02d", date.monthValue, date.dayOfMonth)
+        return monthDay(date)
     }
+
+    /** 日期短写（直接由日期对象）：10-02。 */
+    fun monthDay(date: java.time.LocalDate): String =
+        String.format(Locale.US, "%02d-%02d", date.monthValue, date.dayOfMonth)
 
     /** 完整日期：2026-10-02 14:30。 */
     fun dateTime(millis: Long, zoneId: String): String {
@@ -57,4 +61,7 @@ object Format {
 
     /** 仰角写法：18.4°。 */
     fun elevation(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
+
+    /** 整度写法：236°。 */
+    fun degreeInt(deg: Double): String = String.format(Locale.US, "%.0f°", deg)
 }

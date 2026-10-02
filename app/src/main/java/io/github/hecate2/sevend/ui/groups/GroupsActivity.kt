@@ -18,11 +18,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.hecate2.sevend.R
+import io.github.hecate2.sevend.core.CalcMode
 import io.github.hecate2.sevend.data.GroupRecord
 import io.github.hecate2.sevend.data.GroupRepository
 import io.github.hecate2.sevend.databinding.ActivityGroupsBinding
 import io.github.hecate2.sevend.databinding.DialogGroupNameBinding
 import io.github.hecate2.sevend.databinding.DialogNewGroupBinding
+import io.github.hecate2.sevend.export.Exporter
 import io.github.hecate2.sevend.sensor.FixLocation
 import io.github.hecate2.sevend.sensor.LocationProvider
 import io.github.hecate2.sevend.ui.Extras
@@ -30,14 +32,17 @@ import io.github.hecate2.sevend.ui.capture.CaptureActivity
 import io.github.hecate2.sevend.ui.result.ResultActivity
 import io.github.hecate2.sevend.util.Format
 import io.github.hecate2.sevend.util.Summaries
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 
 /**
  * 照片组管理（应用入口）。
- * 卡片列表来自仓库的 StateFlow；点卡片进结果页，长按改名或删除；右上「+ 新建」建组后直接进采集页。
+ * 卡片列表来自仓库的 StateFlow；点卡片进结果页，长按改名、删除或导出；右上「+ 新建」建组后直接进采集页。
  */
 class GroupsActivity : AppCompatActivity() {
 
@@ -88,6 +93,7 @@ class GroupsActivity : AppCompatActivity() {
         PopupMenu(this, anchor).apply {
             menu.add(0, MENU_RENAME, 0, R.string.menu_rename)
             menu.add(0, MENU_DELETE, 1, R.string.menu_delete)
+            menu.add(0, MENU_EXPORT, 2, R.string.menu_export)
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     MENU_RENAME -> {
@@ -97,6 +103,11 @@ class GroupsActivity : AppCompatActivity() {
 
                     MENU_DELETE -> {
                         confirmDelete(group)
+                        true
+                    }
+
+                    MENU_EXPORT -> {
+                        showExportDialog(group)
                         true
                     }
 
@@ -136,6 +147,54 @@ class GroupsActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.confirm) { _, _ -> repository.deleteGroup(group.id) }
             .show()
+    }
+
+    private fun showExportDialog(group: GroupRecord) {
+        if (group.external.isEmpty() && group.ceiling.isEmpty()) {
+            toast(getString(R.string.result_no_data))
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_export)
+            .setItems(
+                arrayOf(
+                    getString(R.string.result_export_csv),
+                    getString(R.string.result_export_image),
+                ),
+            ) { _, which -> exportGroup(group, csv = which == 0) }
+            .show()
+    }
+
+    /** 列表页快速导出：按默认档位与当地冬至日算一次，交给 Exporter。 */
+    private fun exportGroup(group: GroupRecord, csv: Boolean) {
+        val mode = Summaries.defaultMode(group)
+        val modeLabel = getString(
+            when (mode) {
+                CalcMode.EXTERNAL_ONLY -> R.string.result_mode_external
+                CalcMode.EXTERNAL_AND_CEILING -> R.string.result_mode_both
+                CalcMode.CEILING_ONLY -> R.string.result_mode_ceiling
+            },
+        )
+        val year = LocalDate.now(ZoneId.of(group.zoneId)).year
+        val date = Summaries.winterDate(year, group.lat)
+        lifecycleScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                val daily = Summaries.evaluate(group, mode, date)
+                if (csv) {
+                    Exporter.exportCsv(this@GroupsActivity, group, date, daily, modeLabel)
+                } else {
+                    Exporter.exportImage(
+                        this@GroupsActivity, group, "冬至日", modeLabel, daily,
+                        daily.directMinutes, Summaries.gbWindowMinutes(group, mode, year),
+                    )
+                }
+            }
+            if (outcome.error == null) {
+                toast(getString(R.string.result_export_done, outcome.location.orEmpty()))
+            } else {
+                toast(getString(R.string.result_export_failed))
+            }
+        }
     }
 
     private fun showNewGroupDialog() {
@@ -236,5 +295,6 @@ class GroupsActivity : AppCompatActivity() {
     private companion object {
         const val MENU_RENAME = 1
         const val MENU_DELETE = 2
+        const val MENU_EXPORT = 3
     }
 }

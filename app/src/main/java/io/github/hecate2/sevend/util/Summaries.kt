@@ -1,6 +1,7 @@
 package io.github.hecate2.sevend.util
 
 import io.github.hecate2.sevend.core.CalcMode
+import io.github.hecate2.sevend.core.DailySunlight
 import io.github.hecate2.sevend.core.ShotPoint
 import io.github.hecate2.sevend.core.Skyline
 import io.github.hecate2.sevend.core.SunlightEvaluator
@@ -55,20 +56,50 @@ object Summaries {
     }
 
     /**
-     * 冬至结论：当地一年中太阳最低一天在默认档位（仅外部）下的直射分钟数。
+     * 默认档位：外部有点用「仅外部」；外部空白而只有天花板时用「仅天花板」
+     * （否则「未拍区域视为无遮挡」会给出全周开阔的失真结论）；两区都空回退「仅外部」。
+     */
+    fun defaultMode(group: GroupRecord): CalcMode =
+        if (group.external.isEmpty() && group.ceiling.isNotEmpty()) {
+            CalcMode.CEILING_ONLY
+        } else {
+            CalcMode.EXTERNAL_ONLY
+        }
+
+    /**
+     * 冬至结论：当地一年中太阳最低一天在默认档位下的直射分钟数。
      * 两区都没有点位时返回 null（界面显示「未测」）。
      */
     fun winterSolsticeMinutes(
         group: GroupRecord,
-        mode: CalcMode = CalcMode.EXTERNAL_ONLY,
+        mode: CalcMode = defaultMode(group),
     ): Int? {
         if (group.external.isEmpty() && group.ceiling.isEmpty()) return null
         val year = LocalDate.now(ZoneId.of(group.zoneId)).year
-        val date = if (group.lat >= 0.0) LocalDate.of(year, 12, 21) else LocalDate.of(year, 6, 21)
-        return SunlightEvaluator.evaluate(
+        return evaluate(group, mode, winterDate(year, group.lat)).directMinutes
+    }
+
+    /** 当地冬至：北半球 12-21，南半球 6-21（一年中太阳最低的一天）。 */
+    fun winterDate(year: Int, latDeg: Double): LocalDate =
+        if (latDeg >= 0.0) LocalDate.of(year, 12, 21) else LocalDate.of(year, 6, 21)
+
+    /** 当地大寒：北半球 1-20，南半球镜像为 7-20。 */
+    fun dahanDate(year: Int, latDeg: Double): LocalDate =
+        if (latDeg >= 0.0) LocalDate.of(year, 1, 20) else LocalDate.of(year, 7, 20)
+
+    /** 某组某日某档位的日照评估。 */
+    fun evaluate(group: GroupRecord, mode: CalcMode, date: LocalDate): DailySunlight =
+        SunlightEvaluator.evaluate(
             group.lat, group.lon, group.zoneId,
             group.external.toShotPoints(), group.ceiling.toShotPoints(),
             mode, date,
-        ).directMinutes
-    }
+        )
+
+    /** 国标辅助卡：大寒日真太阳时 8:00–16:00 时间带内的有效直射分钟。 */
+    fun gbWindowMinutes(group: GroupRecord, mode: CalcMode, year: Int): Int =
+        SunlightEvaluator.windowMinutes(
+            group.lat, group.lon, group.zoneId,
+            group.external.toShotPoints(), group.ceiling.toShotPoints(),
+            mode, dahanDate(year, group.lat), 480, 960,
+        )
 }
