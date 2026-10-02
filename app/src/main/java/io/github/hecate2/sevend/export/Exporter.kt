@@ -1,7 +1,6 @@
 package io.github.hecate2.sevend.export
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Resources
@@ -22,6 +21,8 @@ import io.github.hecate2.sevend.core.Solar
 import io.github.hecate2.sevend.data.GroupRecord
 import io.github.hecate2.sevend.data.PointRecord
 import io.github.hecate2.sevend.util.Format
+import io.github.hecate2.sevend.util.publishPendingMediaStore
+import io.github.hecate2.sevend.util.sanitizeGroupName
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.text.SimpleDateFormat
@@ -452,8 +453,9 @@ object Exporter {
         scan: Boolean,
     ): Outcome {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            publishMediaStore(context, bytes, displayName, mime, mediaRelativeDir, mediaCollection)
-                ?.let { return Outcome("$locationLabel/$displayName", null) }
+            publishPendingMediaStore(
+                context, mediaCollection, displayName, mime, mediaRelativeDir,
+            ) { it.write(bytes) }?.let { return Outcome("$locationLabel/$displayName", null) }
         } else if (hasWritePermission(context)) {
             try {
                 if (legacySubDir.exists() || legacySubDir.mkdirs()) {
@@ -471,42 +473,6 @@ object Exporter {
         return fallbackToAppDir(context, bytes, displayName)
     }
 
-    /** 返回非空即成功。 */
-    private fun publishMediaStore(
-        context: Context,
-        bytes: ByteArray,
-        displayName: String,
-        mime: String,
-        relativeDir: String,
-        collection: Uri,
-    ): Uri? {
-        val resolver = context.contentResolver
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-            put(MediaStore.MediaColumns.MIME_TYPE, mime)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, relativeDir)
-            put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
-        val uri = try {
-            resolver.insert(collection, values)
-        } catch (_: Exception) {
-            null
-        } ?: return null
-        return try {
-            resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: run {
-                resolver.delete(uri, null, null)
-                return null
-            }
-            values.clear()
-            values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
-            uri
-        } catch (_: Exception) {
-            resolver.delete(uri, null, null)
-            null
-        }
-    }
-
     private fun fallbackToAppDir(context: Context, bytes: ByteArray, displayName: String): Outcome = try {
         val dir = File(context.getExternalFilesDir(null), "7D")
         if (!dir.exists() && !dir.mkdirs()) throw IllegalStateException("mkdir failed")
@@ -522,11 +488,8 @@ object Exporter {
 
     private fun fileName(context: Context, groupName: String, ext: String): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())
-        return context.getString(R.string.export_file_name, sanitize(groupName), stamp, ext)
+        return context.getString(R.string.export_file_name, sanitizeGroupName(groupName), stamp, ext)
     }
-
-    private fun sanitize(name: String): String =
-        name.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().take(24).ifBlank { "group" }
 
     private const val MINUTES_PER_DAY = 1440
 }

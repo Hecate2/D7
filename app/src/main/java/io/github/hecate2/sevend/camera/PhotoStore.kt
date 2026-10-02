@@ -1,7 +1,6 @@
 package io.github.hecate2.sevend.camera
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
@@ -14,6 +13,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import io.github.hecate2.sevend.data.Region
+import io.github.hecate2.sevend.util.publishPendingMediaStore
+import io.github.hecate2.sevend.util.sanitizeGroupName
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONObject
 import java.io.File
@@ -100,40 +101,17 @@ class PhotoStore(private val context: Context) {
 
     private fun publish(temp: File, meta: PhotoMeta): Uri? {
         val displayName = buildDisplayName(meta)
-        val folder = sanitize(meta.groupName)
+        val folder = sanitizeGroupName(meta.groupName)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            publishToMediaStore(temp, displayName, folder)
+            publishPendingMediaStore(
+                context = context,
+                collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                displayName = displayName,
+                mime = "image/jpeg",
+                relativeDir = "${Environment.DIRECTORY_PICTURES}/7D/$folder",
+            ) { sink -> temp.inputStream().use { it.copyTo(sink) } }
         } else {
             publishLegacy(temp, displayName, folder)
-        }
-    }
-
-    private fun publishToMediaStore(temp: File, displayName: String, folder: String): Uri? {
-        val resolver = context.contentResolver
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            put(
-                MediaStore.Images.Media.RELATIVE_PATH,
-                "${Environment.DIRECTORY_PICTURES}/7D/$folder",
-            )
-            put(MediaStore.Images.Media.IS_PENDING, 1)
-        }
-        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
-        return try {
-            val out = resolver.openOutputStream(uri)
-            if (out == null) {
-                resolver.delete(uri, null, null)
-                return null
-            }
-            out.use { sink -> temp.inputStream().use { it.copyTo(sink) } }
-            values.clear()
-            values.put(MediaStore.Images.Media.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
-            uri
-        } catch (_: Exception) {
-            resolver.delete(uri, null, null)
-            null
         }
     }
 
@@ -177,9 +155,6 @@ class PhotoStore(private val context: Context) {
 
     private fun buildDisplayName(meta: PhotoMeta): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(meta.takenAt))
-        return "7D_${sanitize(meta.groupName)}_${meta.region.name}_${meta.seq}_$stamp.jpg"
+        return "7D_${sanitizeGroupName(meta.groupName)}_${meta.region.name}_${meta.seq}_$stamp.jpg"
     }
-
-    private fun sanitize(name: String): String =
-        name.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().take(24).ifBlank { "group" }
 }

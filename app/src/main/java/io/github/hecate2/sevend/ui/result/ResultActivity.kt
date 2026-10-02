@@ -27,6 +27,7 @@ import io.github.hecate2.sevend.databinding.DialogPointsBulkBinding
 import io.github.hecate2.sevend.export.Exporter
 import io.github.hecate2.sevend.ui.Extras
 import io.github.hecate2.sevend.ui.capture.CaptureActivity
+import io.github.hecate2.sevend.ui.setPillSelected
 import io.github.hecate2.sevend.util.Format
 import io.github.hecate2.sevend.util.Summaries
 import io.github.hecate2.sevend.util.toShotPoints
@@ -168,13 +169,7 @@ class ResultActivity : AppCompatActivity() {
             binding.pillCustom to Preset.CUSTOM,
         )
         for ((view, value) in pills) {
-            val selected = preset == value
-            view.setBackgroundResource(
-                if (selected) R.drawable.bg_pill_filled else R.drawable.bg_pill,
-            )
-            view.setTextColor(
-                ContextCompat.getColor(this, if (selected) R.color.ink else R.color.smoke),
-            )
+            view.setPillSelected(preset == value)
         }
     }
 
@@ -186,15 +181,8 @@ class ResultActivity : AppCompatActivity() {
             binding.chipCeilingOnly to CalcMode.CEILING_ONLY,
         )
         for ((view, value) in chips) {
-            val selected = mode == value
-            val locked = value != CalcMode.EXTERNAL_ONLY && ceilingEmpty
-            view.setBackgroundResource(
-                if (selected) R.drawable.bg_pill_filled else R.drawable.bg_pill,
-            )
-            view.setTextColor(
-                ContextCompat.getColor(this, if (selected) R.color.ink else R.color.smoke),
-            )
-            view.alpha = if (locked) 0.35f else 1f
+            view.setPillSelected(mode == value)
+            view.alpha = if (value != CalcMode.EXTERNAL_ONLY && ceilingEmpty) 0.35f else 1f
         }
     }
 
@@ -467,9 +455,7 @@ class ResultActivity : AppCompatActivity() {
             view.chipCeiling to Region.CEILING,
         )
         for ((chip, region) in chips) {
-            val on = region == selected
-            chip.setBackgroundResource(if (on) R.drawable.bg_pill_filled else R.drawable.bg_pill)
-            chip.setTextColor(ContextCompat.getColor(this, if (on) R.color.ink else R.color.smoke))
+            chip.setPillSelected(region == selected)
         }
     }
 

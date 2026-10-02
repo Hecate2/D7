@@ -38,6 +38,7 @@ import io.github.hecate2.sevend.sensor.OrientationSensor
 import io.github.hecate2.sevend.sensor.Pose
 import io.github.hecate2.sevend.ui.Extras
 import io.github.hecate2.sevend.ui.result.ResultActivity
+import io.github.hecate2.sevend.ui.setPillSelected
 import io.github.hecate2.sevend.util.Format
 import kotlin.math.abs
 import kotlinx.coroutines.launch
@@ -504,9 +505,7 @@ class CaptureActivity : AppCompatActivity() {
     }
 
     private fun updatePlus180Ui() {
-        val on = settings.plus180
-        binding.plus180.setBackgroundResource(if (on) R.drawable.bg_pill_filled else R.drawable.bg_pill)
-        binding.plus180.setTextColor(ContextCompat.getColor(this, if (on) R.color.ink else R.color.smoke))
+        binding.plus180.setPillSelected(settings.plus180)
     }
 
     private fun applyLineSettings() {
