@@ -27,12 +27,12 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/latInput"
+            android:id="@+id/lonInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:backgroundTint="@color/stroke2"
-            android:hint="@string/label_latitude_hint"
+            android:hint="@string/label_longitude_hint"
             android:importantForAutofill="no"
             android:inputType="numberDecimal|numberSigned"
             android:maxLines="1"
@@ -41,13 +41,13 @@
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/lonInput"
+            android:id="@+id/latInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:backgroundTint="@color/stroke2"
-            android:hint="@string/label_longitude_hint"
+            android:hint="@string/label_latitude_hint"
             android:importantForAutofill="no"
             android:inputType="numberDecimal|numberSigned"
             android:maxLines="1"
