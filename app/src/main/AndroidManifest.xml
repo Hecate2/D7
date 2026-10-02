@@ -38,11 +38,14 @@
             </intent-filter>
         </activity>
 
+        <!-- 采集页锁竖屏：横屏时取景区几乎无剩余空间，保持竖屏版式最省面积；
+             分屏时系统会忽略方向请求，因此不影响分屏运行（窗口形状不匹配时以留边呈现） -->
         <activity
             android:name=".ui.capture.CaptureActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|uiMode"
             android:exported="false"
-            android:resizeableActivity="true" />
+            android:resizeableActivity="true"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".ui.result.ResultActivity"
