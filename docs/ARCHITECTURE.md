@@ -6,7 +6,7 @@
 
 七日是一个离线、小巧的安卓应用，帮助买房人在看房现场用手机相机测量南侧（或南半球时的北侧）建筑的顶部轮廓，把轮廓拐点记录为若干组（仰角，方位角），再由这些点连成的天际线推算站在测量位置上全年每一天的直射日照时长。它的精度定位是「判断有没有两小时够用，打官司不够」，不替代官方日照分析报告。
 
-明确不做的事：不请求网络权限（数据全部本地）、不做测距（楼多高多远不影响结果）、不建账号不做云同步、视频不参与计算（照片只是瞄准过程的存档与 EXIF 载体）、不强制横竖屏。
+明确不做的事：不请求网络权限（数据全部本地）、不做测距（楼多高多远不影响结果）、不建账号不做云同步、视频不参与计算（照片只是瞄准过程的存档与 EXIF 载体）、不强制横竖屏（采集页例外：锁竖屏保住取景面积，分屏时系统忽略方向请求、不影响分屏运行）。
 
 ## 2. 工程结构
 
@@ -16,7 +16,7 @@
 
 `:app` 是 Android 应用，包含传感器管线、相机管线、存储、四个界面与自绘视图，依赖 `:core`。
 
-包结构（`:app` 内）约定：`sensor`（姿态与定位）、`camera`（CameraX 封装与照片落盘）、`data`（数据模型与仓库）、`ui.groups` / `ui.capture` / `ui.result`（三个页面）、`view`（自绘控件：取景器叠加层、时间线、全年曲线、覆盖条）、`util`。
+包结构（`:app` 内）约定：`sensor`（姿态与定位）、`camera`（CameraX 封装与照片落盘）、`data`（数据模型与仓库）、`export`（CSV 与参考图导出）、`ui.groups` / `ui.capture` / `ui.result`（三个页面）、`view`（自绘控件：取景器叠加层、时间线、全年曲线、覆盖条）、`util`。
 
 ## 3. 坐标与角度约定
 
@@ -60,9 +60,9 @@
 
 姿态使用 `TYPE_ROTATION_VECTOR`（加速度计、陀螺仪、磁力计融合），经 `getRotationMatrixFromVector` 得到 R 后按第 3 节方法直接算后摄视轴方位角与仰角，以及供叠加层使用的设备三轴世界向量。仰角以重力为基准不经罗盘，是最稳的量；方位角经磁偏角校正到真北：用 `android.hardware.GeomagneticField(lat, lon, alt, now)` 的 `declination` 加到磁方位上。该 API 内置世界地磁模型，无需联网与自带系数表。
 
-罗盘精度来自旋转矢量传感器的 `onAccuracyChanged`，映射为高/中/低三档显示，并在低精度时给出「画 8 字校准」提示。定位只用 `LocationManager` 的 GPS provider（不申请网络权限，也不用融合定位 SDK），拿到经纬度后立即用 GeomagneticField 算磁偏角、用 `ZoneId.systemDefault()` 记录时区。定位为一次性请求（新建组时或采集页首次进入时），组内保存快照，避免测量中途经纬度跳动引起真北基准漂移。
+罗盘校准取旋转矢量传感器的 `onAccuracyChanged` 精度回调（未回调前为未知态），读数精度取最近 24 个姿态样本的极差（0.8 度内为高、2.5 度内为中，更差为低），两枚药丸以绿/黄/红/灰分级显示，低或未校准时提示画 8 字。定位用系统自带 `LocationManager` 的多 provider 融合：API 31 及以上优先 `FUSED_PROVIDER`，与 `NETWORK_PROVIDER`、`GPS_PROVIDER` 并发取位，不申请网络权限、不引入第三方定位 SDK（零体积、零 key）。应用启动即 `warmUp()` 挂低频预热监听（无权限时静默跳过，可重复调用），建组取位先用 5 分钟内新鲜缓存（命中秒回不干等），实取时精度 ≤100 米立即返回、2.5 秒软超时采用已有最佳值、6 秒硬超时兜底；界面每秒刷新定位能力（GPS、网络定位、系统融合是否可用与当前精度）。拿到经纬度后立即用 GeomagneticField 算磁偏角、用 `ZoneId.systemDefault()` 记录时区；组内保存快照，避免测量中途经纬度跳动引起真北基准漂移。
 
-传感器到界面用一个 `SensorFusion` 类封装：注册/注销、坐标换算、磁偏角叠加、平滑（对显示值做轻量低通，采集时刻直接取融合瞬时值，不引入额外延迟）。
+传感器到界面用一个 `OrientationSensor` 类封装：注册/注销、坐标换算（含显示旋转映射）、磁偏角叠加、平滑（对显示值做轻量低通，采集时刻直接取融合瞬时值，不引入额外延迟）；同一姿态顺带解出滚转角 `atan2(-right[2], up[2])`（屏幕「上」相对世界竖直的偏转，正值=机顶向右倒），供采集页显示左右倾斜。
 
 ## 8. 相机与照片管线
 
@@ -78,7 +78,7 @@
 
 叠加层是一个覆盖在 `PreviewView` 上的自定义 View，每帧（传感器更新驱动，约 30 到 60 次每秒，做 30 毫秒节流）按当前姿态重绘：参考弧、拍摄点与连线、十字线、空隙标记。
 
-投影用针孔模型：世界方向向量 v（由方位角、仰角生成 ENU 单位向量）依次点乘相机的右、上、前三个世界向量得到相机坐标 (x, y, z)，屏幕坐标 = 中心 + (x/z, -y/z) × 焦距像素（焦距由视场角推算）；z ≤ 0.01 的方向视为在相机背后予以剔除，剔除处把折线断开，因此跨视场边缘的弧线只画落在画面里的那一段，近天顶段自然裁剪。相机的右、上向量按显示旋转（`Display.getRotation()` 四种取值）从设备三轴映射得到，竖屏为主用形态，横屏映射在真机上验证后固化。
+投影用针孔模型：世界方向向量 v（由方位角、仰角生成 ENU 单位向量）依次点乘相机的右、上、前三个世界向量得到相机坐标 (x, y, z)，屏幕坐标 = 中心 + (x/z, -y/z) × 焦距像素（焦距由视场角推算）；z ≤ 0.01 的方向视为在相机背后予以剔除，剔除处把折线断开，因此跨视场边缘的弧线只画落在画面里的那一段，近天顶段自然裁剪。相机的右、上向量按显示旋转（`Display.getRotation()` 四种取值）从设备三轴映射得到；采集页已锁竖屏，常规使用即 ROTATION_0，四种映射用于兜底分屏等窗口形态。
 
 参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧与拍摄点连线，隐藏地平线与铅垂线，设置持久化在 SharedPreferences。
 
@@ -88,9 +88,9 @@
 
 四个界面：
 
-照片组管理是全应用入口。卡片显示组名、冬至结论（该组当前默认档位下的冬至日直射时长，未拍显示「未测」）、采集日期与经纬度、外部区点数与覆盖率、天花板区状态（点数或未拍虚框）。点卡片进结果页，长按弹出改名/删除/导出（删除对话框提供「同时删除相册中的 N 张照片」复选框，默认不勾；组内没有带照片的点时不显示该框，勾选确定后逐个删除照片 URI，失败数量以提示告知），右上「+ 新建」走建组对话框（组名、纬度经度输入与「用 GPS 定位」按钮、南北半球提示），确认后直接进入采集页开拍。
+照片组管理是全应用入口。卡片显示组名、冬至结论（该组当前默认档位下的冬至日直射时长，未拍显示「未测」）、采集日期与经纬度、外部区点数与覆盖率、天花板区状态（点数或未拍虚框）。点卡片进结果页，长按弹出改名/删除/导出（删除对话框提供「同时删除相册中的 N 张照片」复选框，默认不勾；组内没有带照片的点时不显示该框，勾选确定后逐个删除照片 URI，失败数量以提示告知），右上「+ 新建」走建组对话框（组名、经纬度输入〔左经度、右纬度〕、「用 GPS 定位」按钮与定位能力行、随输入联动的南北半球提示）：能力行每秒刷新 GPS／网络定位／系统融合是否可用与当前精度，取位优先用后台预热的新鲜缓存，点按按钮才实取，无权限或系统定位关闭时静默降级、仍可手动输入。确认后直接进入采集页开拍。
 
-采集页自上而下：标题栏（组名、GPS 与真北校正状态、罗盘精度）、大号仰角与方位读数（加 `+180°` 药丸）、取景器（左上分区 chip：外部建筑/天花板，右侧为覆盖条与「显示线」）、方向提示（北半球「面向南，西·先拍 → 东·后拍」、南半球镜像）、底部三键（左「完成」、中快门、右「删除」）。快门短按：记录当前十字线指向为新的拍摄点并与上一点直接连线；长按（外部区）：记录并以经地平线推断段与上一点连接；天花板区仅短按，且与上一点直接连线。删除键长按：在当前分区内删除「十字线右侧、离当前瞄准方位最近」的一个点（判定为相对当前方位角的顺时针角距最小者，即 `normalize(az_point - az_now) ∈ (0°, 180°)` 中角距最小），按住一次只删一个；左侧的点不受影响。完成键保存并跳转结果页。覆盖条之外，取景器内直接画出已拍点与连线（第 9 节）。续拍：从结果页「回采集续拍」返回该组，新点按分区各自原序续接。
+采集页自上而下：标题栏（组名与经纬度元信息）、大号仰角与方位读数（加 `+180°` 药丸）、罗盘校准与读数精度两枚分级药丸及滚转角读数（左右倾斜，正值=机顶向右倒，非航向）、取景器（左上分区 chip：外部建筑/天花板，右侧为覆盖条与「显示线」）、方向提示（北半球「面向南，西·先拍 → 东·后拍」、南半球镜像）、底部三键（左「完成」、中快门、右「删除」）。快门短按：记录当前十字线指向为新的拍摄点并与上一点直接连线；长按（外部区）：记录并以经地平线推断段与上一点连接；天花板区仅短按，且与上一点直接连线。删除键长按：在当前分区内删除「十字线右侧、离当前瞄准方位最近」的一个点（判定为相对当前方位角的顺时针角距最小者，即 `normalize(az_point - az_now) ∈ (0°, 180°)` 中角距最小），按住一次只删一个；左侧的点不受影响。完成键保存并跳转结果页。覆盖条之外，取景器内直接画出已拍点与连线（第 9 节）。页面锁竖屏运行，横屏时保持竖屏版式（见第 10 节）。续拍：从结果页「回采集续拍」返回该组，新点按分区各自原序续接。
 
 结果页自上而下：标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与左邻点的连线模式切换按钮、删除按钮；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
 
@@ -98,7 +98,7 @@
 
 角度编辑分两级且一律「强行」生效（不受照片限制）。单点：点击某行弹出对话框改写方位角与仰角，照片与拍摄时间保留；方位角规范化到 [0, 360)，仰角限制到 [0, 90]。批量：点列标题行右侧「编辑」按钮打开批量编辑器，外部区与天花板区各一段多行文本，逐行「方位角 仰角 [horizon]」（第三词写 horizon 或 h、0 均可，大小写不敏感，表示与下一点之间经地平线），可先填方位偏移与仰角偏移、点「应用偏移」对全文整体平移再确认；确认时按行数决定照片继承——行数不变则按序继承原照片与拍摄时间，增删行则新点为无图点（photoUri 为空，界面显示占位缩略图）。因此不拍照也能手工搭出完整点列，供计算、导出与测试使用。
 
-分屏适配：所有 Activity 声明 `resizeableActivity=true`，不锁定方向，`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局全部用约束与权重，分屏小窗时压缩而非截断关键控件（取景器优先占满剩余空间）。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
+分屏适配：所有 Activity 声明 `resizeableActivity=true`；采集页锁定竖屏（横屏时取景区几乎无面积，保持竖屏版式最省），其余页面不锁方向。分屏时系统忽略方向请求，采集页按窗口形状缩放、以留边呈现，取景与拍摄照常。`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局全部用约束与权重，分屏小窗时压缩而非截断关键控件（取景器优先占满剩余空间）。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
 
 ## 11. 数据模型与持久化
 
@@ -129,11 +129,11 @@
 
 ## 12. 构建与工具链
 
-工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / appcompat / activity-ktx / constraintlayout / recyclerview / lifecycle-runtime-ktx、Google Material Components、CameraX 1.4.x（core、camera2、lifecycle、view）、kotlinx-serialization-json、androidx exifinterface、coroutines；测试仅 JUnit4（`:core` 的 JVM 单测）。
+工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / appcompat / activity-ktx / constraintlayout / recyclerview / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），并只保留 zh/en 资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
-常用命令：`./gradlew :core:test`（算法单测）、`./gradlew :app:assembleDebug`（产出 APK）、`./gradlew :app:installDebug`（装机）。
+常用命令：`./gradlew :core:test`（算法单测）、`./gradlew :app:assembleDebug`（调试包）、`./gradlew :app:assembleRelease`（发布包，产物名带版本号）、`./gradlew :app:connectedDebugAndroidTest`（仪器测试，在已连接的模拟器或真机上运行，多设备时用 `ANDROID_SERIAL` 指定；该任务结束会自动卸载应用）。装机若 `installDebug` 遇到 ddmlib 超时，可改用 `adb install -r` 直接安装。
 
 ## 13. 实施阶段与提交计划
 
@@ -143,7 +143,7 @@
 
 ## 14. 风险与对策
 
-姿态读数在手机接近垂直时方位抖动（机身上缘水平投影趋零所致）：主用姿态是略微后仰瞄准楼顶，抖动可接受；显示层做低通平滑；测量值取瞬时融合值。横屏时设备三轴到屏幕的映射需真机验证一次，错了只影响叠加层贴合，不影响记录数据。罗盘受阳台钢筋干扰属物理限制，界面提示画 8 字校准并在低精度时显著提示，数值不追求优于 2 到 4 度。不同厂商相机在多窗口下的可用性有差异，兜底方案是分屏下暂停预览但保留传感器读数。MediaStore URI 被外部清理时缩略图缺失、角度数据不受影响，导出功能提供数据自救。
+姿态读数在手机接近垂直时方位抖动（机身上缘水平投影趋零所致）：主用姿态是略微后仰瞄准楼顶，抖动可接受；显示层做低通平滑；测量值取瞬时融合值。采集页已锁竖屏，常规使用不会出现横屏版式；分屏窗口形状不匹配时方向映射按 `Display.getRotation()` 处理，错了只影响叠加层贴合，不影响记录数据。罗盘受阳台钢筋干扰属物理限制，界面提示画 8 字校准并在低精度时显著提示，数值不追求优于 2 到 4 度。不同厂商相机在多窗口下的可用性有差异，兜底方案是分屏下暂停预览但保留传感器读数。MediaStore URI 被外部清理时缩略图缺失、角度数据不受影响，导出功能提供数据自救。
 
 ## 附录 A：代码级实施清单
 
@@ -159,13 +159,13 @@
 `:app` 文件清单（包 `io.github.hecate2.sevend` 下）：
 
 - `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 原子写，`StateFlow<List<GroupRecord>>`，CRUD、`touch()`、`updatePointAngles()` 与 `setRegionPoints()`）。
-- `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `data class Pose(camAzDeg, camElDeg, right: FloatArray, up: FloatArray, forward: FloatArray, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值（ROTATION_90 的映射需真机验证）；磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：GPS 单次定位 + `GeomagneticField` 磁偏角 + `ZoneId.systemDefault()`。
-- `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore `Pictures/7D/<组名>/`（API 29+ IS_PENDING；API 28- 公共目录+扫描）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回半视场角 32 度。
-- `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线）；`view/CoverageBarView.kt`；`view/TimelineView.kt`；`view/YearCurveView.kt`；`view/PolarSkylineView.kt`（导出图片用，极坐标天际线图）。
-- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/Settings`（SharedPreferences 存线显隐与上次档位）。
-- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、Material3 暗色主题、图标由根目录 PNG 生成自适应图标。
+- `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `Pose(forward, right, up: FloatArray, frontAzDeg, frontElDeg, smoothAzDeg, smoothElDeg, rollDeg: Double, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值，滚转角 `atan2(-right[2], up[2])`，磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：系统融合定位（多 provider 并发、`warmUp()` 预热、`lastFresh()` 新鲜缓存、`requestSingleUpdate()` 快慢三档返回、`capability()` 能力快照），另提供静态 `declination()` 磁偏角计算。
+- `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore `Pictures/7D/<组名>/`（API 29+ IS_PENDING；API 28- 公共目录+扫描）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
+- `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
+- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
+- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的 AppCompat 暗色主题（`Theme.SevenD`，不引入 Material 库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗与 MediaStore 发布共用）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
 
-实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛，最后 `installDebug` 到真机（当前连接设备为 vivo PD2164PA，Android 11 / API 30）实测。
+实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛；自动化验证在模拟器 AVD 7d_api30（android-30）上运行 `:app:connectedDebugAndroidTest`，另有真机 vivo PD2164PA（Android 11 / API 30）供人工实测。
 
 ## 附录 B：国际化（internationalization，缩写 i18n）设计
 

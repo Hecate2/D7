@@ -6,7 +6,7 @@ Stand at the window you care about, aim the camera at the rooftop corners of the
 
 No tape measure, no rangefinder, no need to know how tall the buildings are or how far away. Works best for existing homes and resale apartments you can physically visit.
 
-> This repository is in the design stage. This file explains the principle and the intended workflow. Code will land in four phases. For Chinese users, see [README.md](README.md).
+> All four development phases (algorithm prototype, capture app, computation and visualization, polish and release) are implemented. This file explains the principle and the workflow. For Chinese users, see [README.md](README.md).
 
 ## The idea in three sentences
 
@@ -34,7 +34,7 @@ One subtlety applies even in Beijing: in summer the sun rises in the northeast a
 
 ## How to use it
 
-1. Position and groups. Stand at the window or balcony you care about, phone as close to the middle of the window opening as you can reach. One window is one group: name each new group on creation (e.g. "balcony"), and build separate groups for separate windows and floors. Angles follow the standing point. You measure where you stand. Off-plan homes cannot be measured, this tool serves homes you can visit.
+1. Position and groups. Stand at the window or balcony you care about, phone as close to the middle of the window opening as you can reach. One window is one group: name each new group on creation (e.g. "balcony"), then type latitude/longitude or tap Use GPS — the dialog shows this device's live location capability and accuracy (GPS, network, system fused) and falls back silently to manual entry when location is unavailable. Build separate groups for separate windows and floors. Angles follow the standing point. You measure where you stand. Off-plan homes cannot be measured, this tool serves homes you can visit.
 2. Calibrate. Wave the phone in a figure-eight to calibrate the compass on site. Rebar in balconies and window frames disturbs the magnetometer. Do not skip this. The app shows its current heading accuracy.
 3. Capture. Face the southern buildings and shoot their outline vertices in order, from the right (west) to the left (east). In the southern hemisphere mirror it: face north and go from the right (east) to the left (west). Either way, walk from one end to the other without jumping back and forth, so that flipping through the album from right to left follows the shooting direction from old to new. The shutter has two presses: a short press connects the new point to the previous one with a straight segment; a long press closes the current building at the previous point. The app then drops vertically from the previous point to the horizon, runs along the horizon to the new point's direction, and rises vertically to the new point, so a gap is formed in one gesture. If a low wall, tree or low building inside a gap blocks light, do not long-press over it; short-press its top corners into the outline instead. Each shot auto-saves its photo, no toggle; single shots only, no burst.
 
@@ -47,7 +47,7 @@ All groups live on the group management screen, one card per group: the name, th
 
 ![Group management](img/ui-groups.svg)
 
-The viewfinder carries live reference arcs: blue dashed for the winter solstice sun path, the lowest of the year; red dashed for the equinoxes, in between; orange dashed for the summer solstice, the highest, usually off the top of the screen until you tilt the phone up. A white solid line marks today's sun path, for same-day checks. The zone chip at the top left of the viewfinder switches the active capture zone between external buildings and ceiling. The horizon and plumb lines are gray short-dashed and hidden by default; switch them on in the line settings when needed. Whichever segment falls inside the current field of view is the one drawn. When the crosshair sits below the winter-solstice arc, that point never blocks the midwinter sun and can be ignored. Above the summer-solstice arc, the point blocks the sun all year round. Near the zenith at low latitudes the projection loses accuracy, so that segment is hidden and replaced with a text hint. Whenever the aiming angle crosses either boundary, the screen shows a live reminder.
+The viewfinder carries live reference arcs: blue dashed for the winter solstice sun path, the lowest of the year; red dashed for the equinoxes, in between; orange dashed for the summer solstice, the highest, usually off the top of the screen until you tilt the phone up. A white solid line marks today's sun path, for same-day checks. The zone chip at the top left of the viewfinder switches the active capture zone between external buildings and ceiling. The horizon and plumb lines are gray short-dashed and hidden by default; switch them on in the line settings when needed. Whichever segment falls inside the current field of view is the one drawn. When the crosshair sits below the winter-solstice arc, that point never blocks the midwinter sun and can be ignored. Above the summer-solstice arc, the point blocks the sun all year round. Near the zenith at low latitudes the projection loses accuracy, so that segment is hidden and replaced with a text hint. Whenever the aiming angle crosses either boundary, the screen shows a live reminder. Right of the accuracy pills sits the roll readout (how far the phone tilts sideways, not a heading; positive = top edge leaning right), handy for levelling the phone.
 
 Next to the azimuth readout sits a small `+180°` pill. The rear-camera sight direction is naturally about 180° off the body-orientation sensor reading when the phone is held upright (one points at the building, the other at the user), so +180° is applied by default and shown filled; tap once to remove or restore it, e.g. for landscape holding, clip-on lenses, or when the heading looks reversed. No burst mode: confirm point by point with single shots.
 
@@ -61,7 +61,7 @@ The "lines" control next to the coverage bar toggles each reference overlay: sol
 
 Six things on the results screen.
 
-Computation scope. Below the date pills, three modes: external only (default, counts just the towers across the street), external + ceiling (also applies your own frame's cropping, the handover-inspection mode), ceiling only (how much light the bare opening admits, for judging the unit type before the towers). The rules: azimuths never captured in the external zone count as open; azimuths never captured in the ceiling zone count as solid wall; a zone with no points at all constrains nothing.
+Computation scope. Below the date pills, three modes: external only (default, counts just the towers across the street), external + ceiling (also applies your own frame's cropping, the handover-inspection mode), ceiling only (how much light the bare opening admits, for judging the unit type before the towers). The rules: azimuths never captured in the external zone count as open; azimuths never captured in the ceiling zone count as solid wall; a zone with no points at all degrades by the same rule (empty external = fully open, empty ceiling = fully blocking), so the two ceiling-dependent modes stay disabled until the ceiling zone has points.
 
 The year curve. One point per day, direct sunlight hours on the vertical axis. Low in winter and high in summer is normal. Look at the deepest dip of the winter.
 
@@ -92,7 +92,7 @@ The app requests no network permission. Photos, angles and location stay on the 
 
 ## UI and palette
 
-The app is named 7D (七日, "seven days"). Icons are the two PNG files in the repository root: black background, white crosshair, gray-white buildings, golden sun.
+The app is named 7D (七日, "seven days"). The icon source is `城市日照十字瞄准图标.png` in the repository root: black background, white crosshair, gray-white buildings, golden sun (an inspiration image and the palette reference `配色基准.jpg` are kept locally as design material, not committed).
 
 The palette follows the lead character of `配色基准.jpg` (jet-black costume and background, mist-white lettering and highlights, gray-violet pupil gradient):
 
@@ -121,4 +121,4 @@ On black background vs harsh outdoor light, honestly: pure black is not the brig
 
 ## Status
 
-Design stage. Four development phases are planned: algorithm prototype, capture app, computation and visualization, polish and release. See the repository READMEs for the plan.
+All four phases (algorithm prototype, capture app, computation and visualization, polish and release) are implemented, with unit tests for the algorithms and instrumented tests for the UI. See [README.md](README.md) for the Chinese original.
