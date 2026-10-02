@@ -27,6 +27,7 @@ import io.github.hecate2.sevend.databinding.DialogGroupNameBinding
 import io.github.hecate2.sevend.databinding.DialogNewGroupBinding
 import io.github.hecate2.sevend.export.Exporter
 import io.github.hecate2.sevend.sensor.FixLocation
+import io.github.hecate2.sevend.sensor.LocationCapability
 import io.github.hecate2.sevend.sensor.LocationProvider
 import io.github.hecate2.sevend.ui.Extras
 import io.github.hecate2.sevend.ui.capture.CaptureActivity
@@ -40,6 +41,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * 照片组管理（应用入口）。
@@ -62,7 +64,12 @@ class GroupsActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val action = pendingLocate
             pendingLocate = null
-            if (granted) action?.invoke() else toast(getString(R.string.gps_failed))
+            if (granted) {
+                locationProvider.warmUp()
+                action?.invoke()
+            } else {
+                toast(getString(R.string.gps_failed))
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +82,9 @@ class GroupsActivity : AppCompatActivity() {
         binding.groupList.layoutManager = LinearLayoutManager(this)
         binding.groupList.adapter = adapter
         binding.newButton.setOnClickListener { showNewGroupDialog() }
+
+        // 启动即在后台尝试定位（无权限时静默跳过），让建组对话框能秒回结果
+        locationProvider.warmUp()
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -235,14 +245,22 @@ class GroupsActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) = updateHemisphereHint(view)
         })
+        // 未点击定位前，状态行每秒刷新定位能力（GPS / 网络 / 融合是否可用 + 当前精度）；点击后交给定位流程
+        var liveCapability = true
+        val capabilityTicker = object : Runnable {
+            override fun run() {
+                if (liveCapability) view.gpsStatus.text = capabilityText(locationProvider.capability())
+                view.root.postDelayed(this, CAPABILITY_TICK_MS)
+            }
+        }
         view.gpsButton.setOnClickListener {
+            liveCapability = false
             locate(
                 onStart = { view.gpsStatus.setText(R.string.gps_locating) },
                 onFix = { fix ->
                     view.latInput.setText(String.format(Locale.US, "%.6f", fix.lat))
                     view.lonInput.setText(String.format(Locale.US, "%.6f", fix.lon))
-                    view.gpsStatus.text =
-                        getString(R.string.gps_done, Format.coordinate(fix.lat, fix.lon))
+                    view.gpsStatus.text = fixStatusText(fix)
                 },
                 onFail = { view.gpsStatus.setText(R.string.gps_failed) },
             )
@@ -281,9 +299,37 @@ class GroupsActivity : AppCompatActivity() {
                     Intent(this, CaptureActivity::class.java).putExtra(Extras.GROUP_ID, group.id),
                 )
             }
+            view.root.post(capabilityTicker)
         }
+        dialog.setOnDismissListener { view.root.removeCallbacks(capabilityTicker) }
         dialog.show()
         updateHemisphereHint(view)
+    }
+
+    /** 「GPS 可用 · 网络定位 可用 · 系统融合 可用 · 当前精度 ±35 m」。 */
+    private fun capabilityText(cap: LocationCapability): String {
+        if (cap.noneEnabled) return getString(R.string.gps_cap_none)
+        val parts = mutableListOf(
+            getString(if (cap.gpsEnabled) R.string.gps_cap_gps_on else R.string.gps_cap_gps_off),
+            getString(if (cap.networkEnabled) R.string.gps_cap_net_on else R.string.gps_cap_net_off),
+        )
+        if (cap.fusedAvailable) parts += getString(R.string.gps_cap_fused_on)
+        val fix = cap.lastFix
+        parts += when {
+            fix == null -> getString(R.string.gps_cap_waiting)
+            fix.accuracyMeters > 0f -> getString(R.string.gps_cap_accuracy, fix.accuracyMeters.roundToInt())
+            else -> getString(R.string.gps_cap_accuracy_unknown)
+        }
+        return parts.joinToString(" · ")
+    }
+
+    private fun fixStatusText(fix: FixLocation): String {
+        val coordinate = Format.coordinate(fix.lat, fix.lon)
+        return if (fix.accuracyMeters > 0f) {
+            getString(R.string.gps_done_accuracy, coordinate, fix.accuracyMeters.roundToInt())
+        } else {
+            getString(R.string.gps_done, coordinate)
+        }
     }
 
     private fun locate(onStart: () -> Unit, onFix: (FixLocation) -> Unit, onFail: () -> Unit) {
@@ -292,7 +338,8 @@ class GroupsActivity : AppCompatActivity() {
             locationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             return
         }
-        locationProvider.lastKnown()?.let {
+        // 启动时已预热：命中新鲜缓存（5 分钟内）就秒回，不干等
+        locationProvider.lastFresh()?.let {
             lastFix = it
             onFix(it)
             return
@@ -327,5 +374,8 @@ class GroupsActivity : AppCompatActivity() {
         const val MENU_RENAME = 1
         const val MENU_DELETE = 2
         const val MENU_EXPORT = 3
+
+        /** 建组对话框中定位能力提示的刷新间隔（毫秒）。 */
+        const val CAPABILITY_TICK_MS = 1_000L
     }
 }
