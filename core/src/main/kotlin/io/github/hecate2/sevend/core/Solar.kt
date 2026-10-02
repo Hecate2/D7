@@ -43,13 +43,18 @@ object Solar {
         lonDeg: Double,
         refraction: Boolean = true,
     ): SolarPosition {
+        // 时角
+        val hourAngle = trueSolarTimeMinutes(utcMillis, lonDeg) / 4.0 - 180.0
+        return positionFrom(latDeg, declinationDeg(utcMillis), hourAngle, refraction)
+    }
+
+    /** 太阳赤纬（度）：太阳直射点纬度，北正南负，全年在 ±23.44 度内。 */
+    fun declinationDeg(utcMillis: Long): Double {
         val t = (julianDay(utcMillis) - J2000_JD) / JULIAN_CENTURY_DAYS
 
-        // 几何平黄经、平近点角、偏心率
+        // 几何平黄经、平近点角、中心差
         val l0 = Angles.normalize360(280.46646 + t * (36_000.76983 + t * 0.0003032))
         val m = 357.52911 + t * (35_999.05029 - 0.0001537 * t)
-        val ecc = 0.016708634 - t * (0.000042037 + 0.0000001267 * t)
-
         val mRad = m * PI / 180.0
         val center = sin(mRad) * (1.914602 - t * (0.004817 + 0.000014 * t)) +
             sin(2 * mRad) * (0.019993 - 0.000101 * t) +
@@ -60,15 +65,11 @@ object Solar {
         val omega = 125.04 - 1934.136 * t
         val lambda = trueLong - 0.00569 - 0.00478 * sin(omega * PI / 180.0)
 
-        // 黄赤交角与赤纬
+        // 黄赤交角
         val eps0 = 23.0 + (26.0 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60.0) / 60.0
         val eps = eps0 + 0.00256 * cos(omega * PI / 180.0)
-        val declRad = asin(sin(eps * PI / 180.0) * sin(lambda * PI / 180.0))
 
-        // 时角
-        val hourAngle = trueSolarTimeMinutes(utcMillis, lonDeg) / 4.0 - 180.0
-
-        return positionFrom(latDeg, declRad * 180.0 / PI, hourAngle, refraction)
+        return asin(sin(eps * PI / 180.0) * sin(lambda * PI / 180.0)) * 180.0 / PI
     }
 
     /**

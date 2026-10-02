@@ -109,6 +109,24 @@ class GroupRepository private constructor(private val file: File) {
         group.withRegion(region, list)
     }
 
+    /**
+     * 追加一个拍摄点，并同时决定它与上一点之间的连线模式：
+     * viaHorizon 为 true（长按快门）则上一点的 gapAfter 置 true，否则清为直接连线。
+     */
+    fun appendPoint(
+        groupId: String,
+        region: Region,
+        point: PointRecord,
+        viaHorizon: Boolean,
+    ) = update(groupId) { group ->
+        val list = group.regionList(region).toMutableList()
+        if (list.isNotEmpty()) {
+            list[list.size - 1] = list[list.size - 1].copy(gapAfter = viaHorizon)
+        }
+        list.add(point.copy(gapAfter = false))
+        group.withRegion(region, list)
+    }
+
     /** 修改第 startIndex 个点与下一点之间的连线模式（经地平线或直接连线）。 */
     fun setSegmentViaHorizon(groupId: String, region: Region, startIndex: Int, viaHorizon: Boolean) =
         update(groupId) { group ->

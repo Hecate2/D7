@@ -46,6 +46,50 @@
     <string name="delete_group_title">删除照片组</string>
     <string name="delete_group_message">删除「%1$s」的角度与分组数据。相册里的照片不会被删除。</string>
 
+    <!-- 采集页 -->
+    <string name="capture_title">采集</string>
+    <string name="capture_meta">%1$s · 真北已校正 · %2$s</string>
+    <string name="capture_reading">仰角 %1$s · 方位 %2$s</string>
+    <string name="capture_plus180">+180°</string>
+    <string name="capture_chip_external">外部建筑</string>
+    <string name="capture_chip_ceiling">天花板</string>
+    <string name="capture_hint_north">面向南，从右（西）向左（东）依次拍</string>
+    <string name="capture_hint_south">面向北，从右（东）向左（西）依次拍</string>
+    <string name="capture_hint_tropic">赤道附近：太阳可能在南也可能在北，拍你关心的那一面</string>
+    <string name="capture_hint_seg">短按连线 · 长按经地平线断开为空隙</string>
+    <string name="capture_dir_first_west">西·先拍</string>
+    <string name="capture_dir_first_east">东·先拍</string>
+    <string name="capture_dir_last_east">东·后拍</string>
+    <string name="capture_dir_last_west">西·后拍</string>
+    <string name="capture_coverage">方位覆盖 %1$s°</string>
+    <string name="capture_coverage_north">90–270</string>
+    <string name="capture_coverage_south">270–90</string>
+    <string name="capture_show_lines">显示线</string>
+    <string name="capture_done">完成</string>
+    <string name="capture_delete">删除</string>
+    <string name="capture_shutter_hint">短按连线 · 长按断开</string>
+    <string name="capture_delete_hint">长按·删右侧最近点</string>
+    <string name="capture_camera_needed">需要相机权限才能取景拍摄\n点此授权</string>
+    <string name="capture_camera_failed">相机启动失败，仍可记录角度</string>
+    <string name="capture_sensor_missing">本机缺少姿态传感器，无法采集仰角与方位</string>
+    <string name="capture_no_pose">尚未取得姿态读数，请稍候</string>
+    <string name="capture_ceiling_longpress">天花板区只支持短按连线</string>
+    <string name="capture_photo_failed">照片保存失败，已仅记录角度</string>
+    <string name="capture_deleted">已删除第 %1$d 点（照片保留在相册）</string>
+    <string name="capture_delete_no_candidate">右侧没有可删除的点</string>
+    <string name="capture_accuracy_high">罗盘精度高</string>
+    <string name="capture_accuracy_medium">罗盘精度中</string>
+    <string name="capture_accuracy_low">罗盘精度低·请悬空画 8 字校准</string>
+    <string name="capture_accuracy_unreliable">罗盘未校准·请悬空画 8 字校准</string>
+    <string name="lines_title">显示线</string>
+    <string name="line_summer">夏至轨迹</string>
+    <string name="line_equinox">春秋分轨迹</string>
+    <string name="line_winter">冬至轨迹</string>
+    <string name="line_today">今日轨迹</string>
+    <string name="line_segments">拍摄点连线</string>
+    <string name="line_horizon">地平线</string>
+    <string name="line_vertical">铅垂线</string>
+
     <!-- 占位 -->
     <string name="capture_placeholder">采集界面（实现中）</string>
     <string name="result_placeholder">外部 %1$d 点 · 天花板 %2$d 点\n结果界面（实现中）</string>

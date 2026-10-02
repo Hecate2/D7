@@ -129,4 +129,15 @@ class SolarTest {
         assertTrue(Solar.refractionCorrectionDeg(0.0) < 0.6)
         assertEquals(0.0, Solar.refractionCorrectionDeg(88.0), 1e-9)
     }
+
+    @Test
+    fun declinationMatchesSeasons() {
+        // 夏至 ±23.44、冬至 ∓23.44、春秋分接近 0
+        val summer = Solar.declinationDeg(1750507200000L) // 2025-06-21T12:00Z
+        val winter = Solar.declinationDeg(1766318400000L) // 2025-12-21T12:00Z
+        val spring = Solar.declinationDeg(1742472000000L) // 2025-03-20T12:00Z
+        assertEquals(23.44, summer, 0.1)
+        assertEquals(-23.44, winter, 0.1)
+        assertTrue("春分赤纬=$spring", abs(spring) < 0.5)
+    }
 }

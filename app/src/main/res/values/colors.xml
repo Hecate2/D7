@@ -5,6 +5,8 @@
     <!-- 卡片炭灰 -->
     <color name="card">#FF161618</color>
     <color name="card2">#FF1C1C1E</color>
+    <!-- 取景器底 -->
+    <color name="shade">#FF0E0E10</color>
     <!-- 前景白 -->
     <color name="paper">#FFFFFFFF</color>
     <!-- 月灰 -->
