@@ -24,8 +24,8 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
 
-        // 只保留中文与英文资源，剔除各家库自带的几十种语言翻译，显著缩减 resources.arsc
-        resourceConfigurations += setOf("zh", "en")
+        // 只保留中文资源，剔除各家库自带的几十种语言翻译，显著缩减 resources.arsc
+        resourceConfigurations += setOf("zh")
     }
 
     buildTypes {
@@ -46,6 +46,23 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    // 剔除 Kotlin 编译器调试探针与工具链元数据：它们只服务于 IDE 断点与插件，release 用不到
+    packaging {
+        resources.excludes += setOf(
+            "DebugProbesKt.bin",
+            "kotlin-tooling-metadata.json",
+            "**/DebugProbesKt.bin",
+            "**/kotlin-tooling-metadata.json",
+        )
+    }
+
+    lint {
+        // 报错即失败：防止 NewApi / 可用性回归再次静默积累
+        abortOnError = true
+        warningsAsErrors = false
+        checkDependencies = true
     }
 }
 
@@ -74,6 +91,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.exifinterface)
+
+    // 纯函数单测（不碰 Android 运行时，Surface.ROTATION_* 为编译期常量）
+    testImplementation(libs.junit)
 
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)

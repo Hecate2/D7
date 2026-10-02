@@ -395,7 +395,12 @@ class CaptureActivity : ComponentActivity() {
 
                 MotionEvent.ACTION_UP -> {
                     view.alpha = 1f
-                    if (!canceled) onShutter(SystemClock.uptimeMillis() - downAt >= LONG_PRESS_MS)
+                    if (!canceled) {
+                        // 自行处理了按下/抬起，故需补一次 performClick，
+                        // 否则 TalkBack 与开关控制等辅助服务认为该按钮不可用
+                        view.performClick()
+                        onShutter(SystemClock.uptimeMillis() - downAt >= LONG_PRESS_MS)
+                    }
                     true
                 }
 
@@ -493,7 +498,16 @@ class CaptureActivity : ComponentActivity() {
                     true
                 }
 
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                MotionEvent.ACTION_UP -> {
+                    view.alpha = 1f
+                    deleteHandler.removeCallbacks(deleteRunnable)
+                    candidate = -1
+                    // 同快门：自行处理了触摸，需补 performClick 供辅助服务识别
+                    view.performClick()
+                    true
+                }
+
+                MotionEvent.ACTION_CANCEL -> {
                     view.alpha = 1f
                     deleteHandler.removeCallbacks(deleteRunnable)
                     candidate = -1

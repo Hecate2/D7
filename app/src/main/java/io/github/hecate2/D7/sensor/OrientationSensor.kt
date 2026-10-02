@@ -149,19 +149,9 @@ class OrientationSensor(
     }
 
     /**
-     * 屏幕右/上向量的显示旋转映射。
-     *
-     * 显示旋转为「绘制内容相对自然方向的顺时针转角」：ROTATION_90 对应设备逆时针转了 90 度
-     * （机顶指向用户左侧），此时内容右向 = -y、上向 = +x。采集页锁竖屏，横屏两档仅用于
-     * 兜底分屏等窗口形态，其真机验证事项见 docs/ARCHITECTURE.md 第 14 节。
+     * 屏幕右/上向量的显示旋转映射。四档映射与不变量说明见 [ScreenRotation]，
+     * 该处同时供相机焦距换算复用，并有逐档单测兜底。
      */
     private fun screenAxes(rotation: Int, wx: FloatArray, wy: FloatArray): Pair<FloatArray, FloatArray> =
-        when (rotation) {
-            Surface.ROTATION_90 -> negate(wy) to wx
-            Surface.ROTATION_180 -> negate(wx) to negate(wy)
-            Surface.ROTATION_270 -> wy to negate(wx)
-            else -> wx to wy
-        }
-
-    private fun negate(v: FloatArray) = floatArrayOf(-v[0], -v[1], -v[2])
+        ScreenRotation.axesFor(rotation, wx, wy)
 }

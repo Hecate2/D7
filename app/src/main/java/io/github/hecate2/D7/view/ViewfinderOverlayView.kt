@@ -63,11 +63,25 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     var points: List<PointRecord> = emptyList()
         set(value) {
             field = value
+            gapPathCache.clear()
             invalidate()
         }
 
     /** 十字线方位角（+180° 药丸后的显示值），供地平线与铅垂线参考。 */
     var aimAzDeg: Double = 180.0
+        set(value) {
+            field = value
+            guideCacheAz = Double.NaN
+        }
+
+    /**
+     * 地平线/铅垂线的缓存方位角。这两条参考线的采样只是固定的角度偏移集合，
+     * 每帧真正变的只有 aimAzDeg 一个数，故整段重建缓存即可——姿态每秒刷新数十次，
+     * 逐帧重建装箱列表会在采集时持续制造垃圾。
+     */
+    private var guideCacheAz = Double.NaN
+    private var horizonAzimuths: DoubleArray = DoubleArray(0)
+    private var verticalAzimuths: DoubleArray = DoubleArray(0)
 
     /** 焦距像素提供者（相机就绪后由 CameraController 计算，失败时用半视场角假设）。 */
     var focalPxProvider: ((Int, Int) -> Float)? = null
@@ -132,6 +146,9 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     private val path = Path()
     private val pt = FloatArray(2)
 
+    /** 复用同一个投影器：姿态每帧变，但对象本身无需重建。 */
+    private val projector = Projector()
+
     override fun onDraw(canvas: Canvas) {
         if (width <= 0 || height <= 0) return
         drawCrosshair(canvas)
@@ -139,7 +156,7 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
 
         val focal = focalPxProvider?.invoke(width, height)
             ?: ((width / 2f) / tan(32.5 * PI / 180.0).toFloat())
-        val projector = Projector(p, width / 2f, height / 2f, focal)
+        projector.reset(p, width / 2f, height / 2f, focal)
 
         val summerDecl = if (latDeg >= 0) 23.44 else -23.44
         if (show.summer) drawSunArc(canvas, projector, summerDecl, summerArc)
@@ -148,8 +165,11 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         if (show.today) {
             drawSunArc(canvas, projector, Solar.declinationDeg(System.currentTimeMillis()), todayArc)
         }
-        if (show.horizon) drawPolyline(canvas, projector, smokeLine, horizonSamples())
-        if (show.vertical) drawPolyline(canvas, projector, smokeLine, verticalSamples())
+        if (show.horizon || show.vertical) {
+            ensureGuideAzimuths()
+            if (show.horizon) drawGuide(canvas, projector, horizonAzimuths, groundLevel)
+            if (show.vertical) drawGuide(canvas, projector, verticalAzimuths, verticalElevations)
+        }
         if (show.segments) {
             drawSegments(canvas, projector)
             drawPoints(canvas, projector)
@@ -208,24 +228,48 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         canvas.drawPath(path, paint)
     }
 
-    private fun horizonSamples(): List<Pair<Double, Double>> {
-        val out = ArrayList<Pair<Double, Double>>()
-        var offset = -75.0
-        while (offset <= 75.0) {
-            out.add(Angles.normalize360(aimAzDeg + offset) to 0.0)
-            offset += 2.5
+    /** 地平线：沿方位展开 ±75°，仰角恒为 0。 */
+    private val horizonOffsets = DoubleArray(61) { -75.0 + it * 2.5 }
+
+    /** 铅垂线：沿仰角 0..90°，方位固定为当前十字线方位。 */
+    private val verticalElevations = DoubleArray(37) { it * 2.5 }
+
+    /** 地平线各采样点的仰角，恒为 0。 */
+    private val groundLevel = DoubleArray(horizonOffsets.size)
+
+    /**
+     * 按给定的方位/仰角数组画一条参考线，避免逐帧装箱新的采样列表。
+     * 两数组等长，逐点投影；背后点（z ≤ 0）断开，与 [drawPolyline] 行为一致。
+     */
+    private fun drawGuide(
+        canvas: Canvas,
+        projector: Projector,
+        azimuths: DoubleArray,
+        elevations: DoubleArray,
+    ) {
+        path.reset()
+        var started = false
+        for (i in azimuths.indices) {
+            if (projector.project(azimuths[i], elevations[i], pt)) {
+                if (started) path.lineTo(pt[0], pt[1]) else {
+                    path.moveTo(pt[0], pt[1])
+                    started = true
+                }
+            } else {
+                started = false
+            }
         }
-        return out
+        canvas.drawPath(path, smokeLine)
     }
 
-    private fun verticalSamples(): List<Pair<Double, Double>> {
-        val out = ArrayList<Pair<Double, Double>>()
-        var el = 0.0
-        while (el <= 90.0) {
-            out.add(aimAzDeg to el)
-            el += 2.5
+    /** 按当前 aimAzDeg 重建两条参考线的方位角序列（NaN 判定保证每帧至多重建一次）。 */
+    private fun ensureGuideAzimuths() {
+        if (guideCacheAz == aimAzDeg) return
+        guideCacheAz = aimAzDeg
+        horizonAzimuths = DoubleArray(horizonOffsets.size) { i ->
+            Angles.normalize360(aimAzDeg + horizonOffsets[i])
         }
-        return out
+        verticalAzimuths = DoubleArray(verticalElevations.size) { aimAzDeg }
     }
 
     private fun drawPolyline(
@@ -249,13 +293,25 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         canvas.drawPath(path, paint)
     }
 
+    /**
+     * 经地平线段的采样缓存，键为段起止点位。路径形状只取决于两端点，与姿态无关，
+     * 而姿态每秒刷新数十次，故按点位缓存：新增/删除拍摄点时整体作废重建。
+     */
+    private val gapPathCache = HashMap<GapKey, List<Pair<Double, Double>>>()
+
+    private data class GapKey(val az0: Double, val el0: Double, val az1: Double, val el1: Double)
+
     /** 拍摄点连线：直接连线画白色实线，经地平线段拆三段画月灰虚线。 */
     private fun drawSegments(canvas: Canvas, projector: Projector) {
         for (i in 0 until points.size - 1) {
             val a = points[i]
             val b = points[i + 1]
             if (a.gapAfter) {
-                drawPolyline(canvas, projector, moonLine, SkylineShape.viaHorizon(a.az, a.el, b.az, b.el))
+                val key = GapKey(a.az, a.el, b.az, b.el)
+                val samples = gapPathCache.getOrPut(key) {
+                    SkylineShape.viaHorizon(a.az, a.el, b.az, b.el)
+                }
+                drawPolyline(canvas, projector, moonLine, samples)
             } else if (projector.project(a.az, a.el, pt)) {
                 val x0 = pt[0]
                 val y0 = pt[1]
@@ -277,16 +333,23 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         }
     }
 
-    /** 世界方向到屏幕像素的针孔投影。 */
-    private class Projector(
-        pose: Pose,
-        private val cx: Float,
-        private val cy: Float,
-        private val focal: Float,
-    ) {
-        private val right = pose.right
-        private val up = pose.up
-        private val forward = pose.forward
+    /** 世界方向到屏幕像素的针孔投影。可复用，姿态与视口尺寸在 [reset] 时刷新。 */
+    private class Projector {
+        private var cx = 0f
+        private var cy = 0f
+        private var focal = 0f
+        private var right = FloatArray(3)
+        private var up = FloatArray(3)
+        private var forward = FloatArray(3)
+
+        fun reset(pose: Pose, cx: Float, cy: Float, focal: Float) {
+            this.cx = cx
+            this.cy = cy
+            this.focal = focal
+            right = pose.right
+            up = pose.up
+            forward = pose.forward
+        }
 
         fun project(azDeg: Double, elDeg: Double, out: FloatArray): Boolean {
             val az = azDeg * PI / 180.0

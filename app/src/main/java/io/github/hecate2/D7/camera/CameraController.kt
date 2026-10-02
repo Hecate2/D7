@@ -2,15 +2,17 @@ package io.github.hecate2.D7.camera
 
 import android.content.Context
 import android.hardware.camera2.CameraCharacteristics
-import android.view.Surface
 import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalCameraInfo
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import io.github.hecate2.D7.sensor.ScreenRotation
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.tan
@@ -71,7 +73,20 @@ class CameraController(private val context: Context) {
         imageCapture = null
     }
 
-    /** 读数特征：焦距、传感器物理尺寸与传感器朝向。 */
+    /**
+     * 读数特征：焦距、传感器物理尺寸与传感器朝向。
+     *
+     * CameraX 把相机信息与 camera2 互操作都标为实验 API（无更稳定的只读入口），
+     * 故在此显式 opt-in：只用只读特征查询，不涉及预览/编码等易变路径。
+     * 用 androidx 的 OptIn 而非 kotlin.OptIn：CameraX 的实验标记是 Java 侧
+     * androidx.annotation.experimental.RequiresOptIn，lint 只认前者。
+     */
+    @androidx.annotation.OptIn(
+        markerClass = [
+            ExperimentalCameraInfo::class,
+            ExperimentalCamera2Interop::class,
+        ],
+    )
     private fun readCharacteristics(cameraProvider: ProcessCameraProvider) {
         try {
             val info = cameraProvider.getCameraInfo(CameraSelector.DEFAULT_BACK_CAMERA)
@@ -102,15 +117,7 @@ class CameraController(private val context: Context) {
         if (focalMm <= 0f || sensorWidthMm <= 0f || sensorHeightMm <= 0f) {
             return (viewW / 2f) / tan(32.5 * PI / 180.0).toFloat()
         }
-        // 设备相对自然方向的顺时针物理转角
-        val physicalRotation = when (displayRotation) {
-            Surface.ROTATION_90 -> -90
-            Surface.ROTATION_180 -> 180
-            Surface.ROTATION_270 -> 90
-            else -> 0
-        }
-        val needed = ((sensorOrientation + physicalRotation) % 360 + 360) % 360
-        val swap = needed == 90 || needed == 270
+        val swap = ScreenRotation.sensorAxesSwapped(sensorOrientation, displayRotation)
         val widthMm = if (swap) sensorHeightMm else sensorWidthMm
         val heightMm = if (swap) sensorWidthMm else sensorHeightMm
         return focalMm * max(viewW / widthMm, viewH / heightMm)
