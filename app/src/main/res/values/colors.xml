@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 背景黑 -->
+    <color name="ink">#FF000000</color>
+    <!-- 卡片炭灰 -->
+    <color name="card">#FF161618</color>
+    <color name="card2">#FF1C1C1E</color>
+    <!-- 前景白 -->
+    <color name="paper">#FFFFFFFF</color>
+    <!-- 月灰 -->
+    <color name="moon">#FFCAC2D1</color>
+    <!-- 烟灰 -->
+    <color name="smoke">#FF8E8E93</color>
+    <!-- 描边 -->
+    <color name="stroke">#FF2E2E32</color>
+    <color name="stroke2">#FF3A3A3E</color>
+    <!-- 轨迹三色 -->
+    <color name="winter">#FF378ADD</color>
+    <color name="equinox">#FFE24B4A</color>
+    <color name="summer">#FFEF9F27</color>
+</resources>

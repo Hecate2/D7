@@ -44,13 +44,13 @@
 
 任一查询方位角的遮挡仰角取所有覆盖该方位角的线段候选取最大值（遮挡取高者）。这一条同时解决三类问题：换向回拍造成的方位重叠、外部列内部自交、未来可能的一区多段。因此求值不假设方位角单调，环绕也不特殊处理——「覆盖」的判定用短弧包含关系：设线段两端方位差 d 取到 (-180, 180]，查询点相对起点的差 t 同法归一，d 与 t 同号且 |t| ≤ |d| 即视为落在段内。
 
-未覆盖语义按需求区分：外部列未拍到的方位视为开阔（遮挡仰角 -∞，太阳在地平线上即可见）；天花板列未拍到的方位视为全遮挡（遮挡仰角 +∞，永远不可见）。某一列为空时该列视为不设限（不参与判定），这覆盖「只拍外部」「只拍天花板」的情形。
+未覆盖语义按需求区分：外部列未拍到的方位视为开阔，天花板列未拍到的方位视为全遮挡。实现上求值接口返回的是「天际线边缘仰角」，未覆盖方位一律返回 -∞，由两种判定方向自然分化：外部区判定「太阳高于边缘」，-∞ 等价于永远高于、即开阔；天花板区判定「太阳低于边缘」，-∞ 等价于永远不满足、即全遮挡。点列为空即「全周未拍到」，按同一规则退化：外部列空则全周开阔，天花板列空则全周遮挡。因此未拍天花板时涉及天花板的档位恒为 0 分钟，界面会禁用这两档并提示先拍天花板；而「只拍外部」这一默认情形正常工作。
 
 覆盖度按需求只统计主方向半圆：北半球 90 到 270 度，南半球取补集（270 到 360 与 0 到 90）。以 1 度步长采样该半圆，统计落在外部列任一线段内的比例，用于照片组卡片与采集页覆盖条。
 
 ## 6. 日照评估
 
-`SunlightCalculator` 对一个组、一种计算档、一个日期，以 1 分钟步长从当地 0 时到 24 时采样太阳位置，逐分钟判定「可见直射」。三种档位：仅外部（默认，只要求太阳高于外部天际线）、外部+天花板（在前者基础上再要求太阳低于天花板上沿）、仅天花板（只做后者）。任一点列为空则该列不设限，因此「仅外部」在未拍天花板时就等于纯外部判定，「仅天花板」在未拍天花板时恒不可见——与需求「天花板没拍到的区域视为完全遮挡」的语义闭环一致。可见分钟累加即当日直射时长；同时记录可见区间的起止时刻，供时间线绘制与「是否全部来自空隙」判定（全部可见分钟都落在某条经地平线段的开区间内时标注「全部来自空隙」）。
+`SunlightCalculator` 对一个组、一种计算档、一个日期，以 1 分钟步长从当地 0 时到 24 时采样太阳位置，逐分钟判定「可见直射」。三种档位：仅外部（默认，只要求太阳高于外部天际线）、外部+天花板（在前者基础上再要求太阳低于天花板上沿）、仅天花板（只做后者）。点列为空时按第 5 节的未覆盖规则退化，因此「仅外部」在未拍天花板时就等于纯外部判定，而涉及天花板的档位要求先拍天花板。可见分钟累加即当日直射时长；同时记录可见区间的起止时刻，供时间线绘制与「是否全部来自空隙」判定（全部可见分钟都落在某条经地平线段的开区间内时标注「全部来自空隙」）。
 
 日出日落时刻单独扫描 -0.833 度阈值求得，供时间线两端与文字输出。全年曲线按同样方法逐日计算 365 天（闰年 366），在后台协程执行，结果缓存在内存。
 
@@ -150,8 +150,8 @@
 `:core` 文件清单与关键 API：
 
 - `Solar.kt`：`data class SolarPosition(val azimuthDeg: Double, val elevationDeg: Double)`；`object Solar` 提供 `position(utcMillis: Long, latDeg: Double, lonDeg: Double, refraction: Boolean = true): SolarPosition`（NOAA 公式，见第 4 节）、`julianDay(utcMillis: Long): Double`。几何高度角配 -0.833 度阈值即日出日落。
-- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>, uncoveredBlocked: Boolean)` 提供 `obstructionAt(azDeg: Double): Double`（返回 ±∞ 表达未覆盖语义，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）。
-- `Sunlight.kt`：`enum class CalcMode { EXTERNAL_ONLY, EXTERNAL_AND_CEILING, CEILING_ONLY }`；`data class DailySunlight(date, sunriseMinute: Int?, sunsetMinute: Int?, directMinutes: Int, visibleIntervals: List<IntRange>, allFromGap: Boolean, daylightMinutes: Int)`（分钟序号自当地 0 时起）；`object SunlightEvaluator` 提供 `evaluate(lat, lon, zoneId: String, external: List<ShotPoint>, ceiling: List<ShotPoint>, mode, date: LocalDate, stepMinutes: Int = 1): DailySunlight`、`yearlyCurve(..., year: Int, mode): List<Double>`、`windowMinutes(..., date, fromMinute: Int, toMinute: Int, mode): Int`。某区点列为空则该区不设限，即约束仅在对应列非空时参与判定。
+- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>)` 提供 `obstructionAt(azDeg: Double): Double`（返回天际线边缘仰角；未覆盖方位返回 -∞，由判定方向分化为外部开阔与天花板全遮挡，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）。
+- `Sunlight.kt`：`enum class CalcMode { EXTERNAL_ONLY, EXTERNAL_AND_CEILING, CEILING_ONLY }`；`data class DailySunlight(date, sunriseMinute: Int?, sunsetMinute: Int?, directMinutes: Int, visibleIntervals: List<IntRange>, allFromGap: Boolean, daylightMinutes: Int)`（分钟序号自当地 0 时起）；`object SunlightEvaluator` 提供 `evaluate(lat, lon, zoneId: String, external: List<ShotPoint>, ceiling: List<ShotPoint>, mode, date: LocalDate, stepMinutes: Int = 1): DailySunlight`、`yearlyCurve(..., year: Int, mode): List<Double>`、`windowMinutes(..., date, fromMinute: Int, toMinute: Int, mode): Int`。点列为空按第 5 节退化：外部列空则全周开阔、天花板列空则全周遮挡（界面据此禁用涉及天花板的档位）。
 - 单测：`SolarTest.kt`（对拍第二套独立实现的低精度日下点公式与物理合理性断言：北半球正午方位约 180、夏至正午高度角约 90-lat+23.4、春秋分日出方位约 90、赤道昼长约 12h07m、南半球正午方位约 0）、`SkylineTest.kt`（插值、空隙三段、重叠取最大、环绕 350→10、覆盖度）、`SunlightTest.kt`（三档模式语义、空隙穿透、极夜零分钟、南半球镜像）。
 
 `:app` 文件清单（包 `io.github.hecate2.sevend` 下）：

@@ -12,6 +12,7 @@ img/archive/
 build/
 */build/
 local.properties
+.kotlin/
 
 # IDE
 .idea/

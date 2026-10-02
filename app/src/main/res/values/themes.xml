@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 全应用暗色主题：漆黑背景、雾白文字 -->
+    <style name="Theme.SevenD" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/ink</item>
+        <item name="android:colorBackground">@color/ink</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorSurfaceVariant">@color/card2</item>
+        <item name="colorOnSurface">@color/paper</item>
+        <item name="colorOnSurfaceVariant">@color/smoke</item>
+        <item name="colorPrimary">@color/paper</item>
+        <item name="colorOnPrimary">@color/ink</item>
+        <item name="colorOutline">@color/stroke2</item>
+        <item name="android:statusBarColor">@color/ink</item>
+        <item name="android:navigationBarColor">@color/ink</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:textColorPrimary">@color/paper</item>
+        <item name="android:textColorSecondary">@color/smoke</item>
+    </style>
+
+</resources>

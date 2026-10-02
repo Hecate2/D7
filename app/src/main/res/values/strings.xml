@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">七日</string>
+
+    <!-- 照片组管理 -->
+    <string name="groups_title">照片组</string>
+    <string name="groups_new">+ 新建</string>
+    <string name="groups_subtitle">一窗一组 · 全部保存在本机</string>
+    <string name="groups_empty">还没有照片组\n点右上角「+ 新建」起个名字\n站在要看的那扇窗前开拍</string>
+    <string name="group_untested">未测</string>
+    <string name="group_winter">冬至 %1$s</string>
+    <string name="group_meta_captured">%1$s 采集 · %2$s</string>
+    <string name="group_meta_unshot">%1$s 新建 · 尚未拍摄</string>
+    <string name="group_external_prefix">外部 %1$d 点 · </string>
+    <string name="group_external_percent">%1$d%%</string>
+    <string name="group_external_none">外部未拍</string>
+    <string name="group_ceiling_pill">天花板 %1$d 点</string>
+    <string name="group_ceiling_none">天花板未拍</string>
+
+    <!-- 建组 / 改名对话框 -->
+    <string name="new_group_title">新建照片组</string>
+    <string name="rename_group_title">改名</string>
+    <string name="group_name_hint">组名，例如：客厅阳台</string>
+    <string name="label_latitude">纬度</string>
+    <string name="label_longitude">经度</string>
+    <string name="label_latitude_hint">31.23</string>
+    <string name="label_longitude_hint">121.47</string>
+    <string name="use_gps">用 GPS 定位</string>
+    <string name="gps_locating">定位中…</string>
+    <string name="gps_done">已定位 %1$s</string>
+    <string name="gps_failed">定位失败：请到空旷处重试，或手动输入经纬度</string>
+    <string name="hemisphere_north">北纬：面向南侧拍摄，从右（西）拍到左（东）</string>
+    <string name="hemisphere_south">南纬：面向北侧拍摄，从右（东）拍到左（西）</string>
+    <string name="hemisphere_tropic">赤道附近：夏冬正午太阳分居两侧，建议南北两侧都拍</string>
+    <string name="hemisphere_unknown">输入纬度后给出拍摄方向提示</string>
+    <string name="invalid_latlon">请输入有效的纬度（-90..90）与经度（-180..180）</string>
+    <string name="start_capture">开始拍摄</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确定</string>
+
+    <!-- 长按菜单 -->
+    <string name="menu_rename">改名</string>
+    <string name="menu_delete">删除</string>
+    <string name="menu_export">导出</string>
+    <string name="delete_group_title">删除照片组</string>
+    <string name="delete_group_message">删除「%1$s」的角度与分组数据。相册里的照片不会被删除。</string>
+
+    <!-- 占位 -->
+    <string name="capture_placeholder">采集界面（实现中）</string>
+    <string name="result_placeholder">外部 %1$d 点 · 天花板 %2$d 点\n结果界面（实现中）</string>
+    <string name="result_go_capture">回采集续拍</string>
+    <string name="back">返回</string>
+</resources>
