@@ -495,8 +495,10 @@ class ResultActivity : AppCompatActivity() {
             if (az == null || el == null || parts.size > 3) return null to (i + 1)
             val horizon = when {
                 parts.size == 2 -> false
-                parts[2].equals("horizon", ignoreCase = true) -> true
-                else -> return null to (i + 1)
+                else -> when (parts[2].lowercase()) {
+                    "horizon", "h", "0" -> true
+                    else -> return null to (i + 1)
+                }
             }
             rows.add(BulkRow(az, el, horizon))
         }

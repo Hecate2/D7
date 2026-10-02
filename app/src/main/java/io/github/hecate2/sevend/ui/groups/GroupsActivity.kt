@@ -2,6 +2,7 @@ package io.github.hecate2.sevend.ui.groups
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -22,6 +23,7 @@ import io.github.hecate2.sevend.core.CalcMode
 import io.github.hecate2.sevend.data.GroupRecord
 import io.github.hecate2.sevend.data.GroupRepository
 import io.github.hecate2.sevend.databinding.ActivityGroupsBinding
+import io.github.hecate2.sevend.databinding.DialogDeleteGroupBinding
 import io.github.hecate2.sevend.databinding.DialogGroupNameBinding
 import io.github.hecate2.sevend.databinding.DialogNewGroupBinding
 import io.github.hecate2.sevend.export.Exporter
@@ -141,12 +143,41 @@ class GroupsActivity : AppCompatActivity() {
     }
 
     private fun confirmDelete(group: GroupRecord) {
+        val photos = (group.external + group.ceiling).mapNotNull { it.photoUri }
+        val view = DialogDeleteGroupBinding.inflate(layoutInflater)
+        view.deleteMessage.text = getString(R.string.delete_group_message, group.name)
+        view.deletePhotos.isVisible = photos.isNotEmpty()
+        if (photos.isNotEmpty()) {
+            view.deletePhotos.text = getString(R.string.delete_group_with_photos, photos.size)
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.delete_group_title)
-            .setMessage(getString(R.string.delete_group_message, group.name))
+            .setView(view.root)
             .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.confirm) { _, _ -> repository.deleteGroup(group.id) }
+            .setPositiveButton(R.string.confirm) { _, _ ->
+                deleteGroup(group, photos, view.deletePhotos.isChecked)
+            }
             .show()
+    }
+
+    /** 删组；勾选「同时删照片」时先尽力删除相册中的照片（URI 可能已失效），失败不影响删组。 */
+    private fun deleteGroup(group: GroupRecord, photos: List<String>, alsoPhotos: Boolean) {
+        lifecycleScope.launch {
+            if (alsoPhotos && photos.isNotEmpty()) {
+                val failed = withContext(Dispatchers.IO) {
+                    photos.count { uri ->
+                        try {
+                            contentResolver.delete(Uri.parse(uri), null, null)
+                            false
+                        } catch (_: Exception) {
+                            true
+                        }
+                    }
+                }
+                if (failed > 0) toast(getString(R.string.delete_group_photos_failed, failed))
+            }
+            repository.deleteGroup(group.id)
+        }
     }
 
     private fun showExportDialog(group: GroupRecord) {
