@@ -147,7 +147,7 @@
 
 ## 附录 A：代码级实施清单
 
-应用 ID 与包名统一用 `io.github.hecate2.sevend`，`:core` 模块包名 `io.github.hecate2.sevend.core`。
+应用 ID（applicationId）为 `io.github.hecate2.D7`（Android 要求包名每段以字母开头，`7D` 与 `7d` 均不合法，故用 `D7`）；代码包名（namespace）保持 `io.github.hecate2.sevend`，`:core` 模块包名 `io.github.hecate2.sevend.core`。
 
 `:core` 文件清单与关键 API：
 

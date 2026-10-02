@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.hecate2.sevend"
+        applicationId = "io.github.hecate2.D7"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
