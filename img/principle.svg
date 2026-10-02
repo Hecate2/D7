@@ -1,0 +1,45 @@
+<svg viewBox="0 0 680 650" width="680" height="650" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Noto Sans CJK SC','Microsoft YaHei',sans-serif" role="img">
+<title>太阳路径与天际线原理示意</title>
+<desc>极坐标图，圆心为天顶，外圈为地平线，角向为方位角。北京纬度的夏至、春分秋分、冬至太阳弧线，蓝色为冬至，红色为春分秋分，橙色为夏至。南侧楼群天际线中间有一条空隙，冬至午后太阳穿过空隙约一小时。</desc>
+<text x="40" y="32" font-size="14" font-weight="500" fill="#2C2C2A">原理示意：北京 39.9°N，南侧楼群之间有空隙</text>
+<text x="40" y="52" font-size="12" fill="#888780">圆心=天顶（仰角90°），外圈=地平线（仰角0°）。角向=方位角，正北 0° 顺时针。</text>
+<circle cx="340" cy="330" r="250" fill="none" stroke="#888780" stroke-width="1"/>
+<circle cx="340" cy="330" r="166.7" fill="none" stroke="#D3D1C7" stroke-width="0.5" stroke-dasharray="4 4"/>
+<circle cx="340" cy="330" r="83.3" fill="none" stroke="#D3D1C7" stroke-width="0.5" stroke-dasharray="4 4"/>
+<text x="216" y="208" font-size="11" fill="#888780" text-anchor="end">30°</text>
+<text x="275" y="267" font-size="11" fill="#888780" text-anchor="end">60°</text>
+<line x1="340" y1="80" x2="340" y2="72" stroke="#888780" stroke-width="1"/>
+<line x1="590" y1="330" x2="598" y2="330" stroke="#888780" stroke-width="1"/>
+<line x1="340" y1="580" x2="340" y2="588" stroke="#888780" stroke-width="1"/>
+<line x1="90" y1="330" x2="82" y2="330" stroke="#888780" stroke-width="1"/>
+<text x="340" y="64" font-size="13" fill="#2C2C2A" text-anchor="middle">北 0°</text>
+<text x="604" y="334" font-size="13" fill="#2C2C2A">东 90°</text>
+<text x="340" y="602" font-size="13" fill="#2C2C2A" text-anchor="middle">南 180°</text>
+<text x="84" y="334" font-size="13" fill="#2C2C2A" text-anchor="end">西 270°</text>
+<path d="M 556.5 455 L 481.4 471.4 L 426.1 479.1 L 381.7 485.6 L 325.5 496.1 L 279.2 497.1 L 248.8 544.9 L 198 518.6 L 222.2 470.4 L 203.6 425.6 L 173 390.8 L 132.4 366.6 L 92.4 364.8 A 250 250 0 0 0 556.5 455 Z" fill="#D3D1C7" stroke="#888780" stroke-width="1" stroke-linejoin="round"/>
+<circle cx="340" cy="330" r="2" fill="#888780"/>
+<text x="350" y="326" font-size="11" fill="#888780">天顶</text>
+<polyline points="556.5,205 552.9,221.6 548.1,237.4 538.1,265.6 515.1,299.1 487.2,330 452.2,349.8 416.1,363.9 379,373.3 340,376.1 301,373.3 263.9,363.9 227.8,349.8 192.8,330 164.9,299.1 141.9,265.6 131.9,237.4 127.1,221.6 123.5,205" fill="none" stroke="#EF9F27" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="590,330 555,367.9 516.2,394.1 473,416.4 430.1,430.1 385.8,437.9 340,440.8 294.2,437.9 249.9,430.1 207,416.4 163.8,394.1 125,367.9 90,330" fill="none" stroke="#E24B4A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="557.6,453.1 527.4,471.2 512.2,477 481.2,486.9 433.3,498.4 386.7,504.2 340,505.9 292.7,504.1 270.3,502.6" fill="none" stroke="#378ADD" stroke-width="2.5" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="270.3,502.6 246.7,498.4 232.4,495.7 208,490" fill="none" stroke="#378ADD" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="208,490 198.7,486.9 167.8,477 152.8,471.7 126.6,460.2" fill="none" stroke="#378ADD" stroke-width="2.5" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="566" y="200" font-size="12" fill="#854F0B">夏至 6月22日</text>
+<text x="598" y="318" font-size="12" fill="#A32D2D">春分·秋分</text>
+<text x="564" y="448" font-size="12" fill="#185FA5">冬至 12月22日</text>
+<text x="55" y="575" font-size="12" fill="#0F6E56">楼间空隙</text>
+<line x1="108" y1="571" x2="216" y2="536" stroke="#0F6E56" stroke-width="0.5" stroke-dasharray="4 3"/>
+<text x="340" y="525" font-size="12" fill="#2C2C2A" text-anchor="middle">冬至：上午与正午被楼群遮挡</text>
+<text x="340" y="545" font-size="12" fill="#185FA5" text-anchor="middle">13:40-14:40 太阳穿过楼间空隙，直射约 1 小时</text>
+<text x="340" y="566" font-size="11" fill="#5F5E5A" text-anchor="middle">天际线：楼顶轮廓连线（示例峰值仰角 32°）</text>
+<line x1="45" y1="622" x2="65" y2="622" stroke="#EF9F27" stroke-width="2"/>
+<text x="71" y="626" font-size="12" fill="#444441">夏至弧线</text>
+<line x1="145" y1="622" x2="165" y2="622" stroke="#E24B4A" stroke-width="2"/>
+<text x="171" y="626" font-size="12" fill="#444441">春分·秋分弧线</text>
+<line x1="265" y1="622" x2="285" y2="622" stroke="#378ADD" stroke-width="2"/>
+<text x="291" y="626" font-size="12" fill="#444441">冬至可见段</text>
+<line x1="355" y1="622" x2="375" y2="622" stroke="#378ADD" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="381" y="626" font-size="12" fill="#444441">冬至被挡段</text>
+<rect x="445" y="617" width="20" height="10" fill="#D3D1C7" stroke="#888780" stroke-width="0.5"/>
+<text x="471" y="626" font-size="12" fill="#444441">天际线遮挡区</text>
+</svg>

@@ -1,0 +1,78 @@
+<svg viewBox="0 0 250 540" width="500" height="1080" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Noto Sans CJK SC','Microsoft YaHei',sans-serif" role="img">
+<title>采集界面</title>
+<desc>采集草图：默认外部建筑区，取景器左上 chip 可切到天花板区。面向南从右（西）向左（东）依次拍。外部区短按连线、长按经地平线断开，未拍方位视为开阔；天花板区只支持短按连窗框上沿，未拍方位视为墙体全遮挡。取景器默认显示太阳轨迹线与拍摄点连线。覆盖条只计外部区 90 到 270 度。左下完成键；右下删除键须长按，删十字线右边最近的一点，单次只删1点。照片自动保存无开关；方位默认+180°可切。真北由GPS经纬度经GeomagneticField自动校正。</desc>
+<rect x="1" y="1" width="248" height="538" rx="28" fill="#000000" stroke="#2E2E32" stroke-width="1"/>
+<text x="14" y="30" font-size="15" font-weight="600" fill="#FFFFFF">采集</text>
+<text x="236" y="30" font-size="11" fill="#8E8E93" text-anchor="end">阳台</text>
+<text x="14" y="48" font-size="10.5" fill="#8E8E93">31.23°N 121.47°E · 真北已校正 · 罗盘精度高</text>
+<text x="14" y="70" font-size="15" font-weight="500" fill="#FFFFFF">仰角 <tspan fill="#FFFFFF">24.6°</tspan> · 方位 <tspan fill="#FFFFFF">182.1°</tspan></text>
+<rect x="196" y="56" width="42" height="18" rx="9" fill="#FFFFFF"/>
+<text x="217" y="69" font-size="10" fill="#000000" text-anchor="middle">+180°</text>
+<rect x="12" y="78" width="226" height="240" rx="8" fill="#0E0E10" stroke="#2E2E32" stroke-width="1"/>
+<g transform="translate(12,78)">
+<rect x="8" y="8" width="58" height="20" rx="10" fill="#FFFFFF"/>
+<text x="37" y="22" font-size="10" fill="#000000" text-anchor="middle">外部建筑</text>
+<rect x="70" y="8" width="48" height="20" rx="10" fill="none" stroke="#FFFFFF" stroke-width="1"/>
+<text x="94" y="22" font-size="10" fill="#FFFFFF" text-anchor="middle">天花板</text>
+<line x1="120" y1="8" x2="214" y2="8" stroke="#EF9F27" stroke-width="2" stroke-dasharray="6 4"/>
+<path d="M 210 6 L 214 1 L 218 6" fill="none" stroke="#EF9F27" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="226" y="24" font-size="10" fill="#EF9F27" text-anchor="end">夏至轨迹（画面外上方）</text>
+<polyline points="0,80 56.5,52 113,45 169.5,53 226,84" fill="none" stroke="#E24B4A" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round"/>
+<text x="113" y="38" font-size="10" fill="#E24B4A" text-anchor="middle">春分·秋分轨迹</text>
+<polyline points="0,82.5 56.5,56 113,49.5 169.5,57 226,86.5" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+<text x="196" y="50" font-size="10" fill="#FFFFFF" text-anchor="middle">今日轨迹</text>
+<polyline points="0,86.6 56.5,70 113,66.1 169.5,71.1 226,89.4" fill="none" stroke="#378ADD" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round"/>
+<text x="113" y="62" font-size="10" fill="#378ADD" text-anchor="middle">冬至轨迹</text>
+<rect x="0" y="150" width="60" height="90" fill="#232326" stroke="#3A3A3E" stroke-width="0.5"/>
+<rect x="64" y="215" width="16" height="25" fill="#1A1A1C" stroke="#3A3A3E" stroke-width="0.5"/>
+<rect x="113" y="125" width="44" height="115" fill="#2E2E32" stroke="#3A3A3E" stroke-width="0.5"/>
+<rect x="176" y="140" width="50" height="100" fill="#232326" stroke="#3A3A3E" stroke-width="0.5"/>
+<line x1="0" y1="150" x2="60" y2="150" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="64" y1="215" x2="80" y2="215" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="113" y1="125" x2="157" y2="125" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="176" y1="140" x2="226" y2="140" stroke="#FFFFFF" stroke-width="1.5"/>
+<circle cx="60" cy="150" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<circle cx="64" cy="215" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<circle cx="80" cy="215" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<path d="M 157 125 L 157 223 L 176 223 L 176 140" fill="none" stroke="#CAC2D1" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="166.5" y="218" font-size="8" fill="#CAC2D1" text-anchor="middle">空隙</text>
+<text x="60" y="143" font-size="8" fill="#8E8E93" text-anchor="middle">6</text>
+<text x="64" y="208" font-size="8" fill="#8E8E93" text-anchor="middle">5</text>
+<text x="80" y="208" font-size="8" fill="#8E8E93" text-anchor="middle">4</text>
+<text x="157" y="118" font-size="8" fill="#8E8E93" text-anchor="middle">3</text>
+<text x="176" y="133" font-size="8" fill="#8E8E93" text-anchor="middle">2</text>
+<text x="226" y="133" font-size="8" fill="#8E8E93" text-anchor="middle">1</text>
+<circle cx="157" cy="125" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<circle cx="176" cy="140" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<circle cx="226" cy="140" r="3.5" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+<line x1="101" y1="125" x2="111" y2="125" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="115" y1="125" x2="125" y2="125" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="113" y1="113" x2="113" y2="123" stroke="#FFFFFF" stroke-width="1.5"/>
+<line x1="113" y1="127" x2="113" y2="137" stroke="#FFFFFF" stroke-width="1.5"/>
+<circle cx="113" cy="125" r="12" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+<circle cx="113" cy="125" r="2.5" fill="#CAC2D1"/>
+</g>
+<text x="14" y="336" font-size="11" fill="#8E8E93">面向南，从右（西）向左（东）依次拍</text>
+<path d="M 14 344 L 22 344 L 18 350 Z" fill="#CAC2D1"/>
+<text x="28" y="352" font-size="11" fill="#CAC2D1">短按连线 · 长按经地平线断开为空隙</text>
+<text x="14" y="368" font-size="10" fill="#8E8E93">东·后拍</text>
+<text x="238" y="368" font-size="10" fill="#8E8E93" text-anchor="end">西·先拍</text>
+<line x1="188" y1="365" x2="64" y2="365" stroke="#8E8E93" stroke-width="1"/>
+<path d="M 70 361 L 64 365 L 70 369" fill="none" stroke="#8E8E93" stroke-width="1"/>
+<text x="14" y="386" font-size="11" fill="#8E8E93">方位覆盖 90–270°</text>
+<rect x="194" y="372" width="44" height="20" rx="10" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="216" y="386" font-size="10" fill="#8E8E93" text-anchor="middle">显示线</text>
+<rect x="12" y="392" width="226" height="12" rx="6" fill="#1C1C1E" stroke="#2E2E32" stroke-width="0.5"/>
+<rect x="37" y="392" width="176" height="12" rx="6" fill="#FFFFFF"/>
+<text x="24" y="416" font-size="11" fill="#8E8E93" text-anchor="middle">90°</text>
+<text x="125" y="416" font-size="11" fill="#FFFFFF" text-anchor="middle">180°</text>
+<text x="226" y="416" font-size="11" fill="#8E8E93" text-anchor="middle">270°</text>
+<rect x="12" y="448" width="58" height="30" rx="8" fill="#FFFFFF"/>
+<text x="41" y="467" font-size="11" fill="#000000" text-anchor="middle">完成</text>
+<circle cx="125" cy="463" r="26" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+<circle cx="125" cy="463" r="18" fill="#CAC2D1"/>
+<text x="125" y="505" font-size="10" fill="#8E8E93" text-anchor="middle">短按连线 · 长按断开</text>
+<rect x="180" y="448" width="58" height="30" rx="8" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="209" y="467" font-size="11" fill="#FFFFFF" text-anchor="middle">删除</text>
+<text x="209" y="498" font-size="9" fill="#8E8E93" text-anchor="middle">长按·删右侧最近点</text>
+</svg>

@@ -1,0 +1,24 @@
+# 记忆与工作文件（不提交）
+.workbuddy/
+
+# 旧设计稿（按需求不提交）
+img/archive/
+
+# macOS
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+*/build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 构建产物
+*.apk
+*.aab
+captures/

@@ -1,0 +1,83 @@
+<svg viewBox="0 0 250 700" width="500" height="1400" xmlns="http://www.w3.org/2000/svg" font-family="'PingFang SC','Noto Sans CJK SC','Microsoft YaHei',sans-serif" role="img">
+<title>结果界面</title>
+<desc>黑白配色结果草图，内容可上下滑动：黑底白字，日期药丸，计算对象三档（仅外部默认、外部加天花板、仅天花板），时间线白色为直射深灰为被挡，全年曲线白色折线，下方点列区每行含分区标记缩略图、序号方位仰角、连接模式与删除，底部为导出与回采集续拍。</desc>
+<rect x="1" y="1" width="248" height="698" rx="28" fill="#000000" stroke="#2E2E32" stroke-width="1"/>
+<text x="14" y="26" font-size="15" font-weight="600" fill="#FFFFFF">结果 · 阳台</text>
+<text x="14" y="44" font-size="11" fill="#8E8E93">31.23°N 121.47°E · 10-02 采集 · 北京时间</text>
+<rect x="12" y="54" width="38" height="26" rx="13" fill="#FFFFFF"/>
+<text x="31" y="71" font-size="11" fill="#000000" text-anchor="middle">冬至</text>
+<rect x="56" y="54" width="38" height="26" rx="13" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="75" y="71" font-size="11" fill="#8E8E93" text-anchor="middle">大寒</text>
+<rect x="100" y="54" width="38" height="26" rx="13" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="119" y="71" font-size="11" fill="#8E8E93" text-anchor="middle">春分</text>
+<rect x="144" y="54" width="38" height="26" rx="13" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="163" y="71" font-size="11" fill="#8E8E93" text-anchor="middle">夏至</text>
+<rect x="188" y="54" width="50" height="26" rx="13" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="213" y="71" font-size="11" fill="#8E8E93" text-anchor="middle">自定义</text>
+<rect x="12" y="86" width="56" height="24" rx="12" fill="#FFFFFF"/>
+<text x="40" y="102" font-size="11" fill="#000000" text-anchor="middle">仅外部</text>
+<rect x="72" y="86" width="96" height="24" rx="12" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="120" y="102" font-size="11" fill="#8E8E93" text-anchor="middle">外部+天花板</text>
+<rect x="172" y="86" width="66" height="24" rx="12" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="205" y="102" font-size="11" fill="#8E8E93" text-anchor="middle">仅天花板</text>
+<rect x="12" y="116" width="226" height="84" rx="8" fill="#161618" stroke="#2A2A2E" stroke-width="1"/>
+<text x="24" y="136" font-size="11" fill="#8E8E93">冬至日直射日照 · 仅外部</text>
+<text x="24" y="164" font-size="22" font-weight="600" fill="#FFFFFF">1 小时 00 分</text>
+<text x="152" y="164" font-size="11" fill="#CAC2D1">全部来自空隙</text>
+<text x="24" y="188" font-size="11" fill="#8E8E93">日出 07:29 · 日落 16:35</text>
+<text x="14" y="218" font-size="11" fill="#8E8E93">当天时间线</text>
+<text x="238" y="218" font-size="11" fill="#8E8E93" text-anchor="end">白=直射 深灰=被挡</text>
+<rect x="12" y="224" width="226" height="14" rx="7" fill="#2A2A2E"/>
+<rect x="166.9" y="224" width="25.1" height="14" fill="#FFFFFF"/>
+<text x="12" y="252" font-size="11" fill="#8E8E93">07:30</text>
+<text x="164" y="252" font-size="11" fill="#8E8E93" text-anchor="middle">13:40</text>
+<text x="196" y="252" font-size="11" fill="#8E8E93" text-anchor="middle">14:40</text>
+<text x="238" y="252" font-size="11" fill="#8E8E93" text-anchor="end">16:30</text>
+<rect x="12" y="264" width="226" height="80" rx="8" fill="#161618" stroke="#2A2A2E" stroke-width="1"/>
+<text x="24" y="284" font-size="11" fill="#8E8E93">大寒日 8:00-16:00 有效直射</text>
+<text x="24" y="310" font-size="16" font-weight="600" fill="#FFFFFF">1 小时 15 分</text>
+<text x="140" y="310" font-size="11" fill="#CAC2D1">未达 ≥2 小时</text>
+<text x="24" y="332" font-size="11" fill="#8E8E93">GB 50180 预设 · 以当地规划条件为准</text>
+<text x="14" y="364" font-size="11" fill="#8E8E93">全年直射时长（小时/天）</text>
+<line x1="12" y1="438" x2="238" y2="438" stroke="#2E2E32" stroke-width="1"/>
+<line x1="12" y1="366" x2="12" y2="438" stroke="#2E2E32" stroke-width="1"/>
+<polyline points="12,427.2 30.8,422.6 48.2,411.2 67.4,396.8 86.1,383.4 105.3,374.1 118.4,371.1 124,372.1 143.2,380.3 162.5,394.7 181.5,408.1 200.7,419.5 219.4,425.6 232.4,428.2" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="232.4" cy="428.2" r="3.5" fill="#CAC2D1" stroke="#000000" stroke-width="1"/>
+<text x="16" y="378" font-size="11" fill="#8E8E93">看最凹处</text>
+<text x="14" y="454" font-size="11" fill="#8E8E93" text-anchor="middle">1月</text>
+<text x="105" y="454" font-size="11" fill="#8E8E93" text-anchor="middle">6月</text>
+<text x="232" y="454" font-size="11" fill="#8E8E93" text-anchor="middle">12月</text>
+<text x="14" y="474" font-size="11" fill="#8E8E93">拍摄点</text>
+<text x="238" y="474" font-size="11" fill="#8E8E93" text-anchor="end">外 5 点 · 天 3 点</text>
+<rect x="12" y="482" width="30" height="30" rx="6" fill="#232326" stroke="#3A3A3E" stroke-width="0.5"/>
+<circle cx="24" cy="492" r="3" fill="#8E8E93"/>
+<path d="M14,510 L22,500 L28,506 L32,502 L40,510 Z" fill="#8E8E93"/>
+<text x="48" y="501" font-size="11" fill="#FFFFFF">外1 · 236° · 18°</text>
+<rect x="158" y="486" width="52" height="22" rx="11" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="184" y="501" font-size="11" fill="#8E8E93" text-anchor="middle">直接</text>
+<rect x="216" y="486" width="22" height="22" rx="6" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="227" y="502" font-size="11" fill="#FFFFFF" text-anchor="middle">删</text>
+<rect x="12" y="518" width="30" height="30" rx="6" fill="#232326" stroke="#3A3A3E" stroke-width="0.5"/>
+<circle cx="24" cy="528" r="3" fill="#8E8E93"/>
+<path d="M14,546 L22,536 L28,542 L32,538 L40,546 Z" fill="#8E8E93"/>
+<text x="48" y="537" font-size="11" fill="#FFFFFF">外2 · 202° · 25°</text>
+<rect x="158" y="522" width="52" height="22" rx="11" fill="none" stroke="#CAC2D1" stroke-width="1"/>
+<text x="184" y="537" font-size="11" fill="#CAC2D1" text-anchor="middle">地平线</text>
+<rect x="216" y="522" width="22" height="22" rx="6" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="227" y="538" font-size="11" fill="#FFFFFF" text-anchor="middle">删</text>
+<rect x="12" y="554" width="30" height="30" rx="6" fill="#232326" stroke="#3A3A3E" stroke-width="0.5"/>
+<circle cx="24" cy="564" r="3" fill="#8E8E93"/>
+<path d="M14,582 L22,572 L28,578 L32,574 L40,582 Z" fill="#8E8E93"/>
+<text x="48" y="573" font-size="11" fill="#FFFFFF">天1 · 182° · 65°</text>
+<rect x="158" y="558" width="52" height="22" rx="11" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="184" y="573" font-size="11" fill="#8E8E93" text-anchor="middle">直接</text>
+<rect x="216" y="558" width="22" height="22" rx="6" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="227" y="574" font-size="11" fill="#FFFFFF" text-anchor="middle">删</text>
+<text x="125" y="598" font-size="10" fill="#8E8E93" text-anchor="middle">其余 5 点上滑查看</text>
+<rect x="12" y="610" width="109" height="32" rx="8" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="66" y="630" font-size="11" fill="#FFFFFF" text-anchor="middle">导出 CSV</text>
+<rect x="129" y="610" width="109" height="32" rx="8" fill="none" stroke="#3A3A3E" stroke-width="1"/>
+<text x="183" y="630" font-size="11" fill="#FFFFFF" text-anchor="middle">导出图片</text>
+<rect x="12" y="650" width="226" height="32" rx="8" fill="#FFFFFF"/>
+<text x="125" y="670" font-size="11" fill="#000000" text-anchor="middle">回采集续拍</text>
+</svg>
