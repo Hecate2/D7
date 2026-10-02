@@ -160,7 +160,7 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <io.github.hecate2.sevend.view.DayTimelineView
+        <io.github.hecate2.D7.view.DayTimelineView
             android:id="@+id/dayTimeline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -195,15 +195,6 @@
                     android:textColor="@color/paper"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/gbNote"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginBottom="2dp"
-                    android:textColor="@color/moon"
-                    android:textSize="11sp" />
             </LinearLayout>
 
             <TextView
@@ -224,7 +215,7 @@
             android:textColor="@color/smoke"
             android:textSize="11sp" />
 
-        <io.github.hecate2.sevend.view.YearCurveView
+        <io.github.hecate2.D7.view.YearCurveView
             android:id="@+id/yearCurve"
             android:layout_width="match_parent"
             android:layout_height="96dp"

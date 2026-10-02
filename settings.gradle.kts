@@ -20,6 +20,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "7D"
+rootProject.name = "D7"
 include(":app")
 include(":core")

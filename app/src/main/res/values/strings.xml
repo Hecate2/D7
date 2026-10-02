@@ -129,8 +129,6 @@
     <string name="result_timeline">当天时间线</string>
     <string name="result_timeline_legend">白=直射 深灰=被挡</string>
     <string name="result_gb_label">大寒日 8:00–16:00 有效直射</string>
-    <string name="result_gb_ok">已达 ≥2 小时</string>
-    <string name="result_gb_low">未达 ≥2 小时</string>
     <string name="result_gb_hint">GB 50180 预设 · Ⅰ Ⅱ Ⅲ Ⅶ 区 大寒 8–16 ≥2 h（小城市 3 h）· Ⅳ 区 大寒 9–15 ≥1 h · Ⅴ Ⅵ 区 冬至 9–15 ≥1 h · 以当地规划条件为准</string>
     <string name="result_year_label">全年直射时长（小时/天）</string>
     <string name="result_points">拍摄点</string>
@@ -168,12 +166,12 @@
     <string name="compass_east">东</string>
 
     <!-- 导出：保存位置与文件名 -->
-    <string name="export_location_downloads">下载/7D</string>
-    <string name="export_location_pictures">相册 Pictures/7D</string>
+    <string name="export_location_downloads">下载/D7</string>
+    <string name="export_location_pictures">相册 Pictures/D7</string>
     <string name="export_file_name">%1$s-日照-%2$s.%3$s</string>
 
     <!-- 导出 CSV -->
-    <string name="export_csv_title">七日 7D 日照数据</string>
+    <string name="export_csv_title">七日 D7 日照数据</string>
     <string name="export_csv_row_group_name">组名</string>
     <string name="export_csv_row_latitude">纬度</string>
     <string name="export_csv_row_longitude">经度</string>
@@ -189,7 +187,7 @@
     <string name="export_yes">是</string>
     <string name="export_no">否</string>
     <string name="export_csv_section_points">拍摄点</string>
-    <string name="export_csv_points_header">分区,序号,方位角,仰角,与左邻点连线,拍摄时间</string>
+    <string name="export_csv_points_header">分区,序号,方位角,仰角,与右边相邻点连线,拍摄时间</string>
     <string name="export_region_external">外部</string>
     <string name="export_region_ceiling">天花板</string>
     <string name="export_seg_via_horizon">走地平线</string>
@@ -203,7 +201,7 @@
     <string name="export_png_gap_note">（全部来自空隙）</string>
     <string name="export_png_winter">冬至日（当地最低）直射 %1$s</string>
     <string name="export_png_gb">大寒日 8–16 时有效直射 %1$s</string>
-    <string name="export_png_footer">七日 7D · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告</string>
+    <string name="export_png_footer">七日 D7 · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告</string>
 
     <!-- 点位编辑（单点 / 批量，强行改角度、允许无图点） -->
     <string name="result_edit_points">编辑</string>
@@ -216,6 +214,7 @@
     <string name="bulk_edit_el_offset">仰角偏移</string>
     <string name="bulk_edit_apply_offset">应用偏移</string>
     <string name="bulk_edit_offset_invalid">偏移量需为数字，例如 -2 或 1.5</string>
-    <string name="bulk_edit_hint">每行一个点：「方位角 仰角」，第三词写 horizon（或 h、0）表示与下一点之间经地平线。行数不变时按序保留照片；增删行则为无图点。清空文本会删光该区点列。</string>
+    <string name="bulk_edit_hint">每行一个点：「方位角 仰角」，第三词写 horizon（或 h、0）表示该行与上一行（右边相邻点）之间经地平线，首行不能标。照片优先按角度对应继承，对不上且行数不变时按序继承；增删行则为无图点。清空文本会删光该区点列。</string>
+    <string name="bulk_edit_first_horizon">第 1 行没有上一行，不能标 horizon</string>
     <string name="bulk_edit_parse_error">第 %1$d 行无法解析，应形如「236.2 18.4」或「236.2 18.4 horizon」（h 或 0 同义）</string>
 </resources>

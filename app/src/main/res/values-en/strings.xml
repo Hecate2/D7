@@ -7,5 +7,5 @@
   约定详见 docs/ARCHITECTURE.md 的「国际化（i18n）」小节。
 -->
 <resources>
-    <string name="app_name">7D</string>
+    <string name="app_name">D7</string>
 </resources>

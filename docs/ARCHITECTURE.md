@@ -1,4 +1,4 @@
-# 七日 7D · 架构规划
+# 七日 D7 · 架构规划
 
 本文是动工前的架构约定，用于指导实现与自查。需求原文见根目录 `AGENTS.md`，面向用户的原理与操作说明见 `README.md`，界面草图见 `img/` 目录（`img/archive` 为旧稿，不参与实现）。凡本文与草图冲突之处，以 `AGENTS.md` 与 `README.md` 文字为准。
 
@@ -60,7 +60,7 @@
 
 姿态使用 `TYPE_ROTATION_VECTOR`（加速度计、陀螺仪、磁力计融合），经 `getRotationMatrixFromVector` 得到 R 后按第 3 节方法直接算后摄视轴方位角与仰角，以及供叠加层使用的设备三轴世界向量。仰角以重力为基准不经罗盘，是最稳的量；方位角经磁偏角校正到真北：用 `android.hardware.GeomagneticField(lat, lon, alt, now)` 的 `declination` 加到磁方位上。该 API 内置世界地磁模型，无需联网与自带系数表。
 
-罗盘校准取旋转矢量传感器的 `onAccuracyChanged` 精度回调（未回调前为未知态），读数精度取最近 24 个姿态样本的极差（0.8 度内为高、2.5 度内为中，更差为低），两枚药丸以绿/黄/红/灰分级显示，低或未校准时提示画 8 字。定位用系统自带 `LocationManager` 的多 provider 融合：API 31 及以上优先 `FUSED_PROVIDER`，与 `NETWORK_PROVIDER`、`GPS_PROVIDER` 并发取位，不申请网络权限、不引入第三方定位 SDK（零体积、零 key）。应用启动即 `warmUp()` 挂低频预热监听（无权限时静默跳过，可重复调用），建组取位先用 5 分钟内新鲜缓存（命中秒回不干等），实取时精度 ≤100 米立即返回、2.5 秒软超时采用已有最佳值、6 秒硬超时兜底；界面每秒刷新定位能力（GPS、网络定位、系统融合是否可用与当前精度）。拿到经纬度后立即用 GeomagneticField 算磁偏角、用 `ZoneId.systemDefault()` 记录时区；组内保存快照，避免测量中途经纬度跳动引起真北基准漂移。
+罗盘校准取旋转矢量传感器的 `onAccuracyChanged` 精度回调（未回调前为未知态），读数精度取最近 24 个姿态样本的极差（0.8 度内为高、2.5 度内为中，更差为低），两枚药丸以绿/黄/红/灰分级显示，低或未校准时提示画 8 字。定位用系统自带 `LocationManager` 的多 provider 融合：API 31 及以上优先 `FUSED_PROVIDER`，与 `NETWORK_PROVIDER`、`GPS_PROVIDER` 并发取位，不申请网络权限、不引入第三方定位 SDK（零体积、零 key）。照片组管理页在 `onStart` 到 `onStop` 之间挂低频预热监听（无权限时静默跳过，可重复调用；退到后台即注销，避免 GPS 持续耗电与 LocationManager 持有页面上下文造成泄漏），建组取位先用 5 分钟内新鲜缓存（命中秒回不干等），实取时精度 ≤100 米立即返回、2.5 秒软超时采用已有最佳值、6 秒硬超时兜底；界面每秒刷新定位能力（GPS、网络定位、系统融合是否可用与当前精度）。拿到经纬度后立即用 GeomagneticField 算磁偏角、用 `ZoneId.systemDefault()` 记录时区；组内保存快照，避免测量中途经纬度跳动引起真北基准漂移。
 
 传感器到界面用一个 `OrientationSensor` 类封装：注册/注销、坐标换算（含显示旋转映射）、磁偏角叠加、平滑（对显示值做轻量低通，采集时刻直接取融合瞬时值，不引入额外延迟）；同一姿态顺带解出滚转角 `atan2(-right[2], up[2])`（屏幕「上」相对世界竖直的偏转，正值=机顶向右倒），供采集页显示左右倾斜。
 
@@ -68,11 +68,11 @@
 
 相机用 CameraX（`camera-core`、`camera-camera2`、`camera-lifecycle`、`camera-view`）：`PreviewView` 负责取景画面，`ImageCapture` 负责拍照，生命周期与 Activity 绑定。视场角从 `CameraCharacteristics` 的焦距与传感器物理尺寸算出（`Camera2CameraInfo` 取特征），失败时退回 65 度水平视场假设；视场角只影响叠加层与实景的贴合度，不影响记录的角度。
 
-每次快门触发 `ImageCapture.takePicture` 存到 cacheDir 临时文件，随后：用 `ExifInterface` 写入拍摄点元数据（方位、仰角、分区、组名、序号、连线模式，编码为 JSON 放进 `TAG_USER_COMMENT`，同时写 GPS 经纬度与时间），然后发布到系统相册。Android 10 及以上走 MediaStore（`Pictures/7D/<组名>/`，IS_PENDING 流程），Android 9 及以下直接写入公共 Pictures 目录后扫描媒体库；发布完成后删除临时文件。记录点到组数据里保存的是 MediaStore 的 content URI，界面缩略图经 `ContentResolver` 异步加载并降采样，URI 失效时显示占位图。
+每次快门触发 `ImageCapture.takePicture` 存到 cacheDir 临时文件，随后：用 `ExifInterface` 写入拍摄点元数据（方位、仰角、分区、组名、序号、连线模式，编码为 JSON 放进 `TAG_USER_COMMENT`，同时写 GPS 经纬度与时间），然后发布到系统相册。Android 10 及以上走 MediaStore（`Pictures/D7/<组名>/`，同名组中最早创建者用裸名、后来者追加短 id 后缀以免相册里混放；IS_PENDING 流程），Android 9 及以下直接写入公共 Pictures 目录后扫描媒体库；发布完成后删除临时文件。记录点到组数据里保存的是 MediaStore 的 content URI，界面缩略图经 `ContentResolver` 异步加载并降采样，URI 失效时显示占位图。
 
 照片落在系统相册是需求的核心交互之一（「相册右边的照片更旧」），因此不额外在应用私有目录留副本；导出功能提供图片与 CSV 的自救通道。权限方面：相机为必需；定位可选（用户也可手输经纬度）；Android 9 及以下写公共目录需要存储权限，Android 10 及以上不需要。
 
-快门按钮的两种按法在 UI 层判定：按下时长超过 450 毫秒且抬起时仍在本屏视为长按（外部区：该点与上一点之间为经地平线推断段），短于阈值视为短按（直接连线）。天花板区屏蔽长按——长按时不拍照并给出提示「天花板区只支持短按连线」。删除键同样长按生效：按下即锁定一个「待删点」（按当前瞄准方位角取右侧最近点，见第 10 节），按住期间不再重算、不重复触发，抬起或移出按钮取消。
+快门按钮的两种按法在 UI 层判定：按下时长超过 450 毫秒且抬起时仍在本屏视为长按（外部区：该点与上一点之间为经地平线推断段），短于阈值视为短按（直接连线）；手指滑出按钮（`ACTION_MOVE` 越界或 `ACTION_CANCEL`）即取消本次操作，不拍照。天花板区屏蔽长按——长按时不拍照并给出提示「天花板区只支持短按连线」。删除键同样长按生效：按下即锁定一个「待删点」（按当前瞄准方位角取右侧最近点，见第 10 节），按住期间不再重算、不重复触发，滑出按钮或 `ACTION_CANCEL` 即取消且不删点。
 
 ## 9. 取景器投影与叠加层
 
@@ -80,9 +80,9 @@
 
 投影用针孔模型：世界方向向量 v（由方位角、仰角生成 ENU 单位向量）依次点乘相机的右、上、前三个世界向量得到相机坐标 (x, y, z)，屏幕坐标 = 中心 + (x/z, -y/z) × 焦距像素（焦距由视场角推算）；z ≤ 0.01 的方向视为在相机背后予以剔除，剔除处把折线断开，因此跨视场边缘的弧线只画落在画面里的那一段，近天顶段自然裁剪。相机的右、上向量按显示旋转（`Display.getRotation()` 四种取值）从设备三轴映射得到；采集页已锁竖屏，常规使用即 ROTATION_0，四种映射用于兜底分屏等窗口形态。
 
-参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧与拍摄点连线，隐藏地平线与铅垂线，设置持久化在 SharedPreferences。
+参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线；采样只依赖纬度与赤纬，按赤纬缓存在叠加层内（定位更新时失效），姿态变化仅重投影、不重算天文位置。采样取几何高度角（不含大气折射），与天际线求值的判定基准一致。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧与拍摄点连线，隐藏地平线与铅垂线，设置持久化在 SharedPreferences。
 
-拍摄点渲染：每个点画白色圆点与序号（外部 1..n、天花板 1..n 各自编号），点与点之间按模式画线——直接连线画白色实线；经地平线段拆三段画月灰虚线（上点垂直降到地平线、沿地平线横走、垂直升到新点），与草图一致。覆盖条画在取景器下方，横轴为 90 到 270 度（南半球镜像），已达区间白色、未达区间炭灰，同时可点击该条的「显示线」按钮打开线显隐设置。
+拍摄点渲染：每个点画白色圆点与序号（外部 1..n、天花板 1..n 各自编号），点与点之间按模式画线——直接连线画白色实线；经地平线段拆三段画月灰虚线（上点垂直降到地平线、沿地平线横走、垂直升到新点）。连线折线由 `:core` 的 `SkylineShape.direct/viaHorizon` 展开，取景器与导出参考图共用同一套采样，保证「求值、叠加层、导出图」三处几何语义一致；「显示线」关掉拍摄点连线时点与线一并隐藏。覆盖条画在取景器下方，横轴为 90 到 270 度（南半球镜像），已达区间白色、未达区间炭灰，同时可点击该条的「显示线」按钮打开线显隐设置。
 
 ## 10. 界面与交互
 
@@ -92,17 +92,17 @@
 
 采集页自上而下：标题栏（组名与经纬度元信息）、大号仰角与方位读数（加 `+180°` 药丸）、罗盘校准与读数精度两枚分级药丸及滚转角读数（左右倾斜，正值=机顶向右倒，非航向）、取景器（左上分区 chip：外部建筑/天花板，右侧为覆盖条与「显示线」）、方向提示（北半球「面向南，西·先拍 → 东·后拍」、南半球镜像）、底部三键（左「完成」、中快门、右「删除」）。快门短按：记录当前十字线指向为新的拍摄点并与上一点直接连线；长按（外部区）：记录并以经地平线推断段与上一点连接；天花板区仅短按，且与上一点直接连线。删除键长按：在当前分区内删除「十字线右侧、离当前瞄准方位最近」的一个点（判定为相对当前方位角的顺时针角距最小者，即 `normalize(az_point - az_now) ∈ (0°, 180°)` 中角距最小），按住一次只删一个；左侧的点不受影响。完成键保存并跳转结果页。覆盖条之外，取景器内直接画出已拍点与连线（第 9 节）。页面锁竖屏运行，横屏时保持竖屏版式（见第 10 节）。续拍：从结果页「回采集续拍」返回该组，新点按分区各自原序续接。
 
-结果页自上而下：标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与左邻点的连线模式切换按钮、删除按钮；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
+结果页自上而下：标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与右边相邻点（拍摄序前一点，即列表上一行）的连线模式切换按钮、删除按钮；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
 
-结果页点列区的编辑动作直接改组数据：删除任意点；切换某点与拍摄序下一点的连线模式（直接连线 ⇄ 走地平线，仅外部点可切换）。删除点后其前后两点的连接改为直接连线（避免悬空的经地平线段），这与「删除即撤掉该点及其连接段」一致。
+结果页点列区的编辑动作直接改组数据：删除任意点；切换某点与右边相邻点（拍摄序前一点，列表上一行；存储上段即前一点的 `gapAfter`）的连线模式（直接连线 ⇄ 走地平线，仅外部点可切换）。删除点后其前后两点的连接改为直接连线（避免悬空的经地平线段），这与「删除即撤掉该点及其连接段」一致。
 
-角度编辑分两级且一律「强行」生效（不受照片限制）。单点：点击某行弹出对话框改写方位角与仰角，照片与拍摄时间保留；方位角规范化到 [0, 360)，仰角限制到 [0, 90]。批量：点列标题行右侧「编辑」按钮打开批量编辑器，外部区与天花板区各一段多行文本，逐行「方位角 仰角 [horizon]」（第三词写 horizon 或 h、0 均可，大小写不敏感，表示与下一点之间经地平线），可先填方位偏移与仰角偏移、点「应用偏移」对全文整体平移再确认；确认时按行数决定照片继承——行数不变则按序继承原照片与拍摄时间，增删行则新点为无图点（photoUri 为空，界面显示占位缩略图）。因此不拍照也能手工搭出完整点列，供计算、导出与测试使用。
+角度编辑分两级且一律「强行」生效（不受照片限制）。单点：点击某行弹出对话框改写方位角与仰角，照片与拍摄时间保留；方位角规范化到 [0, 360)，仰角限制到 [0, 90]。批量：点列标题行右侧「编辑」按钮打开批量编辑器，外部区与天花板区各一段多行文本，逐行「方位角 仰角 [horizon]」（第三词写 horizon 或 h、0 均可，大小写不敏感，表示该行与上一行即右边相邻点之间经地平线；首行没有上一行，标 horizon 会被整单拒绝、两区都不落库），可先填方位偏移与仰角偏移、点「应用偏移」对全文整体平移再确认；确认时照片继承优先按 (az, el) 精确匹配旧点（行序重排也能对上），无法一一匹配且行数不变时按序继承原照片与拍摄时间，增删行则新点为无图点（photoUri 为空，界面显示占位缩略图）。因此不拍照也能手工搭出完整点列，供计算、导出与测试使用。
 
 分屏适配：所有 Activity 声明 `resizeableActivity=true`；采集页锁定竖屏（横屏时取景区几乎无面积，保持竖屏版式最省），其余页面不锁方向。分屏时系统忽略方向请求，采集页按窗口形状缩放、以留边呈现，取景与拍摄照常。`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局全部用约束与权重，分屏小窗时压缩而非截断关键控件（取景器优先占满剩余空间）。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
 
 ## 11. 数据模型与持久化
 
-组数据用 kotlinx.serialization 序列化为 JSON，存 `filesDir/groups.json`，写入采用「先写临时文件再原子改名」。照片本体在系统相册，JSON 里只存 URI。模式如下：
+组数据用 kotlinx.serialization 序列化为 JSON，存 `filesDir/groups.json`；写入在单线程后台执行器上异步进行（不阻塞界面线程），采用「先写临时文件再原子改名」，文件系统不支持原子改名时回退普通覆盖改名（极端写失败保留内存态、下次修改再试）。照片本体在系统相册，JSON 里只存 URI。模式如下：
 
 ```json
 {
@@ -125,7 +125,7 @@
 }
 ```
 
-导出提供两条通道：CSV（组信息、分区、序号、方位、仰角、连线模式、拍摄时间，以及所选日期的逐分钟可见性）写入 `Downloads/7D/`；导出图片把「天际线极坐标图 + 关键结论」渲染为 PNG 存入相册 `Pictures/7D/`。两者都走 MediaStore（低版本走公共目录+扫描）。
+导出提供两条通道：CSV（组信息、分区、序号、方位、仰角、连线模式、拍摄时间，以及所选日期的逐分钟可见性）写入 `Downloads/D7/`；导出图片把「天际线极坐标图 + 关键结论」渲染为 PNG 存入相册 `Pictures/D7/`。两者都走 MediaStore（低版本走公共目录+扫描）。
 
 ## 12. 构建与工具链
 
@@ -143,27 +143,27 @@
 
 ## 14. 风险与对策
 
-姿态读数在手机接近垂直时方位抖动（机身上缘水平投影趋零所致）：主用姿态是略微后仰瞄准楼顶，抖动可接受；显示层做低通平滑；测量值取瞬时融合值。采集页已锁竖屏，常规使用不会出现横屏版式；分屏窗口形状不匹配时方向映射按 `Display.getRotation()` 处理，错了只影响叠加层贴合，不影响记录数据。罗盘受阳台钢筋干扰属物理限制，界面提示画 8 字校准并在低精度时显著提示，数值不追求优于 2 到 4 度。不同厂商相机在多窗口下的可用性有差异，兜底方案是分屏下暂停预览但保留传感器读数。MediaStore URI 被外部清理时缩略图缺失、角度数据不受影响，导出功能提供数据自救。
+姿态读数在手机接近垂直时方位抖动（机身上缘水平投影趋零所致）：主用姿态是略微后仰瞄准楼顶，抖动可接受；显示层做低通平滑；测量值取瞬时融合值。采集页已锁竖屏，常规使用不会出现横屏版式；分屏小窗叠加横屏的组合下，屏幕右/上向量的显示旋转映射（`ROTATION_90` 与 `ROTATION_270` 两分支）尚未真机实测，已列入真机验证清单：若叠加层整体左右镜像，对调这两个分支即可，不影响记录数据。罗盘受阳台钢筋干扰属物理限制，界面提示画 8 字校准并在低精度时显著提示，数值不追求优于 2 到 4 度。不同厂商相机在多窗口下的可用性有差异，兜底方案是分屏下暂停预览但保留传感器读数。MediaStore URI 被外部清理时缩略图缺失、角度数据不受影响，导出功能提供数据自救。
 
 ## 附录 A：代码级实施清单
 
-应用 ID（applicationId）为 `io.github.hecate2.D7`（Android 要求包名每段以字母开头，`7D` 与 `7d` 均不合法，故用 `D7`）；代码包名（namespace）保持 `io.github.hecate2.sevend`，`:core` 模块包名 `io.github.hecate2.sevend.core`。
+应用 ID（applicationId）与代码包名（namespace）均为 `io.github.hecate2.D7`（`7D` 与 `7d` 因段首为数字、不能用作包名段，故采用 `D7`）；`:core` 模块包名 `io.github.hecate2.D7.core`。
 
 `:core` 文件清单与关键 API：
 
 - `Solar.kt`：`data class SolarPosition(val azimuthDeg: Double, val elevationDeg: Double)`；`object Solar` 提供 `position(utcMillis: Long, latDeg: Double, lonDeg: Double, refraction: Boolean = true): SolarPosition`（NOAA 公式，见第 4 节）、`julianDay(utcMillis: Long): Double`。几何高度角配 -0.833 度阈值即日出日落。
-- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>)` 提供 `obstructionAt(azDeg: Double): Double`（返回天际线边缘仰角；未覆盖方位返回 -∞，由判定方向分化为外部开阔与天花板全遮挡，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）。
+- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>)` 提供 `obstructionAt(azDeg: Double): Double`（返回天际线边缘仰角；未覆盖方位返回 -∞，由判定方向分化为外部开阔与天花板全遮挡，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）；`object SkylineShape` 提供 `direct(...)` 与 `viaHorizon(...)`，把线段按求值语义展开为 (az, el) 绘图折线，取景器叠加层与导出参考图共用，保证「求值、叠加层、导出图」三处语义一致。
 - `Sunlight.kt`：`enum class CalcMode { EXTERNAL_ONLY, EXTERNAL_AND_CEILING, CEILING_ONLY }`；`data class DailySunlight(date, sunriseMinute: Int?, sunsetMinute: Int?, directMinutes: Int, visibleIntervals: List<IntRange>, allFromGap: Boolean, daylightMinutes: Int)`（分钟序号自当地 0 时起）；`object SunlightEvaluator` 提供 `evaluate(lat, lon, zoneId: String, external: List<ShotPoint>, ceiling: List<ShotPoint>, mode, date: LocalDate, stepMinutes: Int = 1): DailySunlight`、`yearlyCurve(..., year: Int, mode): List<Double>`、`windowMinutes(..., date, fromMinute: Int, toMinute: Int, mode): Int`。点列为空按第 5 节退化：外部列空则全周开阔、天花板列空则全周遮挡（界面据此禁用涉及天花板的档位）。
 - 单测：`SolarTest.kt`（对拍第二套独立实现的低精度日下点公式与物理合理性断言：北半球正午方位约 180、夏至正午高度角约 90-lat+23.4、春秋分日出方位约 90、赤道昼长约 12h07m、南半球正午方位约 0）、`SkylineTest.kt`（插值、空隙三段、重叠取最大、环绕 350→10、覆盖度）、`SunlightTest.kt`（三档模式语义、空隙穿透、极夜零分钟、南半球镜像）。
 
-`:app` 文件清单（包 `io.github.hecate2.sevend` 下）：
+`:app` 文件清单（包 `io.github.hecate2.D7` 下）：
 
-- `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 原子写，`StateFlow<List<GroupRecord>>`，CRUD、`touch()`、`updatePointAngles()` 与 `setRegionPoints()`）。
-- `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `Pose(forward, right, up: FloatArray, frontAzDeg, frontElDeg, smoothAzDeg, smoothElDeg, rollDeg: Double, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值，滚转角 `atan2(-right[2], up[2])`，磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：系统融合定位（多 provider 并发、`warmUp()` 预热、`lastFresh()` 新鲜缓存、`requestSingleUpdate()` 快慢三档返回、`capability()` 能力快照），另提供静态 `declination()` 磁偏角计算。
-- `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore `Pictures/7D/<组名>/`（API 29+ IS_PENDING；API 28- 公共目录+扫描）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
+- `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 单线程后台异步原子写、原子改名失败回退普通覆盖，`StateFlow<List<GroupRecord>>`，CRUD、`photoFolderFor()`〔同名组的相册文件夹消歧〕、`updatePointAngles()` 与 `setRegionPoints()`）。
+- `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `Pose(forward, right, up: FloatArray, frontAzDeg, frontElDeg, smoothAzDeg, smoothElDeg, rollDeg: Double, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值，滚转角 `atan2(-right[2], up[2])`，磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：系统融合定位（多 provider 并发、`warmUp()` 预热与 `shutdown()` 注销〔由照片组管理页 `onStart`/`onStop` 驱动〕、`lastFresh()` 新鲜缓存、`requestSingleUpdate()` 快慢三档返回、`capability()` 能力快照），另提供静态 `declination()` 磁偏角计算。
+- `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore 至 `Pictures/D7/<文件夹名>/`（文件夹名由 `photoFolderFor()` 给定，同名组带短 id 后缀；API 29+ IS_PENDING；API 28- 公共目录+扫描，扫描只 fire-and-forget、返回 URI 不等待回调）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
 - `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
-- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
-- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的 AppCompat 暗色主题（`Theme.SevenD`，不引入 Material 库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗与 MediaStore 发布共用）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
+- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按、手指滑出按钮即取消不拍照，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点、滑出取消）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
+- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的 AppCompat 暗色主题（`Theme.D7`，不引入 Material 库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗与 MediaStore 发布共用）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
 
 实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛；自动化验证在模拟器 AVD 7d_api30（android-30）上运行 `:app:connectedDebugAndroidTest`，另有真机 vivo PD2164PA（Android 11 / API 30）供人工实测。
 
@@ -173,4 +173,4 @@
 
 第二语言的落地流程是纯机械的：新建 `res/values-<语言>/strings.xml`（例如 `values-en/`，当前已建好目录但只含 `app_name` 一条作为桩），补齐需要翻译的条目即可，未翻译的条目自动回退到中文默认值。系统级「按应用设置语言」入口由两部分提供：`res/xml/locales_config.xml` 声明支持的语言清单（`zh-Hans` 与 `en`），`AndroidManifest.xml` 的 `android:localeConfig` 属性把它挂到应用上，Android 13 及以上即可在系统设置中为应用单独选语言。
 
-当前处于脚手架阶段，明确不做的部分：不维护中文以外的完整翻译；不做应用内自有的语言切换界面（交给系统设置）；导出文件名与 CSV 内容随当前系统语言变化，不追求跨语言的稳定一致。以 `Format` 工具类为例，时长类函数全部改为接收 `Resources` 后从字符串资源取词（`durationShort` 与 `durationLong`），它在列表页、结果页与导出模块的三个调用场景共用同一套资源。
+当前处于脚手架阶段，明确不做的部分：不维护中文以外的完整翻译；不做应用内自有的语言切换界面（交给系统设置）；导出文件名与 CSV 内容随当前系统语言变化，不追求跨语言的稳定一致。以 `Format` 工具类为例，时长类函数全部改为接收 `Resources` 后从字符串资源取词（`durationShort` 与 `durationLong`），它在列表页、结果页与导出模块的三个调用场景共用同一套资源。唯一豁免是 `Format.coordinate` 拼接的半球符号 `N/E/S/W` 与度数符号 `°`：属于跨语言通用记号而非文案（模板为 `%.2f°%s %.2f°%s`），不单列资源；若将来某语言需要不同写法，随该语言一并处理。

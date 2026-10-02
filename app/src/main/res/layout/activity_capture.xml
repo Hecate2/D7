@@ -145,7 +145,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <io.github.hecate2.sevend.view.ViewfinderOverlayView
+        <io.github.hecate2.D7.view.ViewfinderOverlayView
             android:id="@+id/overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
@@ -283,7 +283,7 @@
             android:textSize="10sp" />
     </LinearLayout>
 
-    <io.github.hecate2.sevend.view.CoverageBarView
+    <io.github.hecate2.D7.view.CoverageBarView
         android:id="@+id/coverageBar"
         android:layout_width="0dp"
         android:layout_height="28dp"

@@ -2,7 +2,7 @@
 <resources>
 
     <!-- 全应用暗色主题：漆黑背景、雾白文字（AppCompat 深色主题，不引入 Material 库） -->
-    <style name="Theme.SevenD" parent="Theme.AppCompat.NoActionBar">
+    <style name="Theme.D7" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/ink</item>
         <item name="android:colorBackground">@color/ink</item>
         <item name="colorBackgroundFloating">@color/card</item>

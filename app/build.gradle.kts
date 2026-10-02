@@ -8,7 +8,7 @@ plugins {
 val appVersionName = "0.1.0"
 
 android {
-    namespace = "io.github.hecate2.sevend"
+    namespace = "io.github.hecate2.D7"
     compileSdk = 35
 
     defaultConfig {

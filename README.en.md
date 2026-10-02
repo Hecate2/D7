@@ -1,4 +1,4 @@
-# 7D (七日) · Sunlight Duration Calculator
+# D7 (七日) · Sunlight Duration Calculator
 
 Measure the sunlight of a home before you buy it, with nothing but your phone.
 
@@ -40,7 +40,7 @@ One subtlety applies even in Beijing: in summer the sun rises in the northeast a
 
 Each group holds two zones: the external-building zone for the towers across the street, and the ceiling zone for your own window-frame head. The zone chip at the top left of the viewfinder switches between them; point order is independent per zone and photos are stored per zone. In the ceiling zone, shoot along the frame head in the same right-to-left order (top-right corner, midpoints, top-left corner, plus extra points wherever beams or soffits step), down each jamb to the side reveal; the sill below needs nothing, it is assumed open. The ceiling zone supports short press only, no long press: a frame is continuous and has no gaps, so a long press does nothing there.
 4. Fix and finish. No need to redo a bad point: the delete key at the bottom right removes only the captured point nearest to the current heading on the right side of the crosshair, never anything on its left; it fires only on long press, and a single hold deletes at most 1 point. The bottom-left done key confirms the session. Check the coverage bar for misses (it scores only the southern half, 90–270°, mirrored to the northern half in the southern hemisphere); capture nearby walls, trees and low buildings to the sides while you are at it. Ground floors should pay extra attention to close-in obstructions.
-5. Resume and edit points. Going back from results to capture resumes shooting on the same group: pick the zone with the chip first, and new points append to that zone's order. Editing captured points lives in the results screen's point list: delete any point, or switch the segment between a point and its left neighbor between "direct connect" and "via horizon" modes (ceiling points are direct only).
+5. Resume and edit points. Going back from results to capture resumes shooting on the same group: pick the zone with the chip first, and new points append to that zone's order. Editing captured points lives in the results screen's point list: delete any point, or switch the segment between a point and its neighbor to the right (the previous shot, i.e. the row above in the list) between "direct connect" and "via horizon" modes (ceiling points are direct only).
 6. Read the results.
 
 All groups live on the group management screen, one card per group: the name, the solstice verdict, and each zone's state (external point count with coverage, ceiling point count or an empty dashed box). Tap a card for results, long-press to rename, delete or export; creating a group from the top-right button names it and jumps straight into capture.
@@ -71,7 +71,7 @@ The timeline. A horizontal bar from sunrise to sunset. White means direct sun, d
 
 Clock time. The app converts sun positions using GPS longitude and the equation of time, then reports in your local timezone. Solar noon in Urumqi correctly lands around 14:00 Beijing time, not 12:00.
 
-Points. One row per shot: zone tag (ext / ceil), index, azimuth, elevation, photo thumbnail, plus the connection mode between the point and its left neighbor (direct / via horizon, switchable; ceiling points are direct only) and delete. Fix wrong points here before resuming capture.
+Points. One row per shot: zone tag (ext / ceil), index, azimuth, elevation, photo thumbnail, plus the connection mode between the point and its neighbor to the right (the previous shot, the row above in the list; direct / via horizon, switchable; ceiling points are direct only) and delete. Fix wrong points here before resuming capture.
 
 ![Results screen](img/ui-result.svg)
 
@@ -88,18 +88,18 @@ Listed honestly:
 
 ## Privacy
 
-The app requests no network permission. Photos, angles and location stay on the phone. Export to CSV and images anytime, delete anytime.
+The app requests no network permission. Photos, angles and location stay on the phone; Android auto-backup is off (allowBackup=false), so nothing is uploaded to the cloud. Export to CSV and images anytime, delete anytime.
 
 ## UI and palette
 
-The app is named 7D (七日, "seven days"). The icon source is `城市日照十字瞄准图标.png` in the repository root: black background, white crosshair, gray-white buildings, golden sun (an inspiration image and the palette reference `配色基准.jpg` are kept locally as design material, not committed).
+The app is named D7 (七日, "seven days"). The icon source is `城市日照十字瞄准图标.png` in the repository root: black background, white crosshair, gray-white buildings, golden sun (an inspiration image and the palette reference `配色基准.jpg` are kept locally as design material, not committed).
 
 The palette follows the lead character of `配色基准.jpg` (jet-black costume and background, mist-white lettering and highlights, gray-violet pupil gradient):
 
 - Background black `#000000`: phone frame, capture / results background
 - Card charcoal `#161618` / `#1C1C1E`: info cards, coverage track, blocked timeline segments
 - Foreground white `#FFFFFF`: body text, crosshair, covered range, direct-sun range, year curve, today's solid path
-- Moon gray `#CAC2D1`: shutter-button center fill, via-horizon inferred dashed segments, secondary emphasis (gap source, below-standard hint, aiming status)
+- Moon gray `#CAC2D1`: shutter-button center fill, via-horizon inferred dashed segments, secondary emphasis (gap source, aiming status)
 - Smoke gray `#8E8E93`: secondary text, unselected date pills, axes, horizon and plumb lines
 - Strokes `#2E2E32` / `#3A3A3E`: card and button outlines
 - Trajectory colors (all dashed): winter-solstice blue `#378ADD`, equinox red `#E24B4A`, summer-solstice orange `#EF9F27`
@@ -116,8 +116,8 @@ On black background vs harsh outdoor light, honestly: pure black is not the brig
 - Sun position uses the simplified NOAA astronomical formulas. Cross-checked against a high-precision ephemeris the error stays below 0.02 degrees, far below sensor error, so the algorithm is never the bottleneck.
 - Attitude comes from the Android rotation vector sensor, a fusion of accelerometer, gyroscope and magnetometer. Elevation references gravity and bypasses the compass, so the most decisive quantity is also the most stable one. Azimuth is taken along the rear-camera sight axis (about +180° from the body reading when held upright, applied by default and user-toggleable via `+180°`), then corrected to true north with magnetic declination.
 - Magnetic declination comes straight from Android's GeomagneticField.getDeclination(), fed with the GPS latitude/longitude (plus altitude and time for extra accuracy) to yield true north. The API embeds the World Magnetic Model, so no bundled coefficient tables and no network are needed. On-site figure-eight calibration is still required, because declination only fixes the systematic offset, not local disturbance from balcony rebar.
-- Each group stores two ordered point lists: ext[{az,el,gapAfter}] and ceil[{az,el}] (no gapAfter, ordering independent per zone). A long-press gap expands into three inferred segments: vertical drop from the previous point to the horizon, along-horizon run to the new point's direction, vertical rise to the new point. Evaluation interpolates measured segments by azimuth, takes the horizon on inferred segments, and takes the maximum elevation where azimuths overlap (occlusion wins), so reversed direction or occasional backtracking cannot corrupt the result. Photos carry the data in EXIF. Per-minute checks: external-only mode wants the sun above the external skyline (uncaptured azimuths count as open); external-plus-ceiling additionally wants the sun below the ceiling head (uncaptured azimuths count as wall); ceiling-only runs just the latter. A zone with an empty point list always passes. The engine samples the sun once per minute and accumulates visible minutes into durations. The capture screen's delete key long-press removes the point nearest to the crosshair on its right plus its connecting segment, inferred triple included, at most 1 point per hold and never anything on the left; the results screen's point list can delete any point and switch the segment between a point and its left neighbor between "direct" and "via horizon" modes.
-- The solstice reference arcs in the viewfinder are drawn with a planar azimuth-and-elevation to pixel projection, accurate within about 40 degrees of the view center, with near-zenith segments clipped automatically. The arcs depend only on latitude and date, and the phone orientation decides only which segment lands on screen, so they are recomputed just once per GPS update.
+- Each group stores two ordered point lists: ext[{az,el,gapAfter}] and ceil[{az,el}] (no gapAfter, ordering independent per zone). A long-press gap expands into three inferred segments: vertical drop from the previous point to the horizon, along-horizon run to the new point's direction, vertical rise to the new point. Evaluation interpolates measured segments by azimuth, takes the horizon on inferred segments, and takes the maximum elevation where azimuths overlap (occlusion wins), so reversed direction or occasional backtracking cannot corrupt the result. Photos carry the data in EXIF. Per-minute checks: external-only mode wants the sun above the external skyline (uncaptured azimuths count as open); external-plus-ceiling additionally wants the sun below the ceiling head (uncaptured azimuths count as wall); ceiling-only runs just the latter. A zone with an empty point list always passes. The engine samples the sun once per minute and accumulates visible minutes into durations. The capture screen's delete key long-press removes the point nearest to the crosshair on its right plus its connecting segment, inferred triple included, at most 1 point per hold and never anything on the left; the results screen's point list can delete any point and switch the segment between a point and its neighbor to the right (the previous shot) between "direct" and "via horizon" modes.
+- The solstice reference arcs in the viewfinder are drawn with a planar azimuth-and-elevation to pixel projection, accurate within about 40 degrees of the view center, with near-zenith segments clipped automatically. The arcs depend only on latitude and date, so their samples are cached per declination inside the overlay and invalidated on location change; the phone orientation decides only which segment lands on screen and merely re-projects them. Sampling uses the geometric (refraction-free) elevation, consistent with the skyline evaluation.
 
 ## Status
 
