@@ -16,8 +16,8 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import android.app.AlertDialog
+import androidx.activity.ComponentActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
  * 删除键长按生效，按下即锁定「十字线右侧、离当前方位最近」的一个候选点，按住只删一个；
  * 完成键跳转结果页。读数取融合瞬时值记录，显示值做轻度低通。
  */
-class CaptureActivity : AppCompatActivity() {
+class CaptureActivity : ComponentActivity() {
 
     companion object {
         private const val LONG_PRESS_MS = 450L

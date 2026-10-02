@@ -56,6 +56,7 @@ object SunlightEvaluator {
         val dayStart = date.atStartOfDay(ZoneId.of(zoneId)).toInstant().toEpochMilli()
         val externalSky = Skyline(external)
         val ceilingSky = Skyline(ceiling)
+        val track = Solar.DayTrack.ofDayStart(dayStart, latDeg, lonDeg)
 
         var daylight = 0
         var direct = 0
@@ -67,7 +68,7 @@ object SunlightEvaluator {
         var m = 0
         while (m < MINUTES_PER_DAY) {
             val instant = dayStart + m * 60_000L
-            val pos = Solar.position(instant, latDeg, lonDeg, refraction = false)
+            val pos = track.position(instant, refraction = false)
             if (pos.elevationDeg > Solar.SUNRISE_THRESHOLD_DEG) {
                 daylight += stepMinutes
                 if (firstUp == null) firstUp = m
@@ -140,14 +141,15 @@ object SunlightEvaluator {
         val dayStart = date.atStartOfDay(ZoneId.of(zoneId)).toInstant().toEpochMilli()
         val externalSky = Skyline(external)
         val ceilingSky = Skyline(ceiling)
+        val track = Solar.DayTrack.ofDayStart(dayStart, latDeg, lonDeg)
 
         var count = 0
         var m = 0
         while (m < MINUTES_PER_DAY) {
             val instant = dayStart + m * 60_000L
-            val solarMinute = Solar.trueSolarTimeMinutes(instant, lonDeg)
+            val solarMinute = track.trueSolarMinutes(instant)
             if (solarMinute >= fromSolarMinute && solarMinute < toSolarMinute) {
-                val pos = Solar.position(instant, latDeg, lonDeg, refraction = false)
+                val pos = track.position(instant, refraction = false)
                 if (pos.elevationDeg > Solar.SUNRISE_THRESHOLD_DEG &&
                     isVisible(pos, mode, externalSky, ceilingSky)
                 ) {

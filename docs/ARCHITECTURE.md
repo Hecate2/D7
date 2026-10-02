@@ -98,7 +98,7 @@
 
 角度编辑分两级且一律「强行」生效（不受照片限制）。单点：点击某行弹出对话框改写方位角与仰角，照片与拍摄时间保留；方位角规范化到 [0, 360)，仰角限制到 [0, 90]。批量：点列标题行右侧「编辑」按钮打开批量编辑器，外部区与天花板区各一段多行文本，逐行「方位角 仰角 [horizon]」（第三词写 horizon 或 h、0 均可，大小写不敏感，表示该行与上一行即右边相邻点之间经地平线；首行没有上一行，标 horizon 会被整单拒绝、两区都不落库），可先填方位偏移与仰角偏移、点「应用偏移」对全文整体平移再确认；确认时照片继承优先按 (az, el) 精确匹配旧点（行序重排也能对上），无法一一匹配且行数不变时按序继承原照片与拍摄时间，增删行则新点为无图点（photoUri 为空，界面显示占位缩略图）。因此不拍照也能手工搭出完整点列，供计算、导出与测试使用。
 
-分屏适配：所有 Activity 声明 `resizeableActivity=true`；采集页锁定竖屏（横屏时取景区几乎无面积，保持竖屏版式最省），其余页面不锁方向。分屏时系统忽略方向请求，采集页按窗口形状缩放、以留边呈现，取景与拍摄照常。`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局全部用约束与权重，分屏小窗时压缩而非截断关键控件（取景器优先占满剩余空间）。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
+分屏适配：所有 Activity 声明 `resizeableActivity=true`；采集页锁定竖屏（横屏时取景区几乎无面积，保持竖屏版式最省），其余页面不锁方向。分屏时系统忽略方向请求，采集页按窗口形状缩放、以留边呈现，取景与拍摄照常。`configChanges` 声明常见尺寸变化避免拖动分屏时重建；相机页布局按「读数区／可伸缩中段／底部按键区」三层权重划分，窗口变矮时先压缩取景器，底部快门与删除、完成键始终留在屏幕内不被截断。相机在分屏下按平台允许情况运行，不额外做多窗口互斥逻辑。
 
 ## 11. 数据模型与持久化
 
@@ -129,7 +129,7 @@
 
 ## 12. 构建与工具链
 
-工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / appcompat / activity-ktx / constraintlayout / recyclerview / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），并只保留 zh/en 资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
+工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / activity-ktx / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view；camera-view 上 exclude 掉 appCompat，它对该库零引用）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），并只保留 zh/en 资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
@@ -162,8 +162,8 @@
 - `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `Pose(forward, right, up: FloatArray, frontAzDeg, frontElDeg, smoothAzDeg, smoothElDeg, rollDeg: Double, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值，滚转角 `atan2(-right[2], up[2])`，磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：系统融合定位（多 provider 并发、`warmUp()` 预热与 `shutdown()` 注销〔由照片组管理页 `onStart`/`onStop` 驱动〕、`lastFresh()` 新鲜缓存、`requestSingleUpdate()` 快慢三档返回、`capability()` 能力快照），另提供静态 `declination()` 磁偏角计算。
 - `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore 至 `Pictures/D7/<文件夹名>/`（文件夹名由 `photoFolderFor()` 给定，同名组带短 id 后缀；API 29+ IS_PENDING；API 28- 公共目录+扫描，扫描只 fire-and-forget、返回 URI 不等待回调）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
 - `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
-- `ui/groups/GroupsActivity.kt`（RecyclerView 卡片、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按、手指滑出按钮即取消不拍照，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点、滑出取消）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
-- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的 AppCompat 暗色主题（`Theme.D7`，不引入 Material 库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗与 MediaStore 发布共用）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
+- `ui/groups/GroupsActivity.kt`（卡片列表用 LinearLayout 逐张 inflate、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门 450 毫秒阈值区分短长按、手指滑出按钮即取消不拍照，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点、滑出取消）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
+- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的原生 Material 暗色主题（`Theme.D7`，不引入 AppCompat 与 Material 支持库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗与 MediaStore 发布共用）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
 
 实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛；自动化验证在模拟器 AVD 7d_api30（android-30）上运行 `:app:connectedDebugAndroidTest`，另有真机 vivo PD2164PA（Android 11 / API 30）供人工实测。
 

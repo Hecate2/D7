@@ -1,0 +1,148 @@
+package io.github.hecate2.D7.ui.result
+
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.util.LruCache
+import android.view.LayoutInflater
+import android.widget.ImageView
+import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
+import io.github.hecate2.D7.R
+import io.github.hecate2.D7.data.PointRecord
+import io.github.hecate2.D7.data.Region
+import io.github.hecate2.D7.databinding.ItemPointBinding
+import io.github.hecate2.D7.util.Format
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * 结果页点列：按拍摄顺序把每行渲染进容器（LinearLayout + addView，无需回收复用）。
+ * 每行显示分区、序号、缩略图、方位与仰角、与左邻点的连线模式、删除按钮；
+ * 点整行进单点编辑，点连线药丸切换经地平线/直接连线（仅外部区且存在左邻点时可切）。
+ *
+ * 缩略图按 URI 缓存于 [thumbs]，避免每次刷新都重新解码 JPEG。
+ */
+class PointRows(
+    private val container: LinearLayout,
+    private val scope: CoroutineScope,
+    private val onToggleSegment: (Int) -> Unit,
+    private val onDelete: (Region, Int) -> Unit,
+    private val onEdit: (Region, Int) -> Unit,
+) {
+
+    /** 一行。[segViaHorizon] 表示本点与左邻点之间的连线是否为经地平线推断段。 */
+    data class Row(
+        val region: Region,
+        /** 分区内 0 基下标。 */
+        val index: Int,
+        val point: PointRecord,
+        val segViaHorizon: Boolean,
+    ) {
+        /** 仅外部区且非首点，才存在左邻点、连线模式才可改。 */
+        val toggleable: Boolean get() = region == Region.EXTERNAL && index > 0
+    }
+
+    /** 缩略图缓存（按字节计），避免刷新列表时反复解码 JPEG。 */
+    private val thumbs = object : LruCache<String, Bitmap>(THUMB_CACHE_KB) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount / 1024
+    }
+
+    fun submit(rows: List<Row>) {
+        val inflater = LayoutInflater.from(container.context)
+        container.removeAllViews()
+        for (row in rows) {
+            val binding = ItemPointBinding.inflate(inflater, container, false)
+            bind(binding, row)
+            container.addView(binding.root)
+        }
+    }
+
+    private fun bind(binding: ItemPointBinding, row: Row) {
+        val context = binding.root.context
+        val regionTag = context.getString(
+            if (row.region == Region.EXTERNAL) R.string.result_region_external
+            else R.string.result_region_ceiling,
+        )
+        binding.title.text = context.getString(
+            R.string.result_point_title,
+            regionTag, row.index + 1,
+            Format.degreeInt(row.point.az), Format.degreeInt(row.point.el),
+        )
+
+        val pill = binding.segment
+        if (row.toggleable) {
+            pill.isEnabled = true
+            pill.alpha = 1f
+            pill.setTextColor(
+                ContextCompat.getColor(context, if (row.segViaHorizon) R.color.moon else R.color.smoke),
+            )
+            pill.setBackgroundResource(
+                if (row.segViaHorizon) R.drawable.bg_pill_moon else R.drawable.bg_pill,
+            )
+            pill.text = context.getString(
+                if (row.segViaHorizon) R.string.result_seg_horizon else R.string.result_seg_direct,
+            )
+            pill.setOnClickListener { onToggleSegment(row.index) }
+        } else {
+            pill.setOnClickListener(null)
+            pill.isEnabled = false
+            pill.alpha = 0.45f
+            pill.setTextColor(ContextCompat.getColor(context, R.color.smoke))
+            pill.setBackgroundResource(R.drawable.bg_pill)
+            pill.text = context.getString(R.string.result_seg_direct)
+        }
+
+        binding.delete.setOnClickListener { onDelete(row.region, row.index) }
+        binding.root.setOnClickListener { onEdit(row.region, row.index) }
+
+        bindThumb(binding.thumb, row.point.photoUri)
+    }
+
+    /** 缩略图：缓存命中直接贴图，未命中在 IO 线程解码后回主线程贴图。 */
+    private fun bindThumb(thumb: ImageView, uri: String?) {
+        thumb.tag = uri
+        if (uri == null) {
+            thumb.setImageDrawable(null)
+            return
+        }
+        thumbs.get(uri)?.let {
+            thumb.setImageBitmap(it)
+            return
+        }
+        thumb.setImageDrawable(null)
+        val context = thumb.context
+        scope.launch {
+            val bitmap = withContext(Dispatchers.IO) { loadThumbnail(context, Uri.parse(uri)) }
+                ?: return@launch
+            thumbs.put(uri, bitmap)
+            if (thumb.tag == uri) thumb.setImageBitmap(bitmap)
+        }
+    }
+
+    private companion object {
+        /** 缩略图缓存上限（KB），足够放满整页点列。 */
+        const val THUMB_CACHE_KB = 2048
+        const val THUMB_PX = 96
+
+        /** 降采样解码；URI 失效（照片被外部清理）时返回 null，显示占位框。 */
+        fun loadThumbnail(context: Context, uri: Uri): Bitmap? = try {
+            val resolver = context.contentResolver
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            if (bounds.outWidth <= 0) {
+                null
+            } else {
+                var sample = 1
+                while (bounds.outWidth / (sample * 2) >= THUMB_PX) sample *= 2
+                val options = BitmapFactory.Options().apply { inSampleSize = sample }
+                resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+}

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- 全应用暗色主题：漆黑背景、雾白文字（AppCompat 深色主题，不引入 Material 库） -->
-    <style name="Theme.D7" parent="Theme.AppCompat.NoActionBar">
+    <!-- 全应用暗色主题：漆黑背景、雾白文字（原生 Material 深色主题，不引入支持库） -->
+    <style name="Theme.D7" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/ink</item>
         <item name="android:colorBackground">@color/ink</item>
-        <item name="colorBackgroundFloating">@color/card</item>
-        <item name="colorPrimary">@color/paper</item>
-        <item name="colorPrimaryDark">@color/ink</item>
-        <item name="colorAccent">@color/paper</item>
+        <item name="android:colorBackgroundFloating">@color/card</item>
+        <item name="android:colorPrimary">@color/paper</item>
+        <item name="android:colorPrimaryDark">@color/ink</item>
+        <item name="android:colorAccent">@color/paper</item>
         <item name="android:statusBarColor">@color/ink</item>
         <item name="android:navigationBarColor">@color/ink</item>
         <item name="android:windowLightStatusBar">false</item>

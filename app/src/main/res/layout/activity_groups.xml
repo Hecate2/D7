@@ -59,13 +59,18 @@
         android:layout_marginTop="12dp"
         android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/groupList"
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="12dp"
-            android:scrollbars="none" />
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/groupList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="12dp" />
+        </ScrollView>
 
         <TextView
             android:id="@+id/emptyView"

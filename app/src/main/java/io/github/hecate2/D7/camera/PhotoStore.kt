@@ -15,7 +15,9 @@ import androidx.exifinterface.media.ExifInterface
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.util.publishPendingMediaStore
 import io.github.hecate2.D7.util.sanitizeGroupName
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
@@ -70,10 +72,13 @@ class PhotoStore(private val context: Context) {
             temp.delete()
             return null
         }
-        writeExif(temp, meta)
-        val uri = publish(temp, meta)
-        temp.delete()
-        return uri
+        // EXIF 回写与整张 JPEG 的 MediaStore 拷贝都是真 IO，调用方在主线程，必须自己切走
+        return withContext(Dispatchers.IO) {
+            writeExif(temp, meta)
+            val uri = publish(temp, meta)
+            temp.delete()
+            uri
+        }
     }
 
     private fun writeExif(file: File, meta: PhotoMeta) {

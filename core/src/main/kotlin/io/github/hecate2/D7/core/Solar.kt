@@ -44,13 +44,17 @@ object Solar {
         refraction: Boolean = true,
     ): SolarPosition {
         // 时角
-        val hourAngle = trueSolarTimeMinutes(utcMillis, lonDeg) / 4.0 - 180.0
-        return positionFrom(latDeg, declinationDeg(utcMillis), hourAngle, refraction)
+        val jd = julianDay(utcMillis)
+        val hourAngle = trueSolarMinutes(utcMillis, lonDeg, jd) / 4.0 - 180.0
+        return positionFrom(latDeg, declinationAt(jd), hourAngle, refraction)
     }
 
     /** 太阳赤纬（度）：太阳直射点纬度，北正南负，全年在 ±23.44 度内。 */
-    fun declinationDeg(utcMillis: Long): Double {
-        val t = (julianDay(utcMillis) - J2000_JD) / JULIAN_CENTURY_DAYS
+    fun declinationDeg(utcMillis: Long): Double = declinationAt(julianDay(utcMillis))
+
+    /** 同上，直接以儒略日为参数，供单日轨迹复用。 */
+    private fun declinationAt(jd: Double): Double {
+        val t = (jd - J2000_JD) / JULIAN_CENTURY_DAYS
 
         // 几何平黄经、平近点角、中心差
         val l0 = Angles.normalize360(280.46646 + t * (36_000.76983 + t * 0.0003032))
@@ -106,9 +110,41 @@ object Solar {
     /**
      * 真太阳时（分钟，0..1440），等于 UTC 当日分钟 + 均时差 + 经度修正（4 分钟/度）。
      */
-    fun trueSolarTimeMinutes(utcMillis: Long, lonDeg: Double): Double {
-        val utcMinutes = ((utcMillis % 86_400_000L + 86_400_000L) % 86_400_000L) / 60_000.0
-        return normalizeMinutes(utcMinutes + equationOfTimeMinutes(julianDay(utcMillis)) + 4.0 * lonDeg)
+    fun trueSolarTimeMinutes(utcMillis: Long, lonDeg: Double): Double =
+        trueSolarMinutes(utcMillis, lonDeg, julianDay(utcMillis))
+
+    private fun trueSolarMinutes(utcMillis: Long, lonDeg: Double, jd: Double): Double =
+        normalizeMinutes(utcMinutesOf(utcMillis) + equationOfTimeMinutes(jd) + 4.0 * lonDeg)
+
+    /** 当日 UTC 零点起的分钟数，对负毫秒取模也安全。 */
+    private fun utcMinutesOf(utcMillis: Long): Double =
+        ((utcMillis % 86_400_000L + 86_400_000L) % 86_400_000L) / 60_000.0
+
+    /**
+     * 某一天全天共用的太阳轨迹：赤纬与均时差都只随儒略世纪变化，
+     * 一天内的变化小于 0.001 度，远低于传感器误差，所以提前算一次就够。
+     * 单日采样有 1440 次，逐次重算会白白多出近三万次超越函数调用。
+     */
+    class DayTrack private constructor(
+        private val jd: Double,
+        private val latDeg: Double,
+        private val lonDeg: Double,
+    ) {
+        private val declDeg = declinationAt(jd)
+        private val eotMinutes = equationOfTimeMinutes(jd)
+
+        /** 当日某 UTC 瞬时的太阳位置。 */
+        fun position(utcMillis: Long, refraction: Boolean = true): SolarPosition =
+            positionFrom(latDeg, declDeg, trueSolarMinutes(utcMillis, lonDeg, jd) / 4.0 - 180.0, refraction)
+
+        /** 当日某 UTC 瞬时的真太阳时（分钟，0..1440）。 */
+        fun trueSolarMinutes(utcMillis: Long): Double = Solar.trueSolarMinutes(utcMillis, lonDeg, jd)
+
+        companion object {
+            /** 以当日 0 时（UTC 毫秒）为基准建立轨迹。 */
+            fun ofDayStart(dayStartMillis: Long, latDeg: Double, lonDeg: Double): DayTrack =
+                DayTrack(julianDay(dayStartMillis), latDeg, lonDeg)
+        }
     }
 
     /** NOAA 分段大气折射修正（度），输入几何高度角。 */

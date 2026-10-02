@@ -1,16 +1,15 @@
 package io.github.hecate2.D7.ui.result
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import io.github.hecate2.D7.R
 import io.github.hecate2.D7.core.Angles
 import io.github.hecate2.D7.core.CalcMode
@@ -43,13 +42,13 @@ import kotlin.math.abs
  * 结果页：日期药丸与计算档 → 主结果卡、当天时间线、国标辅助卡、全年曲线 → 点列编辑（删点、切换连线、单点/批量角度编辑）→ 导出与续拍。
  * 计算在后台协程执行，数据变化（续拍、改点）经仓库 StateFlow 自动触发重算。
  */
-class ResultActivity : AppCompatActivity() {
+class ResultActivity : ComponentActivity() {
 
     private enum class Preset { WINTER, DAHAN, EQUINOX, SUMMER, CUSTOM }
 
     private lateinit var binding: ActivityResultBinding
     private lateinit var repository: GroupRepository
-    private lateinit var adapter: PointAdapter
+    private lateinit var pointRows: PointRows
 
     private var group: GroupRecord? = null
     private var preset = Preset.WINTER
@@ -71,14 +70,13 @@ class ResultActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = GroupRepository.get(this)
-        adapter = PointAdapter(
+        pointRows = PointRows(
+            container = binding.pointList,
             scope = lifecycleScope,
             onToggleSegment = ::toggleSegment,
             onDelete = ::deletePoint,
             onEdit = ::editPoint,
         )
-        binding.pointList.layoutManager = LinearLayoutManager(this)
-        binding.pointList.adapter = adapter
 
         binding.pillWinter.setOnClickListener { choosePreset(Preset.WINTER) }
         binding.pillDahan.setOnClickListener { choosePreset(Preset.DAHAN) }
@@ -109,7 +107,9 @@ class ResultActivity : AppCompatActivity() {
         }
         group = g
         if (mode != CalcMode.EXTERNAL_ONLY && g.ceiling.isEmpty()) {
+            // 天花板区被删空时档位失效：退回仅外部，并告知用户为什么结论变了
             mode = CalcMode.EXTERNAL_ONLY
+            toast(getString(R.string.result_mode_ceiling_empty))
         }
         binding.titleResult.text = getString(R.string.result_title, g.name)
         binding.resultMeta.text = getString(
@@ -296,32 +296,21 @@ class ResultActivity : AppCompatActivity() {
     // ---------------- 点列 ----------------
 
     private fun rebuildPoints(g: GroupRecord) {
-        val rows = ArrayList<PointAdapter.Row>(g.external.size + g.ceiling.size)
+        val rows = ArrayList<PointRows.Row>(g.external.size + g.ceiling.size)
         g.external.forEachIndexed { i, p ->
             rows.add(
-                PointAdapter.Row(
+                PointRows.Row(
                     region = Region.EXTERNAL,
                     index = i,
                     point = p,
-                    hasPrev = i > 0,
                     segViaHorizon = i > 0 && g.external[i - 1].gapAfter,
-                    toggleEnabled = i > 0,
                 ),
             )
         }
         g.ceiling.forEachIndexed { i, p ->
-            rows.add(
-                PointAdapter.Row(
-                    region = Region.CEILING,
-                    index = i,
-                    point = p,
-                    hasPrev = i > 0,
-                    segViaHorizon = false,
-                    toggleEnabled = false,
-                ),
-            )
+            rows.add(PointRows.Row(Region.CEILING, i, p, segViaHorizon = false))
         }
-        adapter.submit(rows)
+        pointRows.submit(rows)
         binding.pointsCount.text = getString(
             R.string.result_points_count, g.external.size, g.ceiling.size,
         )

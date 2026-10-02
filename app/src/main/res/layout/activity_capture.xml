@@ -1,89 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/ink"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
     android:paddingStart="12dp"
     android:paddingTop="14dp"
     android:paddingEnd="12dp"
     android:paddingBottom="10dp">
 
-    <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/capture_title"
-        android:textColor="@color/paper"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/groupName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:ellipsize="end"
-        android:gravity="end"
-        android:maxLines="1"
-        android:textColor="@color/smoke"
-        android:textSize="11sp"
-        app:layout_constraintBottom_toBottomOf="@id/title"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/title" />
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/capture_title"
+            android:textColor="@color/paper"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/groupName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
+            android:textColor="@color/smoke"
+            android:textSize="11sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/metaText"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:textColor="@color/smoke"
-        android:textSize="10.5sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title" />
+        android:textSize="10.5sp" />
 
-    <TextView
-        android:id="@+id/readingText"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:textColor="@color/paper"
-        android:textSize="15sp"
-        app:layout_constraintEnd_toStartOf="@id/plus180"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/metaText" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/plus180"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_pill_filled"
-        android:gravity="center"
-        android:minWidth="42dp"
-        android:paddingStart="8dp"
-        android:paddingTop="1dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="1dp"
-        android:text="@string/capture_plus180"
-        android:textColor="@color/ink"
-        android:textSize="10sp"
-        app:layout_constraintBottom_toBottomOf="@id/readingText"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/readingText" />
+        <TextView
+            android:id="@+id/readingText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/paper"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/plus180"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill_filled"
+            android:gravity="center"
+            android:minWidth="42dp"
+            android:paddingStart="8dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="1dp"
+            android:text="@string/capture_plus180"
+            android:textColor="@color/ink"
+            android:textSize="10sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/precisionRow"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/readingText">
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/calibPill"
@@ -126,19 +126,24 @@
             android:textSize="11sp" />
     </LinearLayout>
 
+    <!-- 可伸缩中段：取景器吃掉所有剩余空间，窗口变矮时先压缩它。
+         快门/删除/完成键留在根链末尾，矮窗口（如上下分屏、折叠屏展开）下也不会被挤出屏幕。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
     <FrameLayout
         android:id="@+id/viewfinder"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="8dp"
+        android:layout_weight="1"
         android:background="@drawable/bg_viewfinder"
         android:clipToOutline="true"
-        android:outlineProvider="background"
-        app:layout_constraintBottom_toTopOf="@id/hintText"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/precisionRow">
+        android:outlineProvider="background">
 
         <androidx.camera.view.PreviewView
             android:id="@+id/preview"
@@ -200,36 +205,27 @@
 
     <TextView
         android:id="@+id/hintText"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="2dp"
         android:textColor="@color/smoke"
-        android:textSize="11sp"
-        app:layout_constraintBottom_toTopOf="@id/hintSeg"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/hintSeg"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="6dp"
         android:text="@string/capture_hint_seg"
         android:textColor="@color/moon"
-        android:textSize="11sp"
-        app:layout_constraintBottom_toTopOf="@id/dirRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textSize="11sp" />
 
     <LinearLayout
         android:id="@+id/dirRow"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="6dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@id/coverageRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/dirLeft"
@@ -253,13 +249,10 @@
 
     <LinearLayout
         android:id="@+id/coverageRow"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@id/coverageBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/coverageLabel"
@@ -285,22 +278,18 @@
 
     <io.github.hecate2.D7.view.CoverageBarView
         android:id="@+id/coverageBar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="28dp"
-        android:layout_marginBottom="12dp"
-        app:layout_constraintBottom_toTopOf="@id/buttonRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_marginBottom="12dp" />
+
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/buttonRow"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:baselineAligned="false"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@id/captionRow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:orientation="horizontal">
 
         <FrameLayout
             android:layout_width="0dp"
@@ -362,13 +351,10 @@
 
     <LinearLayout
         android:id="@+id/captionRow"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:baselineAligned="false"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:orientation="horizontal">
 
         <View
             android:layout_width="0dp"
@@ -396,4 +382,4 @@
             android:textSize="9sp" />
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

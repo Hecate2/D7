@@ -120,6 +120,7 @@
     <string name="result_mode_both">外部+天花板</string>
     <string name="result_mode_ceiling">仅天花板</string>
     <string name="result_mode_ceiling_locked">先拍天花板才能用这两档</string>
+    <string name="result_mode_ceiling_empty">天花板区已删空，已切回「仅外部」</string>
     <string name="result_main_label">%1$s 直射日照 · %2$s</string>
     <string name="result_computing">计算中…</string>
     <string name="result_gap_note">全部来自空隙</string>

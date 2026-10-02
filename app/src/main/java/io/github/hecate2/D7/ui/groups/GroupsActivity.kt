@@ -5,18 +5,21 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
+import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import android.app.AlertDialog
+import androidx.activity.ComponentActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import io.github.hecate2.D7.R
 import io.github.hecate2.D7.core.CalcMode
 import io.github.hecate2.D7.data.GroupRecord
@@ -25,6 +28,7 @@ import io.github.hecate2.D7.databinding.ActivityGroupsBinding
 import io.github.hecate2.D7.databinding.DialogDeleteGroupBinding
 import io.github.hecate2.D7.databinding.DialogGroupNameBinding
 import io.github.hecate2.D7.databinding.DialogNewGroupBinding
+import io.github.hecate2.D7.databinding.ItemGroupBinding
 import io.github.hecate2.D7.export.Exporter
 import io.github.hecate2.D7.sensor.FixLocation
 import io.github.hecate2.D7.sensor.LocationCapability
@@ -32,9 +36,11 @@ import io.github.hecate2.D7.sensor.LocationProvider
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.result.ResultActivity
+import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Summaries
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -48,11 +54,10 @@ import kotlin.math.roundToInt
  * 照片组管理（应用入口）。
  * 卡片列表来自仓库的 StateFlow；点卡片进结果页，长按改名、删除或导出；右上「+ 新建」建组后直接进采集页。
  */
-class GroupsActivity : AppCompatActivity() {
+class GroupsActivity : ComponentActivity() {
 
     private lateinit var binding: ActivityGroupsBinding
     private lateinit var repository: GroupRepository
-    private lateinit var adapter: GroupsAdapter
     private val locationProvider by lazy { LocationProvider(this) }
 
     /** 最近一次 GPS 定位结果，建组时若坐标未再手改则沿用其海拔与时区。 */
@@ -79,17 +84,18 @@ class GroupsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = GroupRepository.get(this)
-        adapter = GroupsAdapter(onClick = ::openResult, onLongClick = ::showGroupMenu)
-        binding.groupList.layoutManager = LinearLayoutManager(this)
-        binding.groupList.adapter = adapter
         binding.newButton.setOnClickListener { showNewGroupDialog() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                repository.groups.collect { groups ->
-                    adapter.submit(groups.map { Summaries.cardSummary(it) })
-                    binding.emptyView.isVisible = groups.isEmpty()
-                }
+                // 卡片汇总含每组一次冬至日照精算（约 0.3ms/组），必须在后台线程算，
+                // 否则组数一多，每次采集/改名都会在主线程卡住整个列表。
+                repository.groups
+                    .map { groups -> withContext(Dispatchers.Default) { groups.map { Summaries.cardSummary(it) } } }
+                    .collect { summaries ->
+                        renderGroups(summaries)
+                        binding.emptyView.isVisible = summaries.isEmpty()
+                    }
             }
         }
     }
@@ -106,8 +112,90 @@ class GroupsActivity : AppCompatActivity() {
         locationProvider.shutdown()
     }
 
+    override fun onDestroy() {
+        // 定位权限回调可能晚于对话框消亡，清掉以免持有已失效的视图
+        pendingLocate = null
+        super.onDestroy()
+    }
+
     private fun openResult(group: GroupRecord) {
         startActivity(Intent(this, ResultActivity::class.java).putExtra(Extras.GROUP_ID, group.id))
+    }
+
+    /** 卡片列表行数很少，直接逐张 inflate（无需回收复用）。 */
+    private fun renderGroups(summaries: List<CardSummary>) {
+        binding.groupList.removeAllViews()
+        for (summary in summaries) {
+            val item = ItemGroupBinding.inflate(layoutInflater, binding.groupList, false)
+            bindGroupCard(item, summary)
+            binding.groupList.addView(item.root)
+        }
+    }
+
+    private fun bindGroupCard(item: ItemGroupBinding, summary: CardSummary) {
+        val group = summary.group
+        val context = item.root.context
+        item.name.text = group.name
+
+        val winter = summary.winterMinutes
+        if (winter == null) {
+            item.winterResult.setText(R.string.group_untested)
+            item.winterResult.setTextColor(ContextCompat.getColor(context, R.color.smoke))
+        } else {
+            item.winterResult.text =
+                context.getString(R.string.group_winter, Format.durationShort(context.resources, winter))
+            item.winterResult.setTextColor(ContextCompat.getColor(context, R.color.paper))
+        }
+
+        val hasPoints = summary.externalCount > 0 || summary.ceilingCount > 0
+        val stamp = if (hasPoints) group.updatedAt else group.createdAt
+        val date = Format.dateShort(stamp, group.zoneId)
+        item.meta.text = if (hasPoints) {
+            context.getString(
+                R.string.group_meta_captured,
+                date,
+                Format.coordinate(group.lat, group.lon),
+            )
+        } else {
+            context.getString(R.string.group_meta_unshot, date)
+        }
+
+        if (summary.externalCount >= 2) {
+            item.externalPill.setBackgroundResource(R.drawable.bg_pill)
+            item.externalPill.setTextColor(ContextCompat.getColor(context, R.color.smoke))
+            val prefix = context.getString(R.string.group_external_prefix, summary.externalCount)
+            val percent =
+                context.getString(R.string.group_external_percent, summary.externalCoveredPercent)
+            item.externalPill.text = SpannableStringBuilder(prefix + percent).apply {
+                setSpan(
+                    ForegroundColorSpan(ContextCompat.getColor(context, R.color.paper)),
+                    prefix.length,
+                    prefix.length + percent.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                )
+            }
+        } else {
+            item.externalPill.setBackgroundResource(R.drawable.bg_pill_dashed)
+            item.externalPill.setTextColor(ContextCompat.getColor(context, R.color.smoke))
+            item.externalPill.setText(R.string.group_external_none)
+        }
+
+        if (summary.ceilingCount > 0) {
+            item.ceilingPill.setBackgroundResource(R.drawable.bg_pill_moon)
+            item.ceilingPill.setTextColor(ContextCompat.getColor(context, R.color.moon))
+            item.ceilingPill.text =
+                context.getString(R.string.group_ceiling_pill, summary.ceilingCount)
+        } else {
+            item.ceilingPill.setBackgroundResource(R.drawable.bg_pill_dashed)
+            item.ceilingPill.setTextColor(ContextCompat.getColor(context, R.color.smoke))
+            item.ceilingPill.setText(R.string.group_ceiling_none)
+        }
+
+        item.root.setOnClickListener { openResult(group) }
+        item.root.setOnLongClickListener { view ->
+            showGroupMenu(group, view)
+            true
+        }
     }
 
     private fun showGroupMenu(group: GroupRecord, anchor: View) {
@@ -184,14 +272,7 @@ class GroupsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             if (alsoPhotos && photos.isNotEmpty()) {
                 val failed = withContext(Dispatchers.IO) {
-                    photos.count { uri ->
-                        try {
-                            deletePhoto(Uri.parse(uri))
-                            false
-                        } catch (_: Exception) {
-                            true
-                        }
-                    }
+                    photos.count { !deletePhoto(Uri.parse(it)) }
                 }
                 if (failed > 0) toast(getString(R.string.delete_group_photos_failed, failed))
             }
@@ -199,14 +280,15 @@ class GroupsActivity : AppCompatActivity() {
         }
     }
 
-    /** 删除一张照片：content URI 走 MediaStore；file URI（低版本公共目录或私有目录回退）直接删文件。 */
-    private fun deletePhoto(uri: Uri) {
-        if (uri.scheme == "file") {
-            val file = uri.path?.let(::File) ?: return
-            if (file.exists() && !file.delete()) throw IllegalStateException("delete failed")
-        } else {
-            contentResolver.delete(uri, null, null)
-        }
+    /**
+     * 删除一张照片，返回是否成功。content URI 走 MediaStore（失败返回 0 而非抛异常，
+     * 必须看返回值）；file URI（低版本公共目录或私有目录回退）直接删文件。
+     */
+    private fun deletePhoto(uri: Uri): Boolean = if (uri.scheme == "file") {
+        val file = uri.path?.let(::File) ?: return true
+        !file.exists() || file.delete()
+    } else {
+        runCatching { contentResolver.delete(uri, null, null) > 0 }.getOrDefault(false)
     }
 
     private fun showExportDialog(group: GroupRecord) {

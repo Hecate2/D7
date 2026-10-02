@@ -25,7 +25,7 @@ android {
         }
 
         // 只保留中文与英文资源，剔除各家库自带的几十种语言翻译，显著缩减 resources.arsc
-        resConfigs("zh", "en")
+        resourceConfigurations += setOf("zh", "en")
     }
 
     buildTypes {
@@ -69,10 +69,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
@@ -81,7 +78,12 @@ dependencies {
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
-    implementation(libs.camerax.view)
+    implementation(libs.camerax.view) {
+        // camera-view 的 POM 挂着 appcompat→fragment→viewpager，但它的字节码对这些库零引用
+        // （PreviewView 继承的是 android.widget.FrameLayout）。不显式 exclude 的话，删掉直接依赖
+        // 只会让 Gradle 把 appcompat 降到 camera-view 要求的 1.1.0，体积一点不降。
+        exclude(group = "androidx.appcompat")
+    }
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
