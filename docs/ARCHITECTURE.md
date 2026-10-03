@@ -143,6 +143,16 @@
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
+**release 签名。** 签名材料是仓库根目录的 `release.jks` 与 `keystore.properties`，两者均在 `.gitignore` 内，不入库。生成方式：
+
+```
+keytool -genkeypair -keystore release.jks -keyalg RSA -keysize 4096 \
+  -validity 10000 -alias d7 -dname "CN=D7 Sunlight, O=D7, C=CN"
+printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=<密码>\n' > keystore.properties
+```
+
+`app/build.gradle.kts` 读 `keystore.properties`，文件不存在时 release 产物**退化为未签名**而不报错——这样 clone 后的仓库仍能 `assembleRelease`，只是装不上设备。备份提醒：keystore 一旦丢失或密码遗忘，已发布的包无法覆盖更新，两台设备也无法装同一个应用（签名必须一致）。
+
 常用命令：`./gradlew :core:test`（算法单测）、`./gradlew :app:assembleDebug`（调试包）、`./gradlew :app:assembleRelease`（发布包，产物名带版本号）、`./gradlew :app:connectedDebugAndroidTest`（仪器测试，在已连接的模拟器或真机上运行，多设备时用 `ANDROID_SERIAL` 指定；该任务结束会自动卸载应用）。装机若 `installDebug` 遇到 ddmlib 超时，可改用 `adb install -r` 直接安装。
 
 ## 13. 实施阶段与提交计划

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,15 @@ plugins {
 
 // 版本号集中定义：versionName 与 release 产物文件名共用
 val appVersionName = "0.1.1"
+
+// 签名材料放在仓库根目录的 keystore.properties（已 gitignore），文件不存在时
+// release 产物退化为未签名——这样 clone 后的仓库仍能 assembleRelease，只是装不上设备。
+// 首次生成：keytool -genkeypair -keystore release.jks -keyalg RSA -keysize 4096 \
+//   -validity 10000 -alias d7 -dname "CN=D7 Sunlight, O=D7, C=CN"
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
 
 android {
     namespace = "io.github.hecate2.D7"
@@ -28,6 +39,17 @@ android {
         resourceConfigurations += setOf("zh")
     }
 
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -36,6 +58,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 有 keystore 才签名；没有时产物未签名，装不上设备但不阻断构建
+            if (keystoreProps.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

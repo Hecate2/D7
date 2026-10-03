@@ -23,3 +23,8 @@ local.properties
 *.apk
 *.aab
 captures/
+
+# 签名材料：keystore 与密码一律不入库
+*.jks
+*.keystore
+keystore.properties
