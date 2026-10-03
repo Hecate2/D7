@@ -73,6 +73,9 @@ class GroupRepository private constructor(private val file: File) {
     private val _groups = MutableStateFlow<List<GroupRecord>>(emptyList())
     val groups: StateFlow<List<GroupRecord>> = _groups.asStateFlow()
 
+    /** 守卫所有「读-改-写」整段：见 [update] 与 [publish] 的说明。 */
+    private val stateLock = Any()
+
     init {
         _groups.value = readStore().groups
     }
@@ -85,7 +88,7 @@ class GroupRepository private constructor(private val file: File) {
         lon: Double,
         altitude: Double,
         zoneId: String,
-    ): GroupRecord {
+    ): GroupRecord = synchronized(stateLock) {
         val now = System.currentTimeMillis()
         val group = GroupRecord(
             id = UUID.randomUUID().toString(),
@@ -98,12 +101,12 @@ class GroupRepository private constructor(private val file: File) {
             updatedAt = now,
         )
         publish(_groups.value + group)
-        return group
+        group
     }
 
     fun renameGroup(id: String, name: String) = update(id) { it.copy(name = name) }
 
-    fun deleteGroup(id: String) {
+    fun deleteGroup(id: String) = synchronized(stateLock) {
         publish(_groups.value.filterNot { it.id == id })
     }
 
@@ -174,13 +177,20 @@ class GroupRepository private constructor(private val file: File) {
         update(groupId) { group -> group.withRegion(region, points) }
 
     private fun update(id: String, transform: (GroupRecord) -> GroupRecord) {
-        val current = _groups.value
-        val index = current.indexOfFirst { it.id == id }
-        if (index < 0) return
-        val updated = transform(current[index]).copy(updatedAt = System.currentTimeMillis())
-        publish(current.toMutableList().also { it[index] = updated })
+        synchronized(stateLock) {
+            val current = _groups.value
+            val index = current.indexOfFirst { it.id == id }
+            if (index < 0) return
+            val updated = transform(current[index]).copy(updatedAt = System.currentTimeMillis())
+            publish(current.toMutableList().also { it[index] = updated })
+        }
     }
 
+    /**
+     * 发射新状态并排入落盘。**只允许在持有 [stateLock] 时调用**：
+     * 所有修改都是「读当前列表 → 改一处 → 写回」，不串行化就会丢修改
+     * （拍照协程与界面/后台线程同时改同一组时实测丢过 19/400 个点）。
+     */
     private fun publish(groups: List<GroupRecord>) {
         _groups.value = groups
         val store = Store(groups = groups)
