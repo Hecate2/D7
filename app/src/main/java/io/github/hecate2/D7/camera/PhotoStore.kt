@@ -59,14 +59,18 @@ class PhotoStore(private val context: Context) {
                 ContextCompat.getMainExecutor(context),
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        if (cont.isActive) cont.resume(true)
+                        // 续体已取消（页面销毁、用户切走）：正常路径的 temp.delete() 不会再执行
+                        if (cont.isActive) cont.resume(true) else temp.delete()
                     }
 
                     override fun onError(exception: ImageCaptureException) {
-                        if (cont.isActive) cont.resume(false)
+                        if (cont.isActive) cont.resume(false) else temp.delete()
                     }
                 },
             )
+            // CameraX 尚未回调时协程就被取消（此时 JPEG 可能已建好也可能还没建）：
+            // 先删一次，若它之后才把 JPEG 落盘，回调里还会再删一次，两条路径合起来不留垃圾
+            cont.invokeOnCancellation { temp.delete() }
         }
         if (!saved) {
             temp.delete()

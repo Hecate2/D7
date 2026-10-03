@@ -4,7 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 
 class SunlightTest {
 
@@ -137,6 +139,84 @@ class SunlightTest {
             CalcMode.EXTERNAL_ONLY, LocalDate.of(2026, 1, 20), 8 * 60, 16 * 60,
         )
         assertTrue("窗口内有效直射分钟=$r", r in 440..510)
+    }
+
+    @Test
+    fun dstDayMapsEveryWallClockMinuteToItsOwnInstant() {
+        // 悉尼 2026-10-04 拨快（23 小时日）与 2026-04-05 拨回（25 小时日）：
+        // 采样必须严格贴着当地钟表分钟铺开，不多不少。
+        // 修复前是「本地 0 时 + n 分钟」，拨快日会把次日 00:00-00:59 算进来，
+        // 拨回日则漏掉当天 23:00-23:59 并把回拨重复的那一小时算两遍。
+        val zone = ZoneId.of("Australia/Sydney")
+
+        // 拨快日：02:00-02:59 这个钟面时间不存在，那一天只有 1380 个有效分钟，
+        // 最后一个有效瞬时必须是当地 23:59，而不是次日的 00:59。
+        val gapDay = LocalDate.of(2026, 10, 4)
+        val gapClock = SunlightEvaluator.DayClock(gapDay, zone)
+        val gapInstants = (0 until SunlightEvaluator.MINUTES_PER_DAY)
+            .map { gapClock.instantAt(it) }
+        assertEquals("拨快日只剩 1380 个有效分钟", 1380, gapInstants.count { it != null })
+        assertEquals("缺口分钟的钟面时间不存在", 60, (120 until 180).count { gapClock.instantAt(it) == null })
+        assertEquals(
+            "拨快日最后一个瞬时应是当地 23:59，不是次日 00:59",
+            gapDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 60_000L,
+            gapInstants.last(),
+        )
+        assertEquals(
+            "拨快日的瞬时应互不重复", 1380, gapInstants.filterNotNull().toSet().size,
+        )
+
+        // 拨回日：02:00-02:59 出现两次，每个钟表分钟只算一次（取较早偏移），
+        // 最后一个瞬时必须是当地 23:59，即次日本地 0 时前一分。
+        val overlapDay = LocalDate.of(2026, 4, 5)
+        val overlapClock = SunlightEvaluator.DayClock(overlapDay, zone)
+        val overlapInstants = (0 until SunlightEvaluator.MINUTES_PER_DAY)
+            .map { overlapClock.instantAt(it) }
+        assertTrue("拨回日每个钟表分钟都有瞬时", overlapInstants.none { it == null })
+        assertEquals(
+            "拨回日最后一个瞬时应是当地 23:59",
+            overlapDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 60_000L,
+            overlapInstants.last(),
+        )
+        assertEquals(
+            "拨回日的瞬时应互不重复", 1440, overlapInstants.filterNotNull().toSet().size,
+        )
+
+        // 端到端：切换日报告的日出分钟必须就是那一刻的真实钟面读数。
+        // 修复前这里整整差 60 分钟（例：06:30 的日出被报成 05:30）。
+        for (day in listOf(gapDay, overlapDay)) {
+            val clock = SunlightEvaluator.DayClock(day, zone)
+            for (minute in listOf(
+                SunlightEvaluator.evaluate(
+                    -33.87, 151.21, zone.id, emptyList(), emptyList(),
+                    CalcMode.EXTERNAL_ONLY, day,
+                ).sunriseMinute!!,
+                SunlightEvaluator.evaluate(
+                    -33.87, 151.21, zone.id, emptyList(), emptyList(),
+                    CalcMode.EXTERNAL_ONLY, day,
+                ).sunsetMinute!!,
+            )) {
+                val reading = Instant.ofEpochMilli(clock.instantAt(minute)!!).atZone(zone)
+                assertEquals(
+                    "$day 的第 $minute 分钟应读作 $minute 分钟",
+                    minute, reading.hour * 60 + reading.minute,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun dstDayLengthIsNotAlwaysTwentyFourHours() {
+        // 守住上面那条回归的前提：Sydney 2026 真的有一个 23 小时日和一个 25 小时日，
+        // 否则分钟映射测试会退化成与普通日期无异
+        fun dayHours(date: LocalDate): Long {
+            val zone = ZoneId.of("Australia/Sydney")
+            return (date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() -
+                date.atStartOfDay(zone).toInstant().toEpochMilli()) / 3_600_000L
+        }
+        assertEquals(23L, dayHours(LocalDate.of(2026, 10, 4)))
+        assertEquals(25L, dayHours(LocalDate.of(2026, 4, 5)))
+        assertEquals(24L, dayHours(LocalDate.of(2026, 6, 21)))
     }
 
     @Test
