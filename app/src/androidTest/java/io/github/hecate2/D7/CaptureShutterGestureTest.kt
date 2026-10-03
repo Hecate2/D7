@@ -65,9 +65,19 @@ class CaptureShutterGestureTest {
         aimAt(TEST_ELEVATION_DEG)
     }
 
-    /** 锁定/解除瞄准仰角（null恢复真实读数）。 */
+    /**
+     * 锁定/解除瞄准仰角（null 恢复真实读数）。
+     *
+     * 反复重试直到生效：[OrientationSensor] 在 onStart 才创建，若在它之前调用，
+     * override 会落在null 上被静默丢弃，于是后续按压又用回模拟器固定的负仰角。
+     * 这正是全量 21 个用例一起跑时偶发失败、单独跑却稳定通过的原因。
+     */
     private fun aimAt(elevationDeg: Double?) {
-        scene?.onActivity { it.setAimElevationForTest(elevationDeg) }
+        TestSupport.waitUntil(8000) {
+            var applied = false
+            scene?.onActivity { applied = it.setAimElevationForTest(elevationDeg) }
+            applied
+        }
     }
 
     @After

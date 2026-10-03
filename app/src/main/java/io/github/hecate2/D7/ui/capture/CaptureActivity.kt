@@ -42,7 +42,9 @@ import io.github.hecate2.D7.sensor.LocationProvider
 import io.github.hecate2.D7.sensor.OrientationSensor
 import io.github.hecate2.D7.sensor.Pose
 import io.github.hecate2.D7.ui.Extras
+import io.github.hecate2.D7.ui.Grade
 import io.github.hecate2.D7.ui.result.ResultActivity
+import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
 import kotlin.math.abs
@@ -172,6 +174,9 @@ class CaptureActivity : ComponentActivity() {
         super.onStop()
         stopPressFeedback()
         orientation?.stop()
+        // 传感器实例在 onStart/onStop 之间复用，测试用的仰角覆盖必须随停止清掉，
+        // 否则下次 onStart 会带着它继续跑，掩盖真实读数
+        orientation?.aimElevationOverrideDeg = null
         sensorRunning = false
         uiHandler.removeCallbacksAndMessages(null)
         jitterAz.clear()
@@ -300,10 +305,15 @@ class CaptureActivity : ComponentActivity() {
      * 模拟器的合成姿态约为 -4.7 度（略微下倾），会被 [AimGuard] 当成瞄地面拒绝记录；
      * 真机竖持朝楼顶时仰角为正，走不到那个分支，故生产逻辑不动，只给测试留个口子。
      * 传 null 恢复真实读数。
+     *
+     * 返回是否真的设上——传感器在 onStart 才创建，调用过早会落在 null 上，
+     * 调用方据此重试即可，不必自己猜时机。
      */
     @androidx.annotation.VisibleForTesting
-    fun setAimElevationForTest(elevationDeg: Double?) {
-        orientation?.aimElevationOverrideDeg = elevationDeg
+    fun setAimElevationForTest(elevationDeg: Double?): Boolean {
+        val sensor = orientation ?: return false
+        sensor.aimElevationOverrideDeg = elevationDeg
+        return true
     }
 
     /**
@@ -387,35 +397,40 @@ class CaptureActivity : ComponentActivity() {
 
     /** 刷新两枚精度药丸：罗盘校准取系统精度回调（未回调前为未知），读数精度取抖动档位。 */
     private fun updatePrecisionUi() {
-        val calibText = when (lastAccuracy) {
-            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> R.string.capture_calib_high
-            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> R.string.capture_calib_medium
-            SensorManager.SENSOR_STATUS_ACCURACY_LOW -> R.string.capture_calib_low
-            SensorManager.SENSOR_STATUS_UNRELIABLE -> R.string.capture_calib_unreliable
-            else -> R.string.capture_calib_unknown
-        }
-        val calibColor = when (lastAccuracy) {
-            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> R.color.precision_high
-            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> R.color.precision_mid
+        val calibGrade = when (lastAccuracy) {
+            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> Grade.GOOD
+            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> Grade.MID
             SensorManager.SENSOR_STATUS_ACCURACY_LOW,
-            SensorManager.SENSOR_STATUS_UNRELIABLE -> R.color.precision_low
-            else -> R.color.precision_unknown
+            SensorManager.SENSOR_STATUS_UNRELIABLE -> Grade.LOW
+            else -> Grade.UNKNOWN
         }
-        paintPill(binding.calibPill, calibText, calibColor)
+        paintPill(
+            binding.calibPill,
+            when (calibGrade) {
+                Grade.GOOD -> R.string.capture_calib_high
+                Grade.MID -> R.string.capture_calib_medium
+                Grade.LOW -> R.string.capture_calib_low
+                Grade.UNKNOWN -> R.string.capture_calib_unreliable
+            },
+            calibGrade.colorRes(),
+        )
 
-        val jitterText = when (jitterLevel) {
-            LEVEL_HIGH -> R.string.capture_jitter_high
-            LEVEL_MEDIUM -> R.string.capture_jitter_medium
-            LEVEL_LOW -> R.string.capture_jitter_low
-            else -> R.string.capture_jitter_unknown
+        val jitterGrade = when (jitterLevel) {
+            LEVEL_HIGH -> Grade.GOOD
+            LEVEL_MEDIUM -> Grade.MID
+            LEVEL_LOW -> Grade.LOW
+            else -> Grade.UNKNOWN
         }
-        val jitterColor = when (jitterLevel) {
-            LEVEL_HIGH -> R.color.precision_high
-            LEVEL_MEDIUM -> R.color.precision_mid
-            LEVEL_LOW -> R.color.precision_low
-            else -> R.color.precision_unknown
-        }
-        paintPill(binding.jitterPill, jitterText, jitterColor)
+        paintPill(
+            binding.jitterPill,
+            when (jitterGrade) {
+                Grade.GOOD -> R.string.capture_jitter_high
+                Grade.MID -> R.string.capture_jitter_medium
+                Grade.LOW -> R.string.capture_jitter_low
+                Grade.UNKNOWN -> R.string.capture_jitter_unknown
+            },
+            jitterGrade.colorRes(),
+        )
     }
 
     private fun paintPill(view: TextView, textRes: Int, colorRes: Int) {

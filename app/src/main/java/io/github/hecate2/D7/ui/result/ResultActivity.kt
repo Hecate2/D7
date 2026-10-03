@@ -25,7 +25,9 @@ import io.github.hecate2.D7.databinding.DialogPointAnglesBinding
 import io.github.hecate2.D7.databinding.DialogPointsBulkBinding
 import io.github.hecate2.D7.export.Exporter
 import io.github.hecate2.D7.ui.Extras
+import io.github.hecate2.D7.ui.Grade
 import io.github.hecate2.D7.ui.capture.CaptureActivity
+import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Summaries
@@ -277,16 +279,18 @@ class ResultActivity : ComponentActivity() {
             return
         }
         val percent = Summaries.coveragePercent(g.lat, g.external)
-        val (textRes, colorRes) = when {
-            percent < COVERAGE_LOW ->
-                R.string.result_coverage_low to R.color.precision_low
-            percent < COVERAGE_MID ->
-                R.string.result_coverage_mid to R.color.precision_mid
-            else ->
-                R.string.result_coverage_ok to R.color.precision_unknown
+        val grade = when {
+            percent < COVERAGE_LOW -> Grade.LOW
+            percent < COVERAGE_MID -> Grade.MID
+            else -> Grade.UNKNOWN
+        }
+        val textRes = when (grade) {
+            Grade.LOW -> R.string.result_coverage_low
+            Grade.MID -> R.string.result_coverage_mid
+            else -> R.string.result_coverage_ok
         }
         view.text = getString(textRes, percent)
-        view.setTextColor(ContextCompat.getColor(this, colorRes))
+        view.setTextColor(ContextCompat.getColor(this, grade.colorRes()))
     }
 
     private fun curveKey(g: GroupRecord, mode: CalcMode, year: Int): String = buildString {
