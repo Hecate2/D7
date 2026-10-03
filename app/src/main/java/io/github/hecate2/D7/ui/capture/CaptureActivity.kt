@@ -47,6 +47,7 @@ import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.keepScreenOn
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 
@@ -129,6 +130,7 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        keepScreenOn()
 
         groupId = intent.getStringExtra(Extras.GROUP_ID).orEmpty()
         val group = repository.get(groupId)

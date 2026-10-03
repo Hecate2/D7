@@ -30,6 +30,7 @@ import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.keepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import io.github.hecate2.D7.util.toShotPoints
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +72,7 @@ class ResultActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        keepScreenOn()
 
         repository = GroupRepository.get(this)
         pointRows = PointRows(

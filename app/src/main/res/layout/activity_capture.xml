@@ -8,7 +8,7 @@
     android:paddingStart="12dp"
     android:paddingTop="14dp"
     android:paddingEnd="12dp"
-    android:paddingBottom="10dp">
+    android:paddingBottom="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -138,8 +138,8 @@
         android:id="@+id/viewfinder"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
         android:layout_weight="1"
         android:background="@drawable/bg_viewfinder"
         android:clipToOutline="true"
@@ -250,7 +250,7 @@
         android:id="@+id/hintSeg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
+        android:layout_marginBottom="4dp"
         android:text="@string/capture_hint_seg"
         android:textColor="@color/moon"
         android:textSize="11sp" />
@@ -259,7 +259,7 @@
         android:id="@+id/dirRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
+        android:layout_marginBottom="4dp"
         android:orientation="horizontal">
 
         <TextView
@@ -269,10 +269,10 @@
             android:textColor="@color/smoke"
             android:textSize="10sp" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+    <View
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
 
         <TextView
             android:id="@+id/dirRight"
@@ -315,10 +315,13 @@
         android:id="@+id/coverageBar"
         android:layout_width="match_parent"
         android:layout_height="28dp"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginBottom="6dp" />
 
     </LinearLayout>
 
+    <!-- 底部只留这一行：快门提示已并入 hintSeg（原文与它重复），删除的长按提示
+         贴在删除键正下方，省掉原先单独的 captionRow 一整行。三个控件都占 52dp、
+         顶端对齐，删除键与快门中心线保持一致。 -->
     <LinearLayout
         android:id="@+id/buttonRow"
         android:layout_width="match_parent"
@@ -328,7 +331,7 @@
 
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:layout_weight="1">
 
             <TextView
@@ -350,7 +353,7 @@
 
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:layout_weight="1">
 
             <View
@@ -371,60 +374,43 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="52dp">
+
+                <TextView
+                    android:id="@+id/deleteButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="@drawable/bg_button_outline"
+                    android:gravity="center"
+                    android:minWidth="58dp"
+                    android:paddingStart="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/capture_delete"
+                    android:textColor="@color/paper"
+                    android:textSize="11sp" />
+            </FrameLayout>
 
             <TextView
-                android:id="@+id/deleteButton"
+                android:id="@+id/deleteHint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end|center_vertical"
-                android:background="@drawable/bg_button_outline"
-                android:gravity="center"
-                android:minWidth="58dp"
-                android:paddingStart="14dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="7dp"
-                android:text="@string/capture_delete"
-                android:textColor="@color/paper"
-                android:textSize="11sp" />
-        </FrameLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/captionRow"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:orientation="horizontal">
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/shutterHint"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/capture_shutter_hint"
-            android:textColor="@color/smoke"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/deleteHint"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="@string/capture_delete_hint"
-            android:textColor="@color/smoke"
-            android:textSize="9sp" />
+                android:layout_gravity="end"
+                android:layout_marginTop="3dp"
+                android:text="@string/capture_delete_hint"
+                android:textColor="@color/smoke"
+                android:textSize="9sp" />
+        </LinearLayout>
     </LinearLayout>
 
 </LinearLayout>

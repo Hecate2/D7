@@ -19,7 +19,9 @@ import io.github.hecate2.D7.core.Solar
 import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.sensor.Pose
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.tan
@@ -210,6 +212,9 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
 
     private val path = Path()
     private val pt = FloatArray(2)
+
+    /** [Projector.screenDown] 等方向向量的暂存，避免逐帧装箱。 */
+    private val scratch = FloatArray(2)
     private val arcRect = RectF()
 
     /** 拍摄点转算法点的缓存：点列按引用比对，拍照/删点后自然失效。 */
@@ -281,26 +286,62 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
 
     /**
      * 地面层：地平线（仰角 0）以下填土色，仿飞机姿态仪的地面。
-     * 沿方位每 [GROUND_AZ_STEP] 度取一点投影，投影失败（相机背后）即断开。
-     * 折线末端向下延伸到 [FAR_DOWN]（远超画面底边）后闭合，靠画布自身裁切，
-     * 不用在可见段内部猜测闭合点——那样会拉出横穿画面的错误斜边。
+     *
+     * 地平线是过球心的大圆，在 ENU 里就是一个过原点的平面，而针孔投影把过原点的
+     * 平面映成直线——所以它必定是一条直线，取两个可投影点就足以定出整条线，不必沿弧采样。
+     * 原先沿方位采样且只闭合最后一段折线，而可见弧跨过方位 0（正对北方拍照）时会断成
+     * 两段，前半段整个被丢掉，这就是地面填不满的原因。
+     *
+     * 地面一侧的延伸方向取[世界下方在屏幕上的方向][Projector.screenDown]而不是固定向下：
+     * 传感器固定在机身上，手机横过来时地平线是一条竖直线，固定向下闭合只会拉出一条细长
+     * 斜条而不是整片地面。
      */
     private fun drawGround(canvas: Canvas, projector: Projector) {
-        path.reset()
-        var started = false
+        var ax = 0f
+        var ay = 0f
+        var bx = 0f
+        var by = 0f
+        var haveA = false
+        var haveB = false
         for (az in 0 until 360 step GROUND_AZ_STEP) {
-            if (projector.project(az.toDouble(), 0.0, pt)) {
-                if (started) path.lineTo(pt[0], pt[1]) else {
-                    path.moveTo(pt[0], pt[1])
-                    started = true
-                }
-            } else {
-                started = false
+            if (!projector.project(az.toDouble(), 0.0, pt)) continue
+            if (!haveA) {
+                ax = pt[0]
+                ay = pt[1]
+                haveA = true
+            } else if (abs(pt[0] - ax) > 1f || abs(pt[1] - ay) > 1f) {
+                bx = pt[0]
+                by = pt[1]
+                haveB = true
+                break
             }
         }
-        if (!started) return
-        path.lineTo(FAR_DOWN, FAR_DOWN)
-        path.lineTo(-FAR_DOWN, FAR_DOWN)
+        // 抬头看天：地平线整圈都在相机背后（z ≤ 0），屏幕上不该出现地面
+        if (!haveA || !haveB) return
+
+        var dx = bx - ax
+        var dy = by - ay
+        val lineLen = hypot(dx, dy)
+        if (lineLen < 1f) return
+        dx /= lineLen
+        dy /= lineLen
+
+        projector.screenDown(scratch)
+        var ex = scratch[0]
+        var ey = scratch[1]
+        val downLen = hypot(ex, ey)
+        // 几乎正对着天顶时世界下方投影退化到零向量，此时地面本就在无穷远，不画
+        if (downLen < 1e-3f) return
+        ex /= downLen
+        ey /= downLen
+
+        // 地平线两侧各延伸 FAR_DOWN，再沿地面方向推出同样远的一个平行四边形，
+        // 靠画布自身裁切，不在可见范围内猜测闭合点
+        path.reset()
+        path.moveTo(ax - dx * FAR_DOWN, ay - dy * FAR_DOWN)
+        path.lineTo(bx + dx * FAR_DOWN, by + dy * FAR_DOWN)
+        path.lineTo(bx + dx * FAR_DOWN + ex * FAR_DOWN, by + dy * FAR_DOWN + ey * FAR_DOWN)
+        path.lineTo(ax - dx * FAR_DOWN + ex * FAR_DOWN, ay - dy * FAR_DOWN + ey * FAR_DOWN)
         path.close()
         canvas.drawPath(path, groundPaint)
     }
@@ -541,6 +582,18 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
             out[0] = cx + x / z * focal
             out[1] = cy - y / z * focal
             return true
+        }
+
+        /**
+         * 世界「下」（ENU 的 -z 方向）在屏幕上的方向，写入 [out]，长度不保证为 1。
+         *
+         * 不能当成「屏幕正下方」用：传感器固定在机身上，手机横过来时世界下方在画面里
+         * 偏到了侧面，地平线也随之从水平线变成竖直线。
+         */
+        fun screenDown(out: FloatArray) {
+            // 远处方向 d 的屏幕偏移正比于 (d·right, -d·up)，取 d = (0, 0, -1)
+            out[0] = -right[2]
+            out[1] = up[2]
         }
     }
 }

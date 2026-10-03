@@ -38,6 +38,7 @@ import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.keepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -89,6 +90,7 @@ class GroupsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGroupsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        keepScreenOn()
 
         repository = GroupRepository.get(this)
         binding.newButton.setOnClickListener { showNewGroupDialog() }
