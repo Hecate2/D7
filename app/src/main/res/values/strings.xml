@@ -68,7 +68,7 @@
     <string name="capture_hint_north">面向南，从右（西）向左（东）依次拍</string>
     <string name="capture_hint_south">面向北，从右（东）向左（西）依次拍</string>
     <string name="capture_hint_tropic">赤道附近：太阳可能在南也可能在北，拍你关心的那一面</string>
-    <string name="capture_hint_seg">短按连线 · 按住不动即记一个地平线空隙点</string>
+    <string name="capture_hint_seg">短按连线\n长按记地平线空隙点</string>
     <string name="capture_dir_first_west">西·先拍</string>
     <string name="capture_dir_first_east">东·先拍</string>
     <string name="capture_dir_last_east">东·后拍</string>
@@ -81,7 +81,7 @@
     <string name="capture_delete">删除</string>
     <string name="capture_shutter_hint">短按连线 · 按住记空隙</string>
     <string name="capture_press_hint">按住不放：新点经地平线连到上一点</string>
-    <string name="capture_delete_hint">长按·删右侧最近点</string>
+    <string name="capture_delete_hint">长按删右侧最近点</string>
     <string name="capture_camera_needed">需要相机权限才能取景拍摄\n点此授权</string>
     <string name="capture_camera_failed">相机启动失败，仍可记录角度</string>
     <string name="capture_sensor_missing">本机缺少姿态传感器，无法采集仰角与方位</string>
@@ -95,7 +95,7 @@
     <string name="capture_calib_medium">罗盘校准 中</string>
     <string name="capture_calib_low">罗盘校准 低 · 画8字</string>
     <string name="capture_calib_unreliable">罗盘未校准 · 画8字</string>
-    <string name="capture_below_horizon">手机抬太高，瞄到地面了\n把镜头抬到地平线以上</string>
+    <string name="capture_below_horizon">仰角低于0度\n把镜头抬到地平线以上</string>
     <string name="capture_jitter_unknown">读数精度 未知</string>
     <string name="capture_jitter_high">读数精度 高</string>
     <string name="capture_jitter_medium">读数精度 中</string>
