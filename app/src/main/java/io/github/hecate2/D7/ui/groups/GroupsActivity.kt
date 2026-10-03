@@ -122,6 +122,18 @@ class GroupsActivity : ComponentActivity() {
         startActivity(Intent(this, ResultActivity::class.java).putExtra(Extras.GROUP_ID, group.id))
     }
 
+    /**
+     * 点卡片：已经拍过点的看结果；一个点都没有的新组直接进采集页——
+     * 空组的结果页没有任何信息量，而新建组后想接着拍还要再点一次「回采集续拍」。
+     */
+    private fun openGroup(group: GroupRecord) {
+        if (group.external.isEmpty() && group.ceiling.isEmpty()) {
+            startActivity(Intent(this, CaptureActivity::class.java).putExtra(Extras.GROUP_ID, group.id))
+        } else {
+            openResult(group)
+        }
+    }
+
     /** 卡片列表行数很少，直接逐张 inflate（无需回收复用）。 */
     private fun renderGroups(summaries: List<CardSummary>) {
         binding.groupList.removeAllViews()
@@ -191,7 +203,7 @@ class GroupsActivity : ComponentActivity() {
             item.ceilingPill.setText(R.string.group_ceiling_none)
         }
 
-        item.root.setOnClickListener { openResult(group) }
+        item.root.setOnClickListener { openGroup(group) }
         item.root.setOnLongClickListener { view ->
             showGroupMenu(group, view)
             true

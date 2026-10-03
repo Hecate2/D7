@@ -15,7 +15,11 @@ object TestSupport {
         repository.groups.value.forEach { repository.deleteGroup(it.id) }
     }
 
-    /** 轮询等待条件成立并返回其非空结果；超时抛 AssertionError 供用例失败。 */
+    /**
+     * 轮询等待条件成立。**条件请返回可空值**：[waitFor] 见到非 null 就返回，
+     * 而 Boolean 永远非 null，直接传 `{ x == 1 }` 会第一轮就返回 false 而不等待。
+     * 只判条件的场合用 [waitUntil]。
+     */
     fun <T : Any> waitFor(timeoutMs: Long = 5000, condition: () -> T?): T {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
@@ -23,6 +27,11 @@ object TestSupport {
             Thread.sleep(50)
         }
         throw AssertionError("等待条件超时（${timeoutMs}ms）")
+    }
+
+    /** 轮询等待布尔条件变 true；超时抛 AssertionError。 */
+    fun waitUntil(timeoutMs: Long = 5000, condition: () -> Boolean) {
+        waitFor(timeoutMs) { condition().takeIf { it } }
     }
 
     /** 往 Pictures/D7/<组名>/ 插入一张测试图片，返回其 MediaStore URI。 */

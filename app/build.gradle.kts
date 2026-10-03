@@ -5,7 +5,7 @@ plugins {
 }
 
 // 版本号集中定义：versionName 与 release 产物文件名共用
-val appVersionName = "0.1.0"
+val appVersionName = "0.1.1"
 
 android {
     namespace = "io.github.hecate2.D7"
@@ -15,7 +15,7 @@ android {
         applicationId = "io.github.hecate2.D7"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = 2
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -9,7 +9,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.animation.ValueAnimator
 import android.os.SystemClock
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
@@ -56,6 +61,21 @@ class CaptureActivity : ComponentActivity() {
         private const val LONG_PRESS_MS = 450L
         private const val POSE_THROTTLE_MS = 30L
 
+        /**
+         * 「显示线」对话框的条目（文案与线色成对），下标顺序与 [CaptureSettings] 的
+         * setLineChecked/lineChecked 一致。线色与 [io.github.hecate2.D7.view.ViewfinderOverlayView]
+         * 画线时取的是同一批 @color，条目文字即用它上色，所见即所画。
+         */
+        private val LINE_ITEMS = arrayOf(
+            R.string.line_summer to R.color.summer,
+            R.string.line_equinox to R.color.equinox,
+            R.string.line_winter to R.color.winter,
+            R.string.line_today to R.color.paper,
+            R.string.line_segments to R.color.paper,
+            R.string.line_horizon to R.color.smoke,
+            R.string.line_vertical to R.color.smoke,
+        )
+
         // 读数精度（抖动）：最近窗口内极差的阈值与档位
         private const val JITTER_WINDOW = 24
         private const val JITTER_STEADY_DEG = 0.8
@@ -89,7 +109,8 @@ class CaptureActivity : ComponentActivity() {
     private val jitterEl = ArrayDeque<Double>()
     private var jitterLevel = LEVEL_UNKNOWN
 
-    private val deleteHandler = Handler(Looper.getMainLooper())
+    /** 快门长按与删除长按共用的主线程延时队列。 */
+    private val uiHandler = Handler(Looper.getMainLooper())
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -144,9 +165,10 @@ class CaptureActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        stopPressFeedback()
         orientation?.stop()
         sensorRunning = false
-        deleteHandler.removeCallbacksAndMessages(null)
+        uiHandler.removeCallbacksAndMessages(null)
         jitterAz.clear()
         jitterEl.clear()
         jitterLevel = LEVEL_UNKNOWN
@@ -373,33 +395,65 @@ class CaptureActivity : ComponentActivity() {
 
     // ---------- 快门（短按连线 / 长按经地平线断开） ----------
 
+    /**
+     * 按住快门时的进度动画：450ms 走完即触发长按记录。
+     * 动画帧只改一个 float，overlay 收到后 invalidate，不做额外测量与分配。
+     */
+    private val pressAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = LONG_PRESS_MS
+        addUpdateListener { binding.overlay.pressProgress = it.animatedValue as Float }
+    }
+
+    /**
+     * 快门手势：
+     * 短按在抬手时记录连线点；长按在按住满 [LONG_PRESS_MS] 时就地记录经地平线推断的空隙点，
+     * 之后无论按多久都不再记录，抬手也不补记——必须松手再按才算下一次。
+     * 按住期间手指滑出按钮即取消本次操作：未到阈值时什么也不记。
+     */
     private fun setupShutter() {
         var downAt = 0L
         var canceled = false
+        var longRecorded = false
+        val longPressRunnable = Runnable {
+            if (canceled) return@Runnable
+            longRecorded = true
+            binding.shutter.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            onShutter(true)
+        }
         binding.shutter.setOnTouchListener { view, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downAt = SystemClock.uptimeMillis()
                     canceled = false
+                    longRecorded = false
                     view.alpha = 0.6f
+                    startPressFeedback()
+                    uiHandler.postDelayed(longPressRunnable, LONG_PRESS_MS)
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
                     if (!canceled && !insideView(view, event)) {
                         canceled = true
+                        uiHandler.removeCallbacks(longPressRunnable)
                         view.alpha = 1f
+                        stopPressFeedback()
                     }
                     true
                 }
 
                 MotionEvent.ACTION_UP -> {
                     view.alpha = 1f
+                    uiHandler.removeCallbacks(longPressRunnable)
+                    stopPressFeedback()
                     if (!canceled) {
                         // 自行处理了按下/抬起，故需补一次 performClick，
                         // 否则 TalkBack 与开关控制等辅助服务认为该按钮不可用
                         view.performClick()
-                        onShutter(SystemClock.uptimeMillis() - downAt >= LONG_PRESS_MS)
+                        // 长按已在阈值处记过点；这里只处理还没记过的短按
+                        if (!longRecorded) {
+                            onShutter(SystemClock.uptimeMillis() - downAt >= LONG_PRESS_MS)
+                        }
                     }
                     true
                 }
@@ -407,6 +461,8 @@ class CaptureActivity : ComponentActivity() {
                 MotionEvent.ACTION_CANCEL -> {
                     view.alpha = 1f
                     canceled = true
+                    uiHandler.removeCallbacks(longPressRunnable)
+                    stopPressFeedback()
                     true
                 }
 
@@ -418,6 +474,21 @@ class CaptureActivity : ComponentActivity() {
     /** 事件坐标是否仍在视图范围内（滑出按钮即取消本次操作）。 */
     private fun insideView(view: View, event: MotionEvent): Boolean =
         event.x >= 0f && event.y >= 0f && event.x <= view.width && event.y <= view.height
+
+    /** 按下即给反馈：准星下方提示 + 准星进度环 + 快门转圈。 */
+    private fun startPressFeedback() {
+        binding.pressHint.isVisible = true
+        binding.shutterProgress.isVisible = true
+        pressAnimator.start()
+    }
+
+    /** 松手/滑出/被打断：收掉全部按住反馈，不留下半截进度环。 */
+    private fun stopPressFeedback() {
+        pressAnimator.cancel()
+        binding.overlay.pressProgress = Float.NaN
+        binding.pressHint.isVisible = false
+        binding.shutterProgress.isVisible = false
+    }
 
     private fun onShutter(longPress: Boolean) {
         if (capturing) return
@@ -473,6 +544,8 @@ class CaptureActivity : ComponentActivity() {
             candidate = -1
             if (index >= 0) {
                 repository.deletePoint(groupId, region, index)
+                // 与快门长按同一套反馈：触觉 + 文字确认，删点是不可撤销的操作
+                binding.deleteButton.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 toast(getString(R.string.capture_deleted, index + 1))
             }
         }
@@ -484,14 +557,14 @@ class CaptureActivity : ComponentActivity() {
                     if (candidate < 0) {
                         toast(R.string.capture_delete_no_candidate)
                     } else {
-                        deleteHandler.postDelayed(deleteRunnable, LONG_PRESS_MS)
+                        uiHandler.postDelayed(deleteRunnable, LONG_PRESS_MS)
                     }
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
                     if (candidate >= 0 && !insideView(view, event)) {
-                        deleteHandler.removeCallbacks(deleteRunnable)
+                        uiHandler.removeCallbacks(deleteRunnable)
                         candidate = -1
                         view.alpha = 1f
                     }
@@ -500,7 +573,7 @@ class CaptureActivity : ComponentActivity() {
 
                 MotionEvent.ACTION_UP -> {
                     view.alpha = 1f
-                    deleteHandler.removeCallbacks(deleteRunnable)
+                    uiHandler.removeCallbacks(deleteRunnable)
                     candidate = -1
                     // 同快门：自行处理了触摸，需补 performClick 供辅助服务识别
                     view.performClick()
@@ -509,7 +582,7 @@ class CaptureActivity : ComponentActivity() {
 
                 MotionEvent.ACTION_CANCEL -> {
                     view.alpha = 1f
-                    deleteHandler.removeCallbacks(deleteRunnable)
+                    uiHandler.removeCallbacks(deleteRunnable)
                     candidate = -1
                     true
                 }
@@ -557,15 +630,19 @@ class CaptureActivity : ComponentActivity() {
     }
 
     private fun showLinesDialog() {
-        val labels = arrayOf(
-            getString(R.string.line_summer),
-            getString(R.string.line_equinox),
-            getString(R.string.line_winter),
-            getString(R.string.line_today),
-            getString(R.string.line_segments),
-            getString(R.string.line_horizon),
-            getString(R.string.line_vertical),
-        )
+        val labels: Array<CharSequence> = Array(LINE_ITEMS.size) { index ->
+            val (labelRes, colorRes) = LINE_ITEMS[index]
+            val text = getString(labelRes)
+            SpannableString(text).apply {
+                // 多选对话框只收文案，文字着色只能靠 span，勾选与布局仍走平台实现
+                setSpan(
+                    ForegroundColorSpan(ContextCompat.getColor(this@CaptureActivity, colorRes)),
+                    0,
+                    text.length,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                )
+            }
+        }
         AlertDialog.Builder(this)
             .setTitle(R.string.lines_title)
             .setMultiChoiceItems(labels, settings.lineChecked()) { _, which, checked ->

@@ -201,6 +201,27 @@
             android:textColor="@color/moon"
             android:textSize="11sp"
             android:visibility="gone" />
+
+        <!-- 按住快门时出现在准星下方的提示：gravity=center 即取景器中心（准星），
+             marginTop 把文字压到准星下面 -->
+        <TextView
+            android:id="@+id/pressHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="42dp"
+            android:background="@drawable/bg_press_hint"
+            android:clickable="false"
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:paddingStart="10dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="5dp"
+            android:text="@string/capture_press_hint"
+            android:textColor="@color/paper"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </FrameLayout>
 
     <TextView
@@ -324,6 +345,16 @@
                 android:layout_height="52dp"
                 android:layout_gravity="center"
                 android:background="@drawable/bg_shutter" />
+
+            <!-- 按住快门时的转圈指示（动画由系统 ProgressBar 驱动，无额外代码与体积） -->
+            <ProgressBar
+                android:id="@+id/shutterProgress"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:indeterminateTint="@color/press"
+                android:visibility="gone" />
         </FrameLayout>
 
         <FrameLayout

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.ContextCompat
@@ -86,6 +87,16 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     /** 焦距像素提供者（相机就绪后由 CameraController 计算，失败时用半视场角假设）。 */
     var focalPxProvider: ((Int, Int) -> Float)? = null
 
+    /**
+     * 按住快门的进度 0..1（长按阈值前逐渐填满）；NaN 表示不画。
+     * 准星外再套一圈进度，让「按住」这段等待看得见；只在接受到动画帧时才重绘。
+     */
+    var pressProgress: Float = Float.NaN
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     private val density = resources.displayMetrics.density
     private fun dp(v: Float): Float = v * density
 
@@ -124,6 +135,18 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         pathEffect = DashPathEffect(floatArrayOf(dp(3f), dp(3f)), 0f)
     }
     private val crossPaint = Paint(solidLine)
+    private val pressTrackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dp(2.5f)
+        color = colorSmoke
+        alpha = 88
+    }
+    private val pressArcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dp(3.5f)
+        strokeCap = Paint.Cap.ROUND
+        color = ContextCompat.getColor(context, R.color.press)
+    }
     private val dotFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = colorPaper
@@ -145,6 +168,7 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
 
     private val path = Path()
     private val pt = FloatArray(2)
+    private val arcRect = RectF()
 
     /** 复用同一个投影器：姿态每帧变，但对象本身无需重建。 */
     private val projector = Projector()
@@ -152,6 +176,7 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     override fun onDraw(canvas: Canvas) {
         if (width <= 0 || height <= 0) return
         drawCrosshair(canvas)
+        drawPressProgress(canvas)
         val p = pose ?: return
 
         val focal = focalPxProvider?.invoke(width, height)
@@ -188,6 +213,20 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         canvas.drawLine(cx, cy + gap, cx, cy + gap + len, crossPaint)
         canvas.drawCircle(cx, cy, dp(12f), crossPaint)
         canvas.drawCircle(cx, cy, dp(2.5f), moonDot)
+    }
+
+    /** 按住进度：准星外侧的灰色底环 + 琥珀色进度弧（顺时针从正上方起画）。 */
+    private fun drawPressProgress(canvas: Canvas) {
+        val progress = pressProgress
+        if (progress.isNaN()) return
+        val cx = width / 2f
+        val cy = height / 2f
+        val r = dp(19f)
+        canvas.drawCircle(cx, cy, r, pressTrackPaint)
+        val sweep = 360f * progress.coerceIn(0f, 1f)
+        if (sweep <= 0f) return
+        arcRect.set(cx - r, cy - r, cx + r, cy + r)
+        canvas.drawArc(arcRect, -90f, sweep, false, pressArcPaint)
     }
 
     /** 参考弧采样缓存：只依赖纬度与赤纬，姿态变化仅重投影，不重算天文位置。 */
