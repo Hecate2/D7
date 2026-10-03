@@ -39,7 +39,7 @@ One subtlety applies even in Beijing: in summer the sun rises in the northeast a
 3. Capture. Face the southern buildings and shoot their outline vertices in order, from the right (west) to the left (east). In the southern hemisphere mirror it: face north and go from the right (east) to the left (west). Either way, walk from one end to the other without jumping back and forth, so that flipping through the album from right to left follows the shooting direction from old to new. The shutter has two presses: a short press connects the new point to the previous one with a straight segment; a long press closes the current building at the previous point. The app then drops vertically from the previous point to the horizon, runs along the horizon to the new point's direction, and rises vertically to the new point, so a gap is formed in one gesture. If a low wall, tree or low building inside a gap blocks light, do not long-press over it; short-press its top corners into the outline instead. Each shot auto-saves its photo, no toggle; single shots only, no burst.
 
 Each group holds two zones: the external-building zone for the towers across the street, and the ceiling zone for your own window-frame head. The zone chip at the top left of the viewfinder switches between them; point order is independent per zone and photos are stored per zone. In the ceiling zone, shoot along the frame head in the same right-to-left order (top-right corner, midpoints, top-left corner, plus extra points wherever beams or soffits step), down each jamb to the side reveal; the sill below needs nothing, it is assumed open. The ceiling zone supports short press only, no long press: a frame is continuous and has no gaps, so a long press does nothing there.
-4. Fix and finish. No need to redo a bad point: the delete key at the bottom right removes only the captured point nearest to the current heading on the right side of the crosshair, never anything on its left; it fires only on long press, and a single hold deletes at most 1 point. The bottom-left done key confirms the session. Check the coverage bar for misses (it scores only the southern half, 90–270°, mirrored to the northern half in the southern hemisphere); capture nearby walls, trees and low buildings to the sides while you are at it. Ground floors should pay extra attention to close-in obstructions.
+4. Fix and finish. No need to redo a bad point: the delete key at the bottom right removes only the captured point nearest to the current heading on the right side of the crosshair, never anything on its left; it fires only on long press, and a single hold deletes at most 1 point. The bottom-left done key confirms the session. Check the coverage bar for misses (it scores only the southern half, 90–270°, mirrored to the northern half in the southern hemisphere); capture nearby walls, trees and low buildings to the sides while you are at it. Ground floors should pay extra attention to close-in obstructions. Do not push the lens below the horizon: you would be aiming at the ground, and the shot would be recorded as a zero-degree "wall" with no trace that the aim was wrong.
 5. Resume and edit points. Going back from results to capture resumes shooting on the same group: pick the zone with the chip first, and new points append to that zone's order. Editing captured points lives in the results screen's point list: delete any point, or switch the segment between a point and its neighbor to the right (the previous shot, i.e. the row above in the list) between "direct connect" and "via horizon" modes (ceiling points are direct only).
 6. Read the results.
 
@@ -53,13 +53,17 @@ Next to the azimuth readout sits a small `+180°` pill. The rear-camera sight di
 
 The viewfinder draws the captured points' connections directly: white solid for short-press measured segments, moon-gray dashed for long-press via-horizon inferred segments, so connected and broken runs read at a glance. The shooting-direction arrow sits below the viewfinder (west-first on the right, east-later on the left), never covering the frame center.
 
-The "lines" control next to the coverage bar toggles each reference overlay: solstice, equinox and today's paths plus point connections are shown by default; the horizon and plumb lines are hidden by default and can be switched on when needed.
+The "lines" control next to the coverage bar toggles each reference overlay: solstice, equinox and today's paths plus point connections and the ground layer are shown by default; the horizon, plumb lines and the obstruction fill are hidden by default and can be switched on when needed.
+
+Everything below the horizon is tinted a faint earth tone, like the ground on an aircraft attitude indicator. Raise the phone too high and the tint climbs up to warn you; the shutter then refuses to record. The reason is practical: a below-horizon reading stored as-is would be clamped to 0 degrees and kept as a "wall lying on the ground", with nothing in the data showing the aim was wrong and no way to recover it afterwards. A red bar under the viewfinder tells you to lift the lens back above the horizon. The obstruction fill, when enabled, tints the sky between your skyline and the horizon in a very faint white so you can see at a glance which patch of sky the buildings take. It only covers the directions you actually measured; unmeasured directions are left blank, because those are unknown rather than "not blocking".
 
 ![Capture screen](img/ui-capture.svg)
 
 ## Reading the results
 
-Six things on the results screen.
+Seven things on the results screen.
+
+Coverage note. The line under the big number reports how much of the main half circle you actually swept: red below 60%, amber from 60% to 85%, plain gray once it is swept. Worth reading before trusting the duration next to it, because unmeasured directions count as open, so the less you capture the more the result leans toward "sunny". With only a point or two captured, the app says outright that the result is probably optimistic. The coverage bar exists only on the capture screen, so this is the last warning you get on the results screen.
 
 Computation scope. Below the date pills, three modes: external only (default, counts just the towers across the street), external + ceiling (also applies your own frame's cropping, the handover-inspection mode), ceiling only (how much light the bare opening admits, for judging the unit type before the towers). The rules: azimuths never captured in the external zone count as open; azimuths never captured in the ceiling zone count as solid wall; a zone with no points at all degrades by the same rule (empty external = fully open, empty ceiling = fully blocking), so the two ceiling-dependent modes stay disabled until the ceiling zone has points.
 
@@ -101,11 +105,15 @@ The palette follows the lead character of `配色基准.jpg` (jet-black costume 
 - Foreground white `#FFFFFF`: body text, crosshair, covered range, direct-sun range, year curve, today's solid path
 - Moon gray `#CAC2D1`: shutter-button center fill, via-horizon inferred dashed segments, secondary emphasis (gap source, aiming status)
 - Smoke gray `#8E8E93`: secondary text, unselected date pills, axes, horizon and plumb lines
+- Ground earth `#8A6A3D`: the translucent layer below the horizon, like an attitude indicator's ground
+- Aim warning `#FF453A`: the red bar shown while the lens is below the horizon
+- Precision / coverage states: high green `#34C759`, mid amber `#EF9F27`, low red `#E24B4A`, unknown gray `#8E8E93`
 - Strokes `#2E2E32` / `#3A3A3E`: card and button outlines
 - Trajectory colors (all dashed): winter-solstice blue `#378ADD`, equinox red `#E24B4A`, summer-solstice orange `#EF9F27`
 - Heading `+180°` pill: filled by default (offset applied), tap to toggle; placed next to the azimuth readout
 - Point connections: white solid (measured) + moon-gray dashed (via-horizon inferred), shown by default
-- "Lines" toggles: sun-path arcs and point connections on by default; horizon and plumb lines off by default
+- Obstruction fill: very faint white (alpha 26), only over measured directions, off by default
+- "Lines" toggles: sun-path arcs, point connections and the ground layer on by default; obstruction fill, horizon and plumb lines off by default
 
 The capture screen has only shutter, done and delete controls: photos are always saved, no toggle; single shots only, no burst mode.
 

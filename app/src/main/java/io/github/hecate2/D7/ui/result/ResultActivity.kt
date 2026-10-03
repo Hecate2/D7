@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -262,6 +263,32 @@ class ResultActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * 主半圆覆盖提示。未拍到的方位按需求视为开阔，所以覆盖率低意味着结论可能虚高。
+     * 分级沿用精度药丸那套四态配色：<60% 红、60~85% 黄、>85% 烟灰。
+     */
+    private fun bindCoverageNote(g: GroupRecord) {
+        val view = binding.coverageNote
+        view.isVisible = true
+        // 点数不足时连覆盖率都算不上，直接说「可能偏乐观」而不是给一个百分比
+        if (g.external.size < 2) {
+            view.setText(R.string.result_coverage_toofew)
+            view.setTextColor(ContextCompat.getColor(this, R.color.precision_low))
+            return
+        }
+        val percent = Summaries.coveragePercent(g.lat, g.external)
+        val (textRes, colorRes) = when {
+            percent < COVERAGE_LOW ->
+                R.string.result_coverage_low to R.color.precision_low
+            percent < COVERAGE_MID ->
+                R.string.result_coverage_mid to R.color.precision_mid
+            else ->
+                R.string.result_coverage_ok to R.color.precision_unknown
+        }
+        view.text = getString(textRes, percent)
+        view.setTextColor(ContextCompat.getColor(this, colorRes))
+    }
+
     private fun curveKey(g: GroupRecord, mode: CalcMode, year: Int): String = buildString {
         append(mode.name).append('|').append(year)
         for (p in g.external) append('|').append(p.az).append(',').append(p.el).append(',').append(p.gapAfter)
@@ -274,6 +301,7 @@ class ResultActivity : ComponentActivity() {
         binding.mainLabel.text = getString(R.string.result_main_label, dateLabel(date), modeLabel())
         binding.mainValue.text = Format.durationLong(resources, d.directMinutes)
         binding.gapNote.isVisible = d.allFromGap
+        bindCoverageNote(g)
         val sunrise = d.sunriseMinute
         binding.sunLine.text = when {
             sunrise == null && d.directMinutes == 0 -> getString(R.string.result_polar_night)
@@ -566,5 +594,13 @@ class ResultActivity : ComponentActivity() {
 
     private fun toast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private companion object {
+        /** 主半圆覆盖率低于此值（%）判为红色警告。 */
+        const val COVERAGE_LOW = 60
+
+        /** 低于此值（%）判为黄色提醒，更高则不着色。 */
+        const val COVERAGE_MID = 85
     }
 }

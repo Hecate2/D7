@@ -95,6 +95,7 @@
     <string name="capture_calib_medium">罗盘校准 中</string>
     <string name="capture_calib_low">罗盘校准 低 · 画8字</string>
     <string name="capture_calib_unreliable">罗盘未校准 · 画8字</string>
+    <string name="capture_below_horizon">手机抬太高，瞄到地面了\n把镜头抬到地平线以上</string>
     <string name="capture_jitter_unknown">读数精度 未知</string>
     <string name="capture_jitter_high">读数精度 高</string>
     <string name="capture_jitter_medium">读数精度 中</string>
@@ -108,6 +109,8 @@
     <string name="line_segments">拍摄点连线</string>
     <string name="line_horizon">地平线</string>
     <string name="line_vertical">铅垂线</string>
+    <string name="line_fill">楼体遮挡区</string>
+    <string name="line_ground">地面</string>
 
     <!-- 结果页 -->
     <string name="result_title">结果 · %1$s</string>
@@ -147,6 +150,10 @@
     <string name="result_export_done">已保存到 %1$s</string>
     <string name="result_export_failed">导出失败：请检查存储空间或权限</string>
     <string name="result_no_data">先拍摄再导出</string>
+    <string name="result_coverage_toofew">拍摄点太少，结果多半偏乐观</string>
+    <string name="result_coverage_low">只拍到半球 %1$d%%，可能没拍全</string>
+    <string name="result_coverage_mid">半球覆盖 %1$d%%，建议补拍两端</string>
+    <string name="result_coverage_ok">半球覆盖 %1$d%%</string>
 
     <!-- 结果页：日期档位名 / 时区 / 年曲线 -->
     <string name="result_date_winter">冬至日</string>

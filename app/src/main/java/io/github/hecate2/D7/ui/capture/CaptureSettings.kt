@@ -46,6 +46,16 @@ class CaptureSettings(context: Context) {
         get() = prefs.getBoolean("line_vertical", false)
         set(value) = prefs.edit { putBoolean("line_vertical", value) }
 
+    /** 遮挡填充：默认关（会压低参考弧与连线的对比度，按需在「显示线」里开）。 */
+    var showFill: Boolean
+        get() = prefs.getBoolean("line_fill", false)
+        set(value) = prefs.edit { putBoolean("line_fill", value) }
+
+    /** 地面层：默认开。 */
+    var showGround: Boolean
+        get() = prefs.getBoolean("line_ground", true)
+        set(value) = prefs.edit { putBoolean("line_ground", value) }
+
     /** 当前设置对应的显示线组合。 */
     fun lines(): LineVisibility = LineVisibility(
         summer = showSummer,
@@ -55,6 +65,8 @@ class CaptureSettings(context: Context) {
         segments = showSegments,
         horizon = showHorizon,
         vertical = showVertical,
+        fill = showFill,
+        ground = showGround,
     )
 
     /** 按「显示线」对话框的条目下标写入（顺序与对话框一致）。 */
@@ -67,11 +79,14 @@ class CaptureSettings(context: Context) {
             4 -> showSegments = checked
             5 -> showHorizon = checked
             6 -> showVertical = checked
+            7 -> showFill = checked
+            8 -> showGround = checked
         }
     }
 
     /** 各条目的当前勾选状态，顺序与对话框一致。 */
     fun lineChecked(): BooleanArray = booleanArrayOf(
-        showSummer, showEquinox, showWinter, showToday, showSegments, showHorizon, showVertical,
+        showSummer, showEquinox, showWinter, showToday, showSegments,
+        showHorizon, showVertical, showFill, showGround,
     )
 }

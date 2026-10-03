@@ -74,6 +74,8 @@ class CaptureActivity : ComponentActivity() {
             R.string.line_segments to R.color.paper,
             R.string.line_horizon to R.color.smoke,
             R.string.line_vertical to R.color.smoke,
+            R.string.line_fill to R.color.moon,
+            R.string.line_ground to R.color.ground,
         )
 
         // 读数精度（抖动）：最近窗口内极差的阈值与档位
@@ -101,6 +103,9 @@ class CaptureActivity : ComponentActivity() {
     private var lastAccuracy = OrientationSensor.ACCURACY_UNKNOWN
     private var lastUiAt = 0L
     private var capturing = false
+
+    /** 瞄准警告条当前是否显示（带滞回，避免阈值附近闪烁）。 */
+    private var aimWarnShown = false
 
     /** 滚转角显示用的低通值（NaN 表示尚未初始化）。 */
     private var smoothRoll = Double.NaN
@@ -283,9 +288,34 @@ class CaptureActivity : ComponentActivity() {
             updatePrecisionUi()
         }
         updateReading(pose)
+        updateAimWarning(pose)
         binding.overlay.pose = pose
         binding.overlay.aimAzDeg = aimAz(pose, smoothed = true)
         binding.overlay.invalidate()
+    }
+
+    /**
+     * 仅供仪器测试：锁定瞄准仰角（度），使模拟器的固定姿态也能测到手势。
+     *
+     * 模拟器的合成姿态约为 -4.7 度（略微下倾），会被 [AimGuard] 当成瞄地面拒绝记录；
+     * 真机竖持朝楼顶时仰角为正，走不到那个分支，故生产逻辑不动，只给测试留个口子。
+     * 传 null 恢复真实读数。
+     */
+    @androidx.annotation.VisibleForTesting
+    fun setAimElevationForTest(elevationDeg: Double?) {
+        orientation?.aimElevationOverrideDeg = elevationDeg
+    }
+
+    /**
+     * 瞄准低于地平线时常驻红条。阈值与滞回见 [AimGuard]。
+     */
+    private fun updateAimWarning(pose: Pose) {
+        val el = aimEl(pose, smoothed = true)
+        val on = AimGuard.shouldWarn(el, aimWarnShown)
+        if (on != aimWarnShown) {
+            aimWarnShown = on
+            binding.aimWarn.isVisible = on
+        }
     }
 
     /**
@@ -503,8 +533,15 @@ class CaptureActivity : ComponentActivity() {
             return
         }
         // 记录瞬时融合值；仰角裁到需求域 0..90
+        val rawEl = aimEl(pose, smoothed = false)
+        // 瞄到地面时拒绝记录：负仰角若直接夹到 0 会伪装成「贴地的墙」，
+        // 数据里看不出这一点本来是错的，且 coerceIn 之后无法复原。
+        if (!AimGuard.canCapture(rawEl)) {
+            toast(R.string.capture_below_horizon)
+            return
+        }
         val az = aimAz(pose, smoothed = false)
-        val el = aimEl(pose, smoothed = false).coerceIn(0.0, 90.0)
+        val el = rawEl.coerceIn(0.0, 90.0)
         val seq = group.regionList(region).size + 1
         val meta = PhotoMeta(
             groupName = group.name,

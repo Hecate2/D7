@@ -59,6 +59,19 @@ class OrientationSensor(
         const val ACCURACY_UNKNOWN = -1
     }
 
+    /**
+     * 仅供仪器测试：锁定**瞄准仰角**（度，即采集页 [io.github.hecate2.D7.ui.capture.CaptureActivity.aimEl]
+     * 的输出值，含 `+180°` 药丸的取负）。非 null 时 [onSensorChanged] 跳过天顶角解算，
+     * 直接构造使 `aimEl` 等于该值的姿态。
+     *
+     * 模拟器的合成姿态使 `aimEl` 约为 -4.7 度（恰好落在采集页
+     * [io.github.hecate2.D7.ui.capture.AimGuard.MIN_EL_DEG] 之下），会被当成瞄地面拒绝记录。
+     * 真机竖持朝楼顶时为正、走不到那个分支，故生产解算逻辑不动，
+     * 只给测试留一个能稳定摆姿态的口子。逐帧生效，长按期间也不会被真实读数覆盖。
+     */
+    @Volatile
+    var aimElevationOverrideDeg: Double? = null
+
     private val manager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val sensor: Sensor? = manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
 
@@ -103,6 +116,15 @@ class OrientationSensor(
         )
         val frontEl = asin(worldZ[2].coerceIn(-1f, 1f).toDouble()) * 180.0 / PI
 
+        val override = aimElevationOverrideDeg
+        if (override != null) {
+            // aimEl 在 +180° 药丸开启时等于 -frontEl，故这里反号，
+            // 使采集页读到的瞄准仰角恰为 override 值。
+            val frontEl = -override
+            onPose(poseWithElevation(right, up, frontAz, rollDeg, frontEl))
+            return
+        }
+
         // 读数低通：对屏幕外法线向量做指数平滑后取角
         if (!smoothInit) {
             worldZ.copyInto(smoothFront)
@@ -133,6 +155,39 @@ class OrientationSensor(
                 rollDeg = rollDeg,
                 accuracy = accuracy,
             ),
+        )
+    }
+
+    /**
+     * 以给定**机身朝向仰角**重建姿态：水平方位沿用 [frontAzDeg]，天分量按 sin/cos 换算。
+     * 逐帧调用，故不做额外分配。
+     */
+    private fun poseWithElevation(
+        right: FloatArray,
+        up: FloatArray,
+        frontAzDeg: Double,
+        rollDeg: Double,
+        frontElDeg: Double,
+    ): Pose {
+        val azRad = frontAzDeg * PI / 180.0
+        val elRad = frontElDeg * PI / 180.0
+        val cosEl = cos(elRad).toFloat()
+        // 后摄视轴 = -worldZ；worldZ 的水平分量由方位角给出、天分量为 sin(仰角)
+        val fwd = floatArrayOf(
+            -cosEl * kotlin.math.sin(azRad).toFloat(),
+            -cosEl * kotlin.math.cos(azRad).toFloat(),
+            -sin(elRad).toFloat(),
+        )
+        return Pose(
+            forward = fwd,
+            right = right,
+            up = up,
+            frontAzDeg = frontAzDeg,
+            frontElDeg = frontElDeg,
+            smoothAzDeg = frontAzDeg,
+            smoothElDeg = frontElDeg,
+            rollDeg = rollDeg,
+            accuracy = accuracy,
         )
     }
 

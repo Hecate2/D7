@@ -12,6 +12,8 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import io.github.hecate2.D7.R
 import io.github.hecate2.D7.core.Angles
+import io.github.hecate2.D7.core.ShotPoint
+import io.github.hecate2.D7.core.Skyline
 import io.github.hecate2.D7.core.SkylineShape
 import io.github.hecate2.D7.core.Solar
 import io.github.hecate2.D7.data.PointRecord
@@ -31,6 +33,10 @@ data class LineVisibility(
     val segments: Boolean = true,
     val horizon: Boolean = false,
     val vertical: Boolean = false,
+    /** 天际线以下到地平线的填充（遮挡区）。 */
+    val fill: Boolean = false,
+    /** 地平线以下的地面层（土色）。 */
+    val ground: Boolean = true,
 )
 
 /**
@@ -166,9 +172,45 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         textAlign = Paint.Align.CENTER
     }
 
+    private companion object {
+        /** 地面层的方位采样步长（度）：4 度约 91 个点，足够平滑且开销可忽略。 */
+        const val GROUND_AZ_STEP = 4
+
+        /** 填充层的方位采样步长（度），与 [SkylineShape] 的绘图步长一致。 */
+        const val FILL_AZ_STEP = 2.0
+
+        /** 主半圆跨度（度）：北半球 90..270，南半球 270..90（经 0）。 */
+        const val FILL_MAIN_HALF_SPAN = 180.0
+
+        /**
+         * 填充多边形向下闭合时用的「远处」坐标。取远大于任何屏幕尺寸的值，
+         * 配合画布裁剪即可得到「从天际线一路填到画面底」的效果，
+         * 避免在可见段内部猜测闭合点而拉出错误斜边。
+         */
+        const val FAR_DOWN = 100_000f
+    }
+
+    /** 地面层：地平线以下的土色，仿飞机姿态仪。 */
+    private val groundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = ContextCompat.getColor(context, R.color.ground)
+        alpha = 70
+    }
+
+    /** 遮挡填充：天际线以下到地平线，浅色半透明。 */
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = colorPaper
+        alpha = 26
+    }
+
     private val path = Path()
     private val pt = FloatArray(2)
     private val arcRect = RectF()
+
+    /** 拍摄点转算法点的缓存：点列按引用比对，拍照/删点后自然失效。 */
+    private var cachedPoints: List<PointRecord>? = null
+    private var cachedShots: List<ShotPoint>? = null
 
     /** 复用同一个投影器：姿态每帧变，但对象本身无需重建。 */
     private val projector = Projector()
@@ -182,6 +224,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         val focal = focalPxProvider?.invoke(width, height)
             ?: ((width / 2f) / tan(32.5 * PI / 180.0).toFloat())
         projector.reset(p, width / 2f, height / 2f, focal)
+
+        // 地面层在最下层，遮挡填充在其上，参考弧与连线最上
+        if (show.ground) drawGround(canvas, projector)
+        if (show.fill) drawSkylineFill(canvas, projector)
 
         val summerDecl = if (latDeg >= 0) 23.44 else -23.44
         if (show.summer) drawSunArc(canvas, projector, summerDecl, summerArc)
@@ -227,6 +273,77 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         if (sweep <= 0f) return
         arcRect.set(cx - r, cy - r, cx + r, cy + r)
         canvas.drawArc(arcRect, -90f, sweep, false, pressArcPaint)
+    }
+
+    /**
+     * 地面层：地平线（仰角 0）以下填土色，仿飞机姿态仪的地面。
+     * 沿方位每 [GROUND_AZ_STEP] 度取一点投影，投影失败（相机背后）即断开。
+     * 折线末端向下延伸到 [FAR_DOWN]（远超画面底边）后闭合，靠画布自身裁切，
+     * 不用在可见段内部猜测闭合点——那样会拉出横穿画面的错误斜边。
+     */
+    private fun drawGround(canvas: Canvas, projector: Projector) {
+        path.reset()
+        var started = false
+        for (az in 0 until 360 step GROUND_AZ_STEP) {
+            if (projector.project(az.toDouble(), 0.0, pt)) {
+                if (started) path.lineTo(pt[0], pt[1]) else {
+                    path.moveTo(pt[0], pt[1])
+                    started = true
+                }
+            } else {
+                started = false
+            }
+        }
+        if (!started) return
+        path.lineTo(FAR_DOWN, FAR_DOWN)
+        path.lineTo(-FAR_DOWN, FAR_DOWN)
+        path.close()
+        canvas.drawPath(path, groundPaint)
+    }
+
+    /**
+     * 天际线遮挡填充：主半圆上沿天际线边缘仰角取样，向下填到画面底。
+     *
+     * 未覆盖方位 [Skyline.obstructionAt] 返回 -∞，这里跳过不填——把未测区域画成
+     * 「矮天际线」会被误读成「测过了但不挡」，反而比不画更糟。未测提示由覆盖条
+     * 与结果页覆盖率承担。采样步长与 [SkylineShape] 的绘图步长一致，最多 91 个点。
+     */
+    private fun drawSkylineFill(canvas: Canvas, projector: Projector) {
+        if (points.size < 2) return
+        val sky = Skyline(shotPoints())
+        // 主半圆：北半球 90..270，南半球 270..90（经 0），与 Summaries.isMainHalf 同口径
+        val start = if (latDeg >= 0) 90.0 else 270.0
+        path.reset()
+        var started = false
+        var step = 0.0
+        while (step <= FILL_MAIN_HALF_SPAN) {
+            val az = Angles.normalize360(start + step)
+            val el = sky.obstructionAt(az)
+            if (el.isFinite() && projector.project(az, el, pt)) {
+                if (started) path.lineTo(pt[0], pt[1]) else {
+                    path.moveTo(pt[0], pt[1])
+                    started = true
+                }
+            } else {
+                started = false
+            }
+            step += FILL_AZ_STEP
+        }
+        if (!started) return
+        path.lineTo(FAR_DOWN, FAR_DOWN)
+        path.lineTo(-FAR_DOWN, FAR_DOWN)
+        path.close()
+        canvas.drawPath(path, fillPaint)
+    }
+
+    /** 拍摄点转算法点。点列每次拍照/ 删点才会换，故按引用缓存，避免逐帧重建列表。 */
+    private fun shotPoints(): List<ShotPoint> {
+        val current = points
+        if (cachedPoints === current && cachedShots != null) return cachedShots!!
+        val shots = current.map { ShotPoint(it.az, it.el, it.gapAfter) }
+        cachedPoints = current
+        cachedShots = shots
+        return shots
     }
 
     /** 参考弧采样缓存：只依赖纬度与赤纬，姿态变化仅重投影，不重算天文位置。 */

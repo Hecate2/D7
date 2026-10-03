@@ -43,6 +43,11 @@ class CaptureShutterGestureTest {
     private var scene: ActivityScenario<CaptureActivity>? = null
     private var groupId: String = ""
 
+    private companion object {
+        /** 锁定的瞄准仰角（度）：正数，确保不被 AimGuard 判为瞄地面。 */
+        const val TEST_ELEVATION_DEG = 20.0
+    }
+
     @Before
     fun setUp() {
         TestSupport.deleteAllGroups(repository)
@@ -54,6 +59,15 @@ class CaptureShutterGestureTest {
         )
         // 没拿到姿态时快门不记录点，先等读数出现
         TestSupport.waitUntil(8000) { !reading().isNullOrBlank() }
+        // 模拟器的合成姿态固定在约 -4.7 度（略微下倾），会被 AimGuard 当成瞄地面
+        // 而拒绝记录。真机竖持朝楼顶时仰角为正，走不到那个分支。
+        // 在传感器层锁定仰角，逐帧生效，长按期间也不会被真实读数覆盖。
+        aimAt(TEST_ELEVATION_DEG)
+    }
+
+    /** 锁定/解除瞄准仰角（null恢复真实读数）。 */
+    private fun aimAt(elevationDeg: Double?) {
+        scene?.onActivity { it.setAimElevationForTest(elevationDeg) }
     }
 
     @After

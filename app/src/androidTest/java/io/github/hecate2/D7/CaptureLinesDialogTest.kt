@@ -77,6 +77,8 @@ class CaptureLinesDialogTest {
         R.string.line_segments to R.color.paper,
         R.string.line_horizon to R.color.smoke,
         R.string.line_vertical to R.color.smoke,
+        R.string.line_fill to R.color.moon,
+        R.string.line_ground to R.color.ground,
     )
 
     @Test
@@ -122,6 +124,8 @@ class CaptureLinesDialogTest {
         settings.showSegments = true
         settings.showHorizon = false
         settings.showVertical = false
+        settings.showFill = false
+        settings.showGround = true
     }
 
     private fun Int.toHex(): String = "#%06X".format(this and 0xFFFFFF)

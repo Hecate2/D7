@@ -225,6 +225,20 @@
     </FrameLayout>
 
     <TextView
+        android:id="@+id/aimWarn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_aim_warn"
+        android:gravity="center"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:text="@string/capture_below_horizon"
+        android:textColor="@color/warn_text"
+        android:textSize="11sp"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/hintText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

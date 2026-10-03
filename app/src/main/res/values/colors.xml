@@ -27,4 +27,9 @@
     <color name="precision_mid">#FFEF9F27</color>
     <color name="precision_low">#FFE24B4A</color>
     <color name="precision_unknown">#FF8E8E93</color>
+    <!-- 地面层：飞机姿态仪式的土色，仅覆盖地平线以下 -->
+    <color name="ground">#FF8A6A3D</color>
+    <!-- 瞄准警告：比精度低档更亮的橙红，在暗色取景器上最醒目 -->
+    <color name="warn">#FFFF453A</color>
+    <color name="warn_text">#FFFFFFFF</color>
 </resources>
