@@ -2,6 +2,9 @@ package io.github.hecate2.D7
 
 import android.content.Context
 import android.content.Intent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onIdle
@@ -21,6 +24,9 @@ import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.result.ResultActivity
+import org.hamcrest.Description
+import org.hamcrest.Matcher
+import org.hamcrest.TypeSafeMatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -209,5 +215,57 @@ class ResultEditFlowTest {
         onView(withId(R.id.pointsCount)).check(
             matches(withText(context.getString(R.string.result_points_count, 3, 2))),
         )
+    }
+
+    /**
+     * 把某区的文本清空 = 删光该区全部角度数据，代价不对称（照片还在、角度不可恢复），
+     * 故必须多一道确认：确认弹窗出现前不落库，点「确定」后才落库。
+     */
+    @Test
+    fun bulkEdit_clearingARegionAsksFirstAndOnlyThenApplies() {
+        launchResult()
+        onView(withId(R.id.chipCeiling)).inRoot(isDialog()).perform(click())
+        bulkText("")
+        confirmBulk()
+
+        // 确认弹窗：标题 + 文案都在，且数据尚未被动
+        onView(withText(R.string.bulk_edit_clear_title)).inRoot(isDialog())
+            .check(matches(isDisplayed()))
+        onView(withText(context.getString(R.string.bulk_edit_clear_message, 1)))
+            .inRoot(isDialog()).check(matches(isDisplayed()))
+        assertEquals(1, repository.get(groupId)!!.ceiling.size)
+        assertEquals(3, external().size)
+
+        // 两个弹窗的确定按钮文案一样，按「所属弹窗里含清空文案」区分，避免 Espresso 歧义
+        onView(confirmButtonOfClearDialog()).inRoot(isDialog()).perform(click())
+        val group = TestSupport.waitFor { repository.get(groupId)!!.takeIf { it.ceiling.isEmpty() } }
+        assertEquals("外部区不受影响", 3, group.external.size)
+    }
+
+    /**
+     * 两个弹窗的「确定」文案相同，必须靠所属弹窗区分。
+     * 判据：该按钮的根视图层级里含清空确认的正文。
+     */
+    private fun confirmButtonOfClearDialog(): Matcher<View> = object : TypeSafeMatcher<View>() {
+        private val confirmText = context.getString(R.string.confirm)
+        private val clearText = context.getString(R.string.bulk_edit_clear_message, 1)
+
+        override fun describeTo(description: Description) {
+            description.appendText("清空确认弹窗的确定按钮")
+        }
+
+        override fun matchesSafely(item: View): Boolean {
+            if (item !is TextView || item.text != confirmText) return false
+            return containsText(item.rootView, clearText)
+        }
+
+        private fun containsText(root: View, target: String): Boolean {
+            if (root is TextView && root.text == target) return true
+            if (root !is ViewGroup) return false
+            for (i in 0 until root.childCount) {
+                if (containsText(root.getChildAt(i), target)) return true
+            }
+            return false
+        }
     }
 }

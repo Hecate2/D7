@@ -6,6 +6,13 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.scrollTo
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import io.github.hecate2.D7.data.GroupRepository
@@ -13,6 +20,7 @@ import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.result.ResultActivity
+import io.github.hecate2.D7.util.Summaries
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,6 +33,7 @@ import java.time.ZoneId
  * 结果页覆盖提示的仪器测试：
  * 拍摄点不足两个、覆盖率低于阈值、覆盖率达标三档分别给出红/黄/不着色的提示，
  * 且提示与主结果同屏（用户点「完成」后就看不到覆盖条了，这里是最后一道告知）。
+ * 另外两条盯住「仅天花板」档：未覆盖语义与外部档相反，提示必须换区、换方向。
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -87,6 +96,70 @@ class ResultCoverageNoteTest {
         val note = noteView()
         assertTrue("南半球也应显示覆盖率提示", note.isShown)
         assertEquals("南半球低覆盖应着红色", LOW, note.currentTextColor)
+    }
+
+    /**
+     * 「仅天花板」档的提示必须换口径：那一档未拍到 = 全遮挡，拍得越少结论越偏向「没太阳」，
+     * 偏差方向与外部档相反；且外部区的覆盖率与该档结论无关，得看天花板区自己的。
+     *
+     * 这里的种子故意让两区覆盖率差距极大（外部扫满100%、天花板只扫 165..175）：
+     * 若代码仍读外部列，文案会变成「半球覆盖 100%」的烟灰提示，与期望不符。
+     */
+    @Test
+    fun ceilingOnlyMode_usesCeilingCoverageAndFlipsTheWording() {
+        val group = repository.createGroup(
+            "天花板覆盖组", 31.23, 121.47, 0.0, ZoneId.systemDefault().id,
+        )
+        groupId = group.id
+        (100..260 step 10).forEach { az ->
+            repository.appendPoint(group.id, Region.EXTERNAL, PointRecord(az.toDouble(), 30.0), false)
+        }
+        val ceiling = listOf(PointRecord(165.0, 30.0), PointRecord(175.0, 30.0))
+        ceiling.forEach { p -> repository.appendPoint(group.id, Region.CEILING, p, false) }
+
+        scene = ActivityScenario.launch(
+            Intent(context, ResultActivity::class.java).putExtra(Extras.GROUP_ID, group.id),
+        )
+        onView(withId(R.id.chipCeilingOnly)).perform(scrollTo(), click())
+
+        val expectedPercent = Summaries.coveragePercent(31.23, ceiling)
+        val expected = context.getString(R.string.result_coverage_ceiling_low, expectedPercent)
+        val note = TestSupport.waitFor { noteView().takeIf { it.text.toString() == expected } }
+
+        onView(withId(R.id.coverageNote)).check(matches(isDisplayed()))
+        assertEquals("仅天花板档应改用天花板区自己的覆盖率", expected, note.text.toString())
+        assertEquals("天花板区覆盖过低同样着红色", LOW, note.currentTextColor)
+        assertTrue(
+            "不该再出现外部区的「偏乐观」文案",
+            note.text.toString() != context.getString(R.string.result_coverage_toofew),
+        )
+    }
+
+    /** 外部区扫满、天花板区不足两点：提示要说「偏保守」，而外部档说的是「偏乐观」。 */
+    @Test
+    fun ceilingOnlyMode_singlePointSaysConservativeNotOptimistic() {
+        val group = repository.createGroup(
+            "天花板单点组", 31.23, 121.47, 0.0, ZoneId.systemDefault().id,
+        )
+        groupId = group.id
+        (100..260 step 10).forEach { az ->
+            repository.appendPoint(group.id, Region.EXTERNAL, PointRecord(az.toDouble(), 30.0), false)
+        }
+        repository.appendPoint(group.id, Region.CEILING, PointRecord(165.0, 30.0), false)
+
+        scene = ActivityScenario.launch(
+            Intent(context, ResultActivity::class.java).putExtra(Extras.GROUP_ID, group.id),
+        )
+        onView(withId(R.id.chipCeilingOnly)).perform(scrollTo(), click())
+
+        val expected = context.getString(R.string.result_coverage_ceiling_toofew)
+        val note = TestSupport.waitFor { noteView().takeIf { it.text.toString() == expected } }
+        assertEquals(expected, note.text.toString())
+        assertTrue(
+            "单点文案必须是「偏保守」而不是外部档的「偏乐观」",
+            expected.contains("保守") &&
+                context.getString(R.string.result_coverage_toofew).contains("乐观"),
+        )
     }
 
     private fun openResult(lat: Double, external: List<Triple<Double, Double, Boolean>>) {

@@ -259,8 +259,47 @@ class LocationProvider(private val context: Context) {
         /** 软等待：已有结果且等满该时长（毫秒），就用当前最好结果。 */
         private const val SOFT_WAIT_MS = 2_500L
 
-        /** 当地磁偏角（度，东偏为正）。内置世界地磁模型，无需联网。 */
-        fun declination(lat: Double, lon: Double, altitude: Double, timeMillis: Long): Double =
-            GeomagneticField(lat.toFloat(), lon.toFloat(), altitude.toFloat(), timeMillis).declination.toDouble()
+        /**
+         * 当地磁偏角（度，东偏为正）。内置世界地磁模型，无需联网。
+         *
+         * [GeomagneticField] 的构造函数每次都要跑一遍完整的球谐展开（几十项级数），
+         * 而采集页以传感器频率（约 20Hz）调用本函数——同一组坐标下结果在半小时内
+         * 变化远小于传感器误差，故按坐标 + 时效做一层缓存，逐帧不再新建对象。
+         */
+        @Synchronized
+        fun declination(lat: Double, lon: Double, altitude: Double, timeMillis: Long): Double {
+            val cache = declinationCache
+            if (cache.lat == lat && cache.lon == lon && cache.alt == altitude &&
+                timeMillis - cache.at in 0 until DECLINATION_TTL_MS
+            ) {
+                return cache.value
+            }
+            val value = GeomagneticField(
+                lat.toFloat(), lon.toFloat(), altitude.toFloat(), timeMillis,
+            ).declination.toDouble()
+            cache.lat = lat
+            cache.lon = lon
+            cache.alt = altitude
+            cache.at = timeMillis
+            cache.value = value
+            return value
+        }
+
+        /**
+         * 磁偏角缓存有效期（毫秒）。取 30 秒：既把约 20Hz 的传感器回调压到每 30 秒
+         * 才重算一次，又保证跨采集会话时不会长时间复用旧值（换城市测新房子时尤其重要）。
+         */
+        private const val DECLINATION_TTL_MS = 30_000L
+
+        private val declinationCache = DeclinationCache()
+
+        /** 可变缓存盒；四个字段必须一起读写，故只在 @Synchronized 的 declination 里触碰。 */
+        private class DeclinationCache {
+            var lat = Double.NaN
+            var lon = Double.NaN
+            var alt = Double.NaN
+            var at = 0L
+            var value = 0.0
+        }
     }
 }

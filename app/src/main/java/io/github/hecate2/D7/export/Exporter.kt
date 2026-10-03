@@ -387,7 +387,7 @@ object Exporter {
         cx: Float,
         cy: Float,
         radius: Float,
-        points: List<io.github.hecate2.D7.data.PointRecord>,
+        points: List<PointRecord>,
         color: Int,
         dashed: Boolean,
     ) {
@@ -403,6 +403,9 @@ object Exporter {
             this.color = color
             style = Paint.Style.FILL
         }
+        // 局部变量而非 object 上的共享字段：导出在 IO 线程并发跑时，
+        // 共享 Path 会被另一个导出中途 reset，导出图就缺几段线。
+        val path = android.graphics.Path()
         for (i in 0 until points.size - 1) {
             val a = points[i]
             val b = points[i + 1]
@@ -413,12 +416,12 @@ object Exporter {
             } else {
                 SkylineShape.direct(a.az, a.el, b.az, b.el)
             }
-            skylinePath.reset()
+            path.reset()
             samples.forEachIndexed { k, (az, el) ->
                 val p = project(cx, cy, radius, az, el.coerceIn(0.0, 90.0))
-                if (k == 0) skylinePath.moveTo(p[0], p[1]) else skylinePath.lineTo(p[0], p[1])
+                if (k == 0) path.moveTo(p[0], p[1]) else path.lineTo(p[0], p[1])
             }
-            canvas.drawPath(skylinePath, paint)
+            canvas.drawPath(path, paint)
         }
         for (p in points) {
             val xy = project(cx, cy, radius, p.az, p.el.coerceIn(0.0, 90.0))
@@ -434,8 +437,6 @@ object Exporter {
             cy + (r * sin(rad)).toFloat(),
         )
     }
-
-    private val skylinePath = android.graphics.Path()
 
     // ---------------- 落盘 ----------------
 

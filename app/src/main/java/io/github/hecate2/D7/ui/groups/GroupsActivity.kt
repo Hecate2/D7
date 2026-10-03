@@ -66,6 +66,13 @@ class GroupsActivity : ComponentActivity() {
     /** 定位权限刚获批后要继续执行的定位动作。 */
     private var pendingLocate: (() -> Unit)? = null
 
+    /**
+     * 是否有导出在飞。这里的入口是长按弹的菜单项，没有按钮可以置灰，
+     * 用户连点就会并发跑两份导出（精算 + 写文件都在Dispatchers.IO），
+     * 既白耗 CPU 又可能同时写同一个文件名。故直接拒绝重复请求。
+     */
+    private var exportInFlight = false
+
     private val locationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val action = pendingLocate
@@ -321,6 +328,10 @@ class GroupsActivity : ComponentActivity() {
 
     /** 列表页快速导出：按默认档位与当地冬至日算一次，交给 Exporter。 */
     private fun exportGroup(group: GroupRecord, csv: Boolean) {
+        if (exportInFlight) {
+            toast(getString(R.string.result_export_busy))
+            return
+        }
         val mode = Summaries.defaultMode(group)
         val modeLabel = getString(
             when (mode) {
@@ -331,23 +342,29 @@ class GroupsActivity : ComponentActivity() {
         )
         val year = LocalDate.now(ZoneId.of(group.zoneId)).year
         val date = Summaries.winterDate(year, group.lat)
+        exportInFlight = true
         lifecycleScope.launch {
-            val outcome = withContext(Dispatchers.IO) {
-                val daily = Summaries.evaluate(group, mode, date)
-                if (csv) {
-                    Exporter.exportCsv(this@GroupsActivity, group, date, daily, modeLabel)
-                } else {
-                    Exporter.exportImage(
-                        this@GroupsActivity, group, getString(R.string.result_date_winter),
-                        modeLabel, daily,
-                        daily.directMinutes, Summaries.gbWindowMinutes(group, mode, year),
-                    )
+            try {
+                val outcome = withContext(Dispatchers.IO) {
+                    val daily = Summaries.evaluate(group, mode, date)
+                    if (csv) {
+                        Exporter.exportCsv(this@GroupsActivity, group, date, daily, modeLabel)
+                    } else {
+                        Exporter.exportImage(
+                            this@GroupsActivity, group, getString(R.string.result_date_winter),
+                            modeLabel, daily,
+                            daily.directMinutes, Summaries.gbWindowMinutes(group, mode, year),
+                        )
+                    }
                 }
-            }
-            if (outcome.error == null) {
-                toast(getString(R.string.result_export_done, outcome.location.orEmpty()))
-            } else {
-                toast(getString(R.string.result_export_failed))
+                if (outcome.error == null) {
+                    toast(getString(R.string.result_export_done, outcome.location.orEmpty()))
+                } else {
+                    toast(getString(R.string.result_export_failed))
+                }
+            } finally {
+                // 协程被生命周期取消时也会走到这里，不会把标志卡在 true
+                exportInFlight = false
             }
         }
     }

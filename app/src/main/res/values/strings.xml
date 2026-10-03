@@ -149,11 +149,15 @@
     <string name="result_go_capture">回采集续拍</string>
     <string name="result_export_done">已保存到 %1$s</string>
     <string name="result_export_failed">导出失败：请检查存储空间或权限</string>
+    <string name="result_export_busy">正在导出，请等上一份完成</string>
     <string name="result_no_data">先拍摄再导出</string>
     <string name="result_coverage_toofew">拍摄点太少，结果多半偏乐观</string>
     <string name="result_coverage_low">只拍到半球 %1$d%%，可能没拍全</string>
     <string name="result_coverage_mid">半球覆盖 %1$d%%，建议补拍两端</string>
     <string name="result_coverage_ok">半球覆盖 %1$d%%</string>
+    <string name="result_coverage_ceiling_toofew">天花板区拍摄点太少，结果多半偏保守</string>
+    <string name="result_coverage_ceiling_low">天花板半球只拍到 %1$d%%，可能没拍全</string>
+    <string name="result_coverage_ceiling_mid">天花板半球覆盖 %1$d%%，建议补拍两端</string>
 
     <!-- 结果页：日期档位名 / 时区 / 年曲线 -->
     <string name="result_date_winter">冬至日</string>
@@ -225,5 +229,7 @@
     <string name="bulk_edit_offset_invalid">偏移量需为数字，例如 -2 或 1.5</string>
     <string name="bulk_edit_hint">每行一个点：「方位角 仰角」，第三词写 horizon（或 h、0）表示该行与上一行（右边相邻点）之间经地平线，首行不能标。照片优先按角度对应继承，对不上且行数不变时按序继承；增删行则为无图点。清空文本会删光该区点列。</string>
     <string name="bulk_edit_first_horizon">第 1 行没有上一行，不能标 horizon</string>
+    <string name="bulk_edit_clear_title">清空分区</string>
+    <string name="bulk_edit_clear_message">确认清空 %1$d 个分区的全部拍摄点？\n照片会留在相册里，但这些分区的角度数据无法恢复。</string>
     <string name="bulk_edit_parse_error">第 %1$d 行无法解析，应形如「236.2 18.4」或「236.2 18.4 horizon」（h 或 0 同义）</string>
 </resources>

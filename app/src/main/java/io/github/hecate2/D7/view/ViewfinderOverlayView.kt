@@ -173,6 +173,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     }
 
     private companion object {
+        /** 参考弧按小时角 [ARC_HA_STEP_DEG] 度采样，-180..180 含两端共 181 点。 */
+        const val ARC_HA_STEP_DEG = 2.0
+        const val ARC_SAMPLE_COUNT = 181
+
         /** 地面层的方位采样步长（度）：4 度约 91 个点，足够平滑且开销可忽略。 */
         const val GROUND_AZ_STEP = 4
 
@@ -346,33 +350,49 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         return shots
     }
 
+    /**
+     * 一条参考弧的全天采样。方位与仰角分装两条 [DoubleArray] 而不用 `List<Pair<Double, Double>>`：
+     * 叠加层每秒重绘数十次，每帧要过 4 条弧 × 181 个采样，用 Pair 会逐帧拆装箱
+     * 两次 double（约 1400 次/帧）。采样只依赖纬度与赤纬、缓存命中率极高，
+     * 多留两条数组在内存上毫无压力。
+     */
+    private class ArcSamples(val azimuths: DoubleArray, val elevations: DoubleArray)
+
     /** 参考弧采样缓存：只依赖纬度与赤纬，姿态变化仅重投影，不重算天文位置。 */
-    private val arcCache = HashMap<Int, List<Pair<Double, Double>>>()
+    private val arcCache = HashMap<Int, ArcSamples>()
 
     /**
-     * 给定赤纬的全天太阳位置采样（按小时角 2 度步长）。
+     * 给定赤纬的全天太阳位置采样（按小时角 [ARC_HA_STEP_DEG] 度步长）。
      * 用几何高度角（不含大气折射），与天际线求值的判定基准一致。
      */
-    private fun arcSamples(declDeg: Double): List<Pair<Double, Double>> =
+    private fun arcSamples(declDeg: Double): ArcSamples =
         arcCache.getOrPut((declDeg * 100.0).roundToInt()) {
-            val out = ArrayList<Pair<Double, Double>>(181)
+            val azimuths = DoubleArray(ARC_SAMPLE_COUNT)
+            val elevations = DoubleArray(ARC_SAMPLE_COUNT)
+            var k = 0
             var ha = -180.0
-            while (ha <= 180.0) {
+            while (ha <= 180.0 && k < ARC_SAMPLE_COUNT) {
                 val sun = Solar.positionFrom(latDeg, declDeg, ha, refraction = false)
-                out.add(sun.azimuthDeg to sun.elevationDeg)
-                ha += 2.0
+                azimuths[k] = sun.azimuthDeg
+                elevations[k] = sun.elevationDeg
+                k++
+                ha += ARC_HA_STEP_DEG
             }
-            out
+            ArcSamples(azimuths, elevations)
         }
 
-    /** 给定赤纬的全天参考弧（按小时角 2 度步长采样）。 */
+    /** 给定赤纬的全天参考弧（按小时角 [ARC_HA_STEP_DEG] 度步长采样）。 */
     private fun drawSunArc(canvas: Canvas, projector: Projector, declDeg: Double, paint: Paint) {
+        val samples = arcSamples(declDeg)
+        val azimuths = samples.azimuths
+        val elevations = samples.elevations
         path.reset()
         var started = false
-        for ((az, el) in arcSamples(declDeg)) {
+        for (i in azimuths.indices) {
+            val el = elevations[i]
             if (el < Solar.SUNRISE_THRESHOLD_DEG) {
                 started = false
-            } else if (projector.project(az, el, pt)) {
+            } else if (projector.project(azimuths[i], el, pt)) {
                 if (started) path.lineTo(pt[0], pt[1]) else {
                     path.moveTo(pt[0], pt[1])
                     started = true

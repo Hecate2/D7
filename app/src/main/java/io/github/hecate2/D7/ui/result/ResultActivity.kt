@@ -266,27 +266,40 @@ class ResultActivity : ComponentActivity() {
     }
 
     /**
-     * 主半圆覆盖提示。未拍到的方位按需求视为开阔，所以覆盖率低意味着结论可能虚高。
+     * 主半圆覆盖提示。**两档的未覆盖语义恰好相反，所以提示方向必须跟着档位变**：
+     *
+     * - 外部区（含「外部+天花板」）：未拍到的方位按需求视为开阔，拍得越少结论越偏向「有太阳」，
+     *   即可能**虚高**。覆盖条与 [Summaries.coveragePercent] 都只统计外部区。
+     * - 「仅天花板」：未拍到的方位视为全遮挡，拍得越少结论越偏向「没太阳」，即可能**偏保守**。
+     *   此时外部区的覆盖率与结论无关，得改看天花板区自己的覆盖率，文案也要换个方向。
+     *
      * 分级沿用精度药丸那套四态配色：<60% 红、60~85% 黄、>85% 烟灰。
      */
     private fun bindCoverageNote(g: GroupRecord) {
         val view = binding.coverageNote
         view.isVisible = true
-        // 点数不足时连覆盖率都算不上，直接说「可能偏乐观」而不是给一个百分比
-        if (g.external.size < 2) {
-            view.setText(R.string.result_coverage_toofew)
+        val ceilingOnly = mode == CalcMode.CEILING_ONLY
+        val points = if (ceilingOnly) g.ceiling else g.external
+        // 点数不足时连覆盖率都算不上，直接定性说明偏差方向，而不是给一个百分比
+        if (points.size < 2) {
+            view.setText(
+                if (ceilingOnly) R.string.result_coverage_ceiling_toofew
+                else R.string.result_coverage_toofew,
+            )
             view.setTextColor(ContextCompat.getColor(this, R.color.precision_low))
             return
         }
-        val percent = Summaries.coveragePercent(g.lat, g.external)
+        val percent = Summaries.coveragePercent(g.lat, points)
         val grade = when {
             percent < COVERAGE_LOW -> Grade.LOW
             percent < COVERAGE_MID -> Grade.MID
             else -> Grade.UNKNOWN
         }
-        val textRes = when (grade) {
-            Grade.LOW -> R.string.result_coverage_low
-            Grade.MID -> R.string.result_coverage_mid
+        val textRes = when {
+            ceilingOnly && grade == Grade.LOW -> R.string.result_coverage_ceiling_low
+            ceilingOnly && grade == Grade.MID -> R.string.result_coverage_ceiling_mid
+            grade == Grade.LOW -> R.string.result_coverage_low
+            grade == Grade.MID -> R.string.result_coverage_mid
             else -> R.string.result_coverage_ok
         }
         view.text = getString(textRes, percent)
@@ -466,10 +479,27 @@ class ResultActivity : ComponentActivity() {
                 }
                 pending.add(region to rowsToRecords(rows, g.regionList(region)))
             }
-            for ((region, points) in pending) {
-                repository.setRegionPoints(g.id, region, points)
+            // 删光整个分区的文本等同于删掉该区全部角度数据，代价不对称：多打一次「确认」拦截。
+            // 照片不受影响（setRegionPoints 只换点列，相册里的 JPEG 另行保存）。
+            val clearing = pending.count { (region, points) ->
+                points.isEmpty() && g.regionList(region).isNotEmpty()
             }
-            dialog.dismiss()
+            val apply = {
+                for ((region, points) in pending) {
+                    repository.setRegionPoints(g.id, region, points)
+                }
+                dialog.dismiss()
+            }
+            if (clearing == 0) {
+                apply()
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.bulk_edit_clear_title)
+                    .setMessage(getString(R.string.bulk_edit_clear_message, clearing))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.confirm) { _, _ -> apply() }
+                    .show()
+            }
         }
     }
 

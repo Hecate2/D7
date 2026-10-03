@@ -57,8 +57,11 @@ data class Store(
  *
  * 落盘在单线程写队列上异步执行（先写临时文件再原子改名，文件系统不支持原子改名时回退普通改名），
  * 不阻塞调用线程；组记录按值快照处理，任何修改都生成新记录并经 [groups] 重新发射，界面据此刷新。
+ *
+ * 构造函数是 `internal`：除了 [get] 走 Context/filesDir 这条路，纯 JVM 单测也可直接传临时文件，
+ * 从而把「读改写不串行化就丢点」这条回归护栏放进 `./gradlew test`，不必每次起设备。
  */
-class GroupRepository private constructor(private val file: File) {
+class GroupRepository internal constructor(private val file: File) {
 
     private val json = Json {
         ignoreUnknownKeys = true
