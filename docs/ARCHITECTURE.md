@@ -151,9 +151,15 @@ keytool -genkeypair -keystore release.jks -keyalg RSA -keysize 4096 \
 printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=<密码>\n' > keystore.properties
 ```
 
-`app/build.gradle.kts` 读 `keystore.properties`，文件不存在时 release 产物**退化为未签名**而不报错——这样 clone 后的仓库仍能 `assembleRelease`，只是装不上设备。备份提醒：keystore 一旦丢失或密码遗忘，已发布的包无法覆盖更新，两台设备也无法装同一个应用（签名必须一致）。
+`app/build.gradle.kts` 读 `keystore.properties`，文件不存在时 release 产物**退化为未签名**而不报错——这样 clone 后的仓库仍能 `assembleRelease`，只是装不上设备。
+
+**签名方案实测为仅 v2**（`apksigner verify` 结果：v1 false、v2 true、v3 false、v4 false）。这是 AGP 对 `minSdk 26` 的默认行为：v1/JAR 签名只在 minSdk < 24 时需要，APK 内确实没有任何 `.RSA`/`.SF`；v3 未启用表示暂不支持密钥轮换（key rotation），对个人应用无影响，若日后要启用可在 `signingConfigs` 里加 `enableV3Signing = true`。证书 DN 为 `CN=D7 Sunlight, O=D7, C=CN`，RSA 4096、有效期 10000 天。
+
+**私钥材料清单**：`release.jks`（含私钥与证书链，PKCS#12，权限 600）与 `keystore.properties`（`storeFile` / `storePassword` / `keyAlias=d7` / `keyPassword`）这两个文件即可对 APK 签名。**两者都必须备份且不得入库**：丢失或忘记密码后，已发布的包无法覆盖更新，另一台设备也无法安装同一应用（Android 要求签名一致）。`.gitignore` 已按`*.jks` 与 `keystore.properties` 两条规则排除。
 
 常用命令：`./gradlew :core:test`（算法单测）、`./gradlew :app:assembleDebug`（调试包）、`./gradlew :app:assembleRelease`（发布包，产物名带版本号）、`./gradlew :app:connectedDebugAndroidTest`（仪器测试，在已连接的模拟器或真机上运行，多设备时用 `ANDROID_SERIAL` 指定；该任务结束会自动卸载应用）。装机若 `installDebug` 遇到 ddmlib 超时，可改用 `adb install -r` 直接安装。
+
+反复调试单个测试类时用 `scripts/run-instrumentation.sh`：它走 `am instrument` 跳过 Gradle 的重新打包与安装，全量 21 个用例约 28 秒、单个类约 4 秒，而 `connectedAndroidTest` 即使命中缓存也要 35 秒以上（冷构建 57 秒）。可传类名或 `类#方法` 限定范围。脚本内把 `ANDROID_SERIAL` 默认为 `emulator-5554`——本机常同时连着真机，而 `connectedAndroidTest` 会跑遍所有连接设备，正式验收仍应显式指定设备。
 
 ## 13. 实施阶段与提交计划
 
