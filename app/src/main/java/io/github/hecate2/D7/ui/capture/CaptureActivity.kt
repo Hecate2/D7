@@ -19,7 +19,6 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,15 +42,18 @@ import io.github.hecate2.D7.databinding.ActivityCaptureBinding
 import io.github.hecate2.D7.sensor.LocationProvider
 import io.github.hecate2.D7.sensor.OrientationSensor
 import io.github.hecate2.D7.sensor.Pose
+import io.github.hecate2.D7.ui.CaptureLine
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.Grade
+import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
+import io.github.hecate2.D7.ui.setToggleTint
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.deletePointPhoto
 import io.github.hecate2.D7.util.Locales
-import io.github.hecate2.D7.util.keepScreenOn
+import io.github.hecate2.D7.util.applyKeepScreenOn
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -96,7 +98,7 @@ class CaptureActivity : ComponentActivity() {
 
     private lateinit var binding: ActivityCaptureBinding
     private val repository by lazy { GroupRepository.get(this) }
-    private lateinit var settings: CaptureSettings
+    private lateinit var settings: Settings
     private lateinit var photoStore: PhotoStore
     private lateinit var camera: CameraController
     private var orientation: OrientationSensor? = null
@@ -158,7 +160,9 @@ class CaptureActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        keepScreenOn()
+
+        settings = Settings(this)
+        applyKeepScreenOn(settings.keepScreenOn)
 
         groupId = intent.getStringExtra(Extras.GROUP_ID).orEmpty()
         val group = repository.get(groupId)
@@ -167,7 +171,6 @@ class CaptureActivity : ComponentActivity() {
             return
         }
 
-        settings = CaptureSettings(this)
         photoStore = PhotoStore(this)
         camera = CameraController(this)
 
@@ -763,9 +766,9 @@ class CaptureActivity : ComponentActivity() {
             torchOn = !torchOn
             camera.setTorch(torchOn)
             binding.torchButton.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-            paintToggle(binding.torchButton, torchOn)
+            binding.torchButton.setToggleTint(torchOn)
         }
-        paintToggle(binding.torchButton, false)
+        binding.torchButton.setToggleTint(false)
     }
 
     /** 对焦键：短按立即对准取景中心对焦一次，长按开关自动对焦。 */
@@ -775,7 +778,7 @@ class CaptureActivity : ComponentActivity() {
             onLongPress = { toggleAutoFocus() },
             onShortPress = { focusNow() },
         )
-        paintToggle(binding.focusButton, true)
+        binding.focusButton.setToggleTint(true)
     }
 
     /** 自动对焦循环：仅在前台跑（[repeatOnLifecycle]），关掉自动对焦时空转不动作。 */
@@ -802,17 +805,7 @@ class CaptureActivity : ComponentActivity() {
     private fun toggleAutoFocus() {
         val next = !camera.autoFocusEnabled
         camera.setAutoFocusEnabled(next)
-        paintToggle(binding.focusButton, next)
-    }
-
-    /**
-     * 开关态着色：开用按住快门的琥珀色（[R.color.press]，黑底上最显眼），
-     * 关用快门中心的月灰（[R.color.moon]）。
-     */
-    private fun paintToggle(view: ImageView, on: Boolean) {
-        view.imageTintList = ColorStateList.valueOf(
-            ContextCompat.getColor(this, if (on) R.color.press else R.color.moon)
-        )
+        binding.focusButton.setToggleTint(next)
     }
 
     /** 仅供仪器测试：自动对焦是否开启。 */
@@ -950,8 +943,8 @@ class CaptureActivity : ComponentActivity() {
         val hasFlash = camera.hasFlashUnit
         binding.torchSlot.isVisible = hasFlash
         torchOn = hasFlash && camera.torchStateBeforeBind == true
-        paintToggle(binding.torchButton, torchOn)
-        paintToggle(binding.focusButton, camera.autoFocusEnabled)
+        binding.torchButton.setToggleTint(torchOn)
+        binding.focusButton.setToggleTint(camera.autoFocusEnabled)
     }
 
     private fun showCameraNotice() {

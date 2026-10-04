@@ -24,8 +24,8 @@ import androidx.test.rule.GrantPermissionRule
 import io.github.hecate2.D7.data.GroupRepository
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
-import io.github.hecate2.D7.ui.capture.CaptureLine
-import io.github.hecate2.D7.ui.capture.CaptureSettings
+import io.github.hecate2.D7.ui.CaptureLine
+import io.github.hecate2.D7.ui.Settings
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -49,7 +49,7 @@ class CaptureLinesDialogTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val repository get() = GroupRepository.get(context)
-    private val settings get() = CaptureSettings(context)
+    private val settings get() = Settings(context)
     private var scene: ActivityScenario<CaptureActivity>? = null
 
     @Before

@@ -32,10 +32,11 @@ import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.Grade
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.colorRes
+import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Locales
-import io.github.hecate2.D7.util.keepScreenOn
+import io.github.hecate2.D7.util.applyKeepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import io.github.hecate2.D7.util.decodeDownsampled
 import io.github.hecate2.D7.util.deletePointPhoto
@@ -84,7 +85,8 @@ class ResultActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityResultBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        keepScreenOn()
+
+        applyKeepScreenOn(Settings(this).keepScreenOn)
 
         repository = GroupRepository.get(this)
         pointRows = PointRows(

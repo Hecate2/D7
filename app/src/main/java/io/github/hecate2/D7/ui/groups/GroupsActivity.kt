@@ -35,12 +35,13 @@ import io.github.hecate2.D7.sensor.LocationCapability
 import io.github.hecate2.D7.sensor.LocationProvider
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
+import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.deletePhoto
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Locales
-import io.github.hecate2.D7.util.keepScreenOn
+import io.github.hecate2.D7.util.applyKeepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -59,6 +60,7 @@ import kotlin.math.roundToInt
 class GroupsActivity : ComponentActivity() {
 
     private lateinit var binding: ActivityGroupsBinding
+    private lateinit var settings: Settings
     private lateinit var repository: GroupRepository
     private val locationProvider by lazy { LocationProvider(this) }
 
@@ -96,7 +98,9 @@ class GroupsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGroupsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        keepScreenOn()
+
+        settings = Settings(this)
+        applyKeepScreenOn(settings.keepScreenOn)
 
         repository = GroupRepository.get(this)
         binding.newButton.setOnClickListener { showNewGroupDialog() }

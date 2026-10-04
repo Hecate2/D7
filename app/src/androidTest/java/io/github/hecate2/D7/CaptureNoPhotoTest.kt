@@ -18,7 +18,7 @@ import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
-import io.github.hecate2.D7.ui.capture.CaptureSettings
+import io.github.hecate2.D7.ui.Settings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -58,7 +58,7 @@ class CaptureNoPhotoTest {
     fun setUp() {
         TestSupport.deleteAllGroups(repository)
         // 设置是全局持久的，测试前先归零，避免上一条用例的开关状态渗进来
-        CaptureSettings(context).noPhoto = false
+        Settings(context).noPhoto = false
         groupId = repository.createGroup(
             "不拍照测试组", 31.23, 121.47, 0.0, ZoneId.systemDefault().id,
         ).id
@@ -72,7 +72,7 @@ class CaptureNoPhotoTest {
     @After
     fun tearDown() {
         scene?.close()
-        CaptureSettings(context).noPhoto = false
+        Settings(context).noPhoto = false
         TestSupport.deleteAllGroups(repository)
     }
 
