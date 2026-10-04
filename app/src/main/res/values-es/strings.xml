@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">Atrás</string>
 
     <!-- Series de fotos -->
     <string name="groups_title">Series</string>
+    <string name="groups_keep_on">Pantalla siempre encendida</string>
     <string name="groups_new">+ Nueva</string>
     <string name="groups_subtitle">Una serie por ventana · se queda en el móvil</string>
     <string name="groups_empty">Aún no hay series\nToca «+ Nueva» y ponle nombre\nColócate en la ventana a medir</string>

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">뒤로</string>
 
     <!-- 촬영 세트 -->
     <string name="groups_title">촬영 세트</string>
+    <string name="groups_keep_on">화면 항상 켜기</string>
     <string name="groups_new">+ 새로</string>
     <string name="groups_subtitle">창문마다 한 세트 · 이 기기에만 저장</string>
     <string name="groups_empty">아직 세트가 없습니다\n“+ 새로”로 이름을 붙이고\n측정할 창문 앞에 서세요</string>

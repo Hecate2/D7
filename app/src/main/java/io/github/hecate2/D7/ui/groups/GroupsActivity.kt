@@ -10,6 +10,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.PopupMenu
 import android.widget.Toast
@@ -37,6 +38,7 @@ import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.result.ResultActivity
+import io.github.hecate2.D7.ui.setToggleTint
 import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.deletePhoto
 import io.github.hecate2.D7.util.Format
@@ -105,6 +107,8 @@ class GroupsActivity : ComponentActivity() {
         repository = GroupRepository.get(this)
         binding.newButton.setOnClickListener { showNewGroupDialog() }
         binding.langButton.setOnClickListener { showLanguageDialog() }
+        binding.keepOnButton.setOnClickListener { toggleKeepScreenOn() }
+        updateKeepOnUi()
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -137,6 +141,21 @@ class GroupsActivity : ComponentActivity() {
         pendingLocate = null
         super.onDestroy()
     }
+
+    /**
+     * 屏幕常亮开关：这是全应用共用的偏好，但入口只在根页面这一处。
+     *
+     * 写进偏好后当场把本窗口的标志也改掉——`FLAG_KEEP_SCREEN_ON` 是逐窗口的，
+     * 只写偏好不重设标志的话，要等下一次进页面才生效。
+     */
+    private fun toggleKeepScreenOn() {
+        settings.keepScreenOn = !settings.keepScreenOn
+        applyKeepScreenOn(settings.keepScreenOn)
+        updateKeepOnUi()
+        binding.keepOnButton.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+    }
+
+    private fun updateKeepOnUi() = binding.keepOnButton.setToggleTint(settings.keepScreenOn)
 
     private fun openResult(group: GroupRecord) {
         startActivity(Intent(this, ResultActivity::class.java).putExtra(Extras.GROUP_ID, group.id))

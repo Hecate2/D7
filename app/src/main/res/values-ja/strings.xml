@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">戻る</string>
 
     <!-- 撮影セット -->
     <string name="groups_title">撮影セット</string>
+    <string name="groups_keep_on">画面を常時点灯</string>
     <string name="groups_new">+ 新規</string>
     <string name="groups_subtitle">窓ごとに1セット · この端末に保存</string>
     <string name="groups_empty">まだセットがありません\n「+ 新規」で名前を付け\n測りたい窓の前に立ってください</string>

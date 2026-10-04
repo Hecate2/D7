@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 屏幕常亮：一颗太阳（空心圆 + 八道短光线），描边式，与手电筒/对焦键同一套线宽与圆头。
+     不用灯泡：手电筒键在本 app 里就是灯的主题，两者隔着一页更容易混。
+     图形横向 1.05–22.95、纵向 1.05–22.95（含描边外扩），以 (12,12) 为中心。
+     运行时用 imageTintList 改色（常亮=琥珀 @color/press，允许熄屏=月灰 @color/moon）。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="@color/moon"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 八道光线的内端 7.0、外端 10.0（相对圆心），四条斜线取 45 度的 cos/sin -->
+    <path
+        android:pathData="M19.0,12 L22.0,12 M16.95,16.95 L19.07,19.07 M12,19.0 L12,22.0 M7.05,16.95 L4.93,19.07
+            M5.0,12 L2.0,12 M7.05,7.05 L4.93,4.93 M12,5.0 L12,2.0 M16.95,7.05 L19.07,4.93"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.9" />
+
+    <!-- 太阳本体：半径 4.5 的空心圆，用两段半圆画成 -->
+    <path
+        android:pathData="M12,7.5 a4.5,4.5 0 1,0 0,9 a4.5,4.5 0 1,0 0,-9 Z"
+        android:strokeColor="@color/paper"
+        android:strokeWidth="1.9" />
+</vector>

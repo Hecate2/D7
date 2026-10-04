@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">Zurück</string>
 
     <!-- Fotostrecken -->
     <string name="groups_title">Fotostrecken</string>
+    <string name="groups_keep_on">Bildschirm bleibt an</string>
     <string name="groups_new">+ Neu</string>
     <string name="groups_subtitle">Eine Strecke pro Fenster · bleibt auf dem Gerät</string>
     <string name="groups_empty">Noch keine Strecke\nTippe „+ Neu“ und benenne sie\nStelle dich ans Fenster</string>

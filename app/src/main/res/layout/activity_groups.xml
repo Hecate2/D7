@@ -48,6 +48,21 @@
             android:textColor="@color/paper"
             android:textSize="12sp" />
 
+        <!-- 屏幕常亮开关：纯图标，开=琥珀、关=月灰（与采集页手电筒/对焦键同一套开关语义）。
+             常亮是三个页面共用的偏好，入口放在根页面这一处。 -->
+        <ImageView
+            android:id="@+id/keepOnButton"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_icon_button"
+            android:clickable="true"
+            android:contentDescription="@string/groups_keep_on"
+            android:focusable="true"
+            android:padding="7dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_keep_on" />
+
         <TextView
             android:id="@+id/newButton"
             android:layout_width="wrap_content"

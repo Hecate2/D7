@@ -16,6 +16,21 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- 有些机型没有底部导航键（手势导航或隐藏导航条），这一页必须自带退路。
+             只做 32dp：标题行为了它多长 12dp，而这页最怕竖向被挤掉。 -->
+        <ImageView
+            android:id="@+id/backButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/back"
+            android:focusable="true"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_back" />
+
         <TextView
             android:id="@+id/title"
             android:layout_width="wrap_content"
@@ -335,9 +350,9 @@
 
     </LinearLayout>
 
-    <!-- 底部只留这一行：快门提示已并入 hintSeg（原文与它重复），删除的长按提示
-         贴在删除键正下方，省掉原先单独的 captionRow 一整行。五个控件都占 52dp、
-         顶端对齐，删除键与快门中心线保持一致。
+    <!-- 底部只留这一行：快门提示已并入 hintSeg（原文与它重复），删除键的长按提示改成
+         短按时弹一句 Toast——常驻提示连同它那一行一起撤掉，高度还给取景器。
+         五个控件都占 52dp、顶端对齐，删除键与快门中心线保持一致。
          闪光灯键与对焦键夹在快门两侧，是纯图标键：48dp 见方、无文字，
          宽度写死以便两个文字键（完成/删除）继续用 weight 平分剩余空间。 -->
     <LinearLayout
@@ -431,43 +446,27 @@
                 android:src="@drawable/ic_focus" />
         </FrameLayout>
 
-        <LinearLayout
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="52dp">
-
-                <TextView
-                    android:id="@+id/deleteButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end|center_vertical"
-                    android:background="@drawable/bg_button_outline"
-                    android:gravity="center"
-                    android:minWidth="58dp"
-                    android:paddingStart="14dp"
-                    android:paddingTop="7dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="7dp"
-                    android:text="@string/capture_delete"
-                    android:textColor="@color/paper"
-                    android:textSize="11sp" />
-            </FrameLayout>
+            android:layout_height="52dp"
+            android:layout_weight="1">
 
             <TextView
-                android:id="@+id/deleteHint"
+                android:id="@+id/deleteButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="3dp"
-                android:text="@string/capture_delete_hint"
-                android:textColor="@color/smoke"
-                android:textSize="9sp" />
-        </LinearLayout>
+                android:layout_gravity="end|center_vertical"
+                android:background="@drawable/bg_button_outline"
+                android:gravity="center"
+                android:minWidth="58dp"
+                android:paddingStart="14dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="7dp"
+                android:text="@string/capture_delete"
+                android:textColor="@color/paper"
+                android:textSize="11sp" />
+        </FrameLayout>
     </LinearLayout>
 
 </LinearLayout>

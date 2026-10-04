@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">七日</string>
+    <string name="back">返回</string>
 
     <!-- 照片组管理 -->
     <string name="groups_title">照片组</string>
+    <string name="groups_keep_on">屏幕常亮</string>
     <string name="groups_new">+ 新建</string>
     <string name="groups_subtitle">一窗一组 · 全部保存在本机</string>
     <string name="groups_empty">还没有照片组\n点右上角「+ 新建」起个名字\n站在要看的那扇窗前开拍</string>

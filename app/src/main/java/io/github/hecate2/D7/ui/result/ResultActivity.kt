@@ -98,6 +98,7 @@ class ResultActivity : ComponentActivity() {
             onShowPhoto = ::showPhoto,
         )
 
+        binding.backButton.setOnClickListener { finish() }
         binding.pillWinter.setOnClickListener { choosePreset(Preset.WINTER) }
         binding.pillDahan.setOnClickListener { choosePreset(Preset.DAHAN) }
         binding.pillEquinox.setOnClickListener { choosePreset(Preset.EQUINOX) }

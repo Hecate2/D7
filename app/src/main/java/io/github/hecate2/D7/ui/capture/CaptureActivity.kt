@@ -118,6 +118,9 @@ class CaptureActivity : ComponentActivity() {
     /** 快门发起拍照的次数（不管成没成），供仪器测试断言「不拍照」开关是否真的切断了拍照链路。 */
     private var photoAttempts = 0
 
+    /** 删除键短按提示弹出的次数，供仪器测试断言「短按不生效但有提示」。 */
+    private var deleteHintCount = 0
+
     /** 手电筒当前是否点亮，与 [CameraController] 实际状态同步。 */
     private var torchOn = false
 
@@ -192,6 +195,7 @@ class CaptureActivity : ComponentActivity() {
         setupFocus()
         startAutoFocusLoop()
 
+        binding.backButton.setOnClickListener { finish() }
         binding.doneButton.setOnClickListener { openResult() }
         binding.plus180.setOnClickListener { togglePlus180() }
         binding.noPhoto.setOnClickListener { toggleNoPhoto() }
@@ -719,6 +723,12 @@ class CaptureActivity : ComponentActivity() {
         bindPressGesture(
             view = binding.deleteButton,
             onLongPress = { deleteCandidate(candidate) },
+            // 短按不删任何东西，但必须说一声「这是长按才生效的」——原先这句提示常驻在
+            // 删除键下方，占掉一整行高度，现在改成按需弹一次。
+            onShortPress = {
+                deleteHintCount++
+                toast(R.string.capture_delete_hint)
+            },
             arm = {
                 candidate = findDeleteCandidate()
                 if (candidate < 0) toast(R.string.capture_delete_no_candidate)
@@ -823,6 +833,10 @@ class CaptureActivity : ComponentActivity() {
     /** 仅供仪器测试：「不拍照」是否开启。 */
     @androidx.annotation.VisibleForTesting
     fun noPhotoForTest(): Boolean = settings.noPhoto
+
+    /** 仅供仪器测试：删除键短按提示的累计弹出次数。 */
+    @androidx.annotation.VisibleForTesting
+    fun deleteHintCountForTest(): Int = deleteHintCount
 
     /** 仅供仪器测试：快门发起拍照的累计次数。 */
     @androidx.annotation.VisibleForTesting

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">Назад</string>
 
     <!-- Серии съёмок -->
     <string name="groups_title">Серии</string>
+    <string name="groups_keep_on">Экран не гаснет</string>
     <string name="groups_new">+ Новая</string>
     <string name="groups_subtitle">Одна серия на окно · хранится на телефоне</string>
     <string name="groups_empty">Серий пока нет\nНажмите «+ Новая» и дайте имя\nВстаньте у нужного окна</string>

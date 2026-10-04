@@ -10,6 +10,9 @@ import android.view.View
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
+import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -30,10 +33,13 @@ import org.junit.runner.RunWith
 import java.time.ZoneId
 
 /**
- * 采集页长按删除键时，连带的相册删除。
+ * 采集页删除键的两组行为：长按删点时连带的相册删除，以及短按时只给一句提示。
  *
  * 用户提的：删掉一个拍错的点，那张照片却还留在相册里。删点不可撤销，留一张再也对不上
  * 任何点的照片（占着相册、占着空间）比删掉它更糟。
+ *
+ * 另一半是提示的去处：原先「长按删右侧最近点」常驻在删除键下方占一整行，现在撤掉了，
+ * 改成短按时弹一次。所以短按必须仍是「什么也不删」，且不能被当成删除。
  *
  * 三条用例把「注意没有照片的情况」拆开盯：
  * 1. 有照片：被删点的那张必须从 MediaStore 消失，而没被删的那张必须原样还在——
@@ -177,6 +183,44 @@ class CaptureDeletePointPhotoTest {
         assertEquals("照片早已不在相册时，删点照常完成", 1, after.size)
     }
 
+    /**
+     * 短按删除键：一个点都不删，只弹一次提示。
+     *
+     * 常驻提示撤掉后，短按就成了「没有提示的无效操作」，没人知道该长按——所以这次提示
+     * 是功能的一部分，不是装饰。
+     */
+    @Test
+    fun shortPressOnlyShowsTheHoldHint() {
+        seedPoints(photoA = null, photoB = null)
+
+        shortPressDelete()
+
+        assertEquals("短按不该删掉任何点", 2, repository.get(groupId)!!.external.size)
+        assertEquals("短按要弹一次「长按删右侧最近点」", 1, hintCount())
+    }
+
+    /** 长按是正常删除，不该再弹短按那句提示。 */
+    @Test
+    fun longPressDeletesWithoutShowingTheHoldHint() {
+        seedPoints(photoA = null, photoB = null)
+
+        longPressDelete()
+
+        TestSupport.waitFor { repository.get(groupId)?.external?.takeIf { it.size == 1 } }
+        assertEquals("长按删完不该再弹短按提示", 0, hintCount())
+    }
+
+    /**
+     * 删除键下方那句常驻提示已经不在界面上，高度还给取景器。
+     *
+     * 按文案找而不是按 id 找：[R.id.deleteHint] 已随那一行一起删掉，而这条断言要防的
+     * 正是「有人把它加回来」。
+     */
+    @Test
+    fun thePermanentHintTextIsNotOnScreen() {
+        onView(withText(R.string.capture_delete_hint)).check(doesNotExist())
+    }
+
     /** 两个相距 180 度的点：任何朝向下都有且只有一个能成为删除目标。 */
     private fun seedPoints(photoA: String?, photoB: String?) {
         repository.appendPoint(
@@ -204,6 +248,14 @@ class CaptureDeletePointPhotoTest {
         Thread.sleep(800)
         touch(MotionEvent.ACTION_UP)
     }
+
+    /** 短按：按下即抬手，不越过长按阈值。 */
+    private fun shortPressDelete() {
+        touch(MotionEvent.ACTION_DOWN)
+        touch(MotionEvent.ACTION_UP)
+    }
+
+    private fun hintCount(): Int = withActivity { it.deleteHintCountForTest() }
 
     private fun touch(action: Int) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {

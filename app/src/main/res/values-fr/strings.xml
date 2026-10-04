@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">Retour</string>
 
     <!-- Séries de photos -->
     <string name="groups_title">Séries</string>
+    <string name="groups_keep_on">Écran toujours allumé</string>
     <string name="groups_new">+ Nouvelle</string>
     <string name="groups_subtitle">Une série par fenêtre · reste sur l’appareil</string>
     <string name="groups_empty">Aucune série\nTouchez « + Nouvelle » et nommez-la\nPlacez-vous à la fenêtre à mesurer</string>

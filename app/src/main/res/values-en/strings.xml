@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">D7</string>
+    <string name="back">Back</string>
 
     <!-- Photo sets -->
     <string name="groups_title">Photo sets</string>
+    <string name="groups_keep_on">Keep screen on</string>
     <string name="groups_new">+ New</string>
     <string name="groups_subtitle">One set per window · kept on this phone</string>
     <string name="groups_empty">No photo sets yet\nTap “+ New” and name it\nStand at the window you want to measure</string>
