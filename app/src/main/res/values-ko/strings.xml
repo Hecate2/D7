@@ -98,7 +98,8 @@
     <string name="capture_no_pose">센서 값을 기다리는 중</string>
     <string name="capture_ceiling_longpress">천장은 탭만 됩니다</string>
     <string name="capture_photo_failed">사진 저장은 실패했지만 각도는 남겼습니다</string>
-    <string name="capture_deleted">%1$d번 점 삭제(사진은 그대로)</string>
+    <string name="capture_deleted">%1$d번 점 삭제</string>
+    <string name="capture_deleted_with_photo">%1$d번 점과 사진 삭제</string>
     <string name="capture_delete_no_candidate">오른쪽에 지울 점이 없습니다</string>
     <string name="capture_calib_label">나침반</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">하루 변화</string>
     <string name="result_timeline_legend">흰색=직사광 진회색=차폐</string>
     <string name="result_gb_label">대한 8:00–16:00 유효 직사광</string>
-    <string name="result_gb_hint">GB 50180 기준 · Ⅰ Ⅱ Ⅲ Ⅶ구역: 대한 8–16에 2시간 이상(소도시 3시간) · Ⅳ구역: 9–15에 1시간 이상 · Ⅴ Ⅵ구역: 동지 9–15에 1시간 이상 · 실제 기준은 지역의 규정에 따름</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">연중 직사광 시간(시간/일)</string>
     <string name="result_points">촬영점</string>
     <string name="result_points_count">외부 %1$d점 · 천장 %2$d점</string>

@@ -98,7 +98,8 @@
     <string name="capture_no_pose">En attente d’une mesure</string>
     <string name="capture_ceiling_longpress">Au plafond : clic seulement</string>
     <string name="capture_photo_failed">Photo non enregistrée ; angle conservé</string>
-    <string name="capture_deleted">Point %1$d supprimé (photo conservée)</string>
+    <string name="capture_deleted">Point %1$d supprimé</string>
+    <string name="capture_deleted_with_photo">Point %1$d et sa photo supprimés</string>
     <string name="capture_delete_no_candidate">Rien à supprimer à droite</string>
     <string name="capture_calib_label">Boussole</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">Journée</string>
     <string name="result_timeline_legend">Blanc = soleil · foncé = masqué</string>
     <string name="result_gb_label">Grand froid 8:00–16:00 soleil effectif</string>
-    <string name="result_gb_hint">Prescriptions GB 50180 · zones Ⅰ Ⅱ Ⅲ Ⅶ : ≥2 h au grand froid 8–16 (3 h en petite ville) ; Ⅳ : ≥1 h 9–15 ; Ⅴ Ⅵ : ≥1 h au solstice 9–15 · les règles locales prévalent</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">Soleil direct sur l’année (h/jour)</string>
     <string name="result_points">Points</string>
     <string name="result_points_count">Ext %1$d · Plaf %2$d</string>

@@ -98,7 +98,8 @@
     <string name="capture_no_pose">センサーの値を待っています</string>
     <string name="capture_ceiling_longpress">天井はタップのみ</string>
     <string name="capture_photo_failed">写真は保存できませんでしたが、角度は記録しました</string>
-    <string name="capture_deleted">%1$d 点目を削除（写真はそのままで残ります）</string>
+    <string name="capture_deleted">%1$d 点目を削除</string>
+    <string name="capture_deleted_with_photo">%1$d 点目とその写真を削除</string>
     <string name="capture_delete_no_candidate">右に削除できる点がありません</string>
     <string name="capture_calib_label">磁針</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">その日の推移</string>
     <string name="result_timeline_legend">白=直射 濃灰=遮蔽</string>
     <string name="result_gb_label">大寒日 8:00–16:00 の有効直射</string>
-    <string name="result_gb_hint">GB 50180 基準 · Ⅰ Ⅱ Ⅲ Ⅶ区：大寒 8–16 で2時間以上（小都市は3時間）· Ⅳ区：9–15 で1時間以上 · Ⅴ Ⅵ区：冬至 9–15 で1時間以上 · 実際の基準は地域の規定による</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">通年の直射時間（時間/日）</string>
     <string name="result_points">撮影点</string>
     <string name="result_points_count">外 %1$d 点 · 天 %2$d 点</string>

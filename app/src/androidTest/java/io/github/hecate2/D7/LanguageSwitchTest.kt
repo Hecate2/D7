@@ -147,6 +147,44 @@ class LanguageSwitchTest {
         }
     }
 
+    /**
+     * 国标提示只给中文界面，其余语言取空串。
+     *
+     * GB 50180-2018 的气候区划与时限出了中国没有对照意义，翻成德俄日韩只会把一句
+     * 「本地不适用」的标准说成通用结论。空串不止是「看不见」——`gbHint` 那个 TextView 还在，
+     * 会把 6dp 间距留在卡片底部，所以两层都要盯：资源本身是空的，界面那一行要收掉。
+     */
+    @Test
+    fun gbHintIsOnlyShownInChinese() {
+        for (tag in listOf("en", "ja", "ko", "de", "fr", "es", "ru")) {
+            Locales.setTag(context, tag)
+            assertEquals(
+                "语言 $tag 下的国标提示应为空串",
+                "",
+                Locales.wrap(context).getString(R.string.result_gb_hint),
+            )
+        }
+        Locales.setTag(context, "zh-Hans")
+        assertTrue(
+            "中文下应给出国标提示",
+            Locales.wrap(context).getString(R.string.result_gb_hint).contains("GB 50180"),
+        )
+
+        assertEquals("英文界面不该留下那一行", View.GONE, gbHintVisibility("en"))
+        assertEquals("中文界面该有那一行", View.VISIBLE, gbHintVisibility("zh-Hans"))
+    }
+
+    /** 按 [tag] 打开结果页后，国标提示那一行的 visibility。 */
+    private fun gbHintVisibility(tag: String): Int {
+        Locales.setTag(context, tag)
+        var visibility = View.INVISIBLE
+        val intent = Intent(context, ResultActivity::class.java).putExtra(Extras.GROUP_ID, groupId)
+        ActivityScenario.launch<ResultActivity>(intent).use { scenario ->
+            scenario.onActivity { visibility = it.findViewById<View>(R.id.gbHint).visibility }
+        }
+        return visibility
+    }
+
     /** 默认跟随系统：清掉偏好后，界面语言等于系统当前语言。 */
     @Test
     fun defaultFollowsSystemLanguage() {

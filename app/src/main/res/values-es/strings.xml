@@ -98,7 +98,8 @@
     <string name="capture_no_pose">Esperando una lectura</string>
     <string name="capture_ceiling_longpress">En techo, solo toca</string>
     <string name="capture_photo_failed">No se guardó la foto; el ángulo se conserva</string>
-    <string name="capture_deleted">Punto %1$d borrado (se conserva la foto)</string>
+    <string name="capture_deleted">Punto %1$d borrado</string>
+    <string name="capture_deleted_with_photo">Punto %1$d y su foto borrados</string>
     <string name="capture_delete_no_candidate">No hay nada que borrar a la derecha</string>
     <string name="capture_calib_label">Brújula</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">Día</string>
     <string name="result_timeline_legend">Blanco = sol · oscuro = tapado</string>
     <string name="result_gb_label">Gran frío 8:00–16:00 sol efectivo</string>
-    <string name="result_gb_hint">Pautas GB 50180 · zonas Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 h en gran frío 8–16 (3 h en pueblo pequeño); Ⅳ: ≥1 h 9–15; Ⅴ Ⅵ: ≥1 h en solsticio 9–15 · manda la planificación local</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">Sol directo todo el año (h/día)</string>
     <string name="result_points">Puntos</string>
     <string name="result_points_count">Ext %1$d · Techo %2$d</string>

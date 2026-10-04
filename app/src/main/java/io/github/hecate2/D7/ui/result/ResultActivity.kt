@@ -88,6 +88,11 @@ class ResultActivity : ComponentActivity() {
 
         applyKeepScreenOn(Settings(this).keepScreenOn)
 
+        // 国标那句只给中文界面：GB 50180-2018 的气候区与时限出了中国没有对照意义，
+        // 其余语言在各自的 strings.xml 里取空串。空的时候连那一行的高度与 6dp 间距一并收掉，
+        // 否则卡片底部会多出一条谁也说不清来历的空白。
+        binding.gbHint.isVisible = getString(R.string.result_gb_hint).isNotEmpty()
+
         repository = GroupRepository.get(this)
         pointRows = PointRows(
             container = binding.pointList,

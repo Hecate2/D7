@@ -98,7 +98,8 @@
     <string name="capture_no_pose">Waiting for a sensor reading</string>
     <string name="capture_ceiling_longpress">Ceiling mode: tap only</string>
     <string name="capture_photo_failed">Photo failed to save; the angle was kept</string>
-    <string name="capture_deleted">Point %1$d deleted (photo kept)</string>
+    <string name="capture_deleted">Point %1$d deleted</string>
+    <string name="capture_deleted_with_photo">Point %1$d and its photo deleted</string>
     <string name="capture_delete_no_candidate">No point on the right to delete</string>
     <string name="capture_calib_label">Compass</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">Day timeline</string>
     <string name="result_timeline_legend">White = sun · dark = blocked</string>
     <string name="result_gb_label">Great Cold 8:00–16:00 effective sun</string>
-    <string name="result_gb_hint">GB 50180 presets · zones Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 h on Great Cold 8–16 (3 h in small towns); Ⅳ: ≥1 h on 9–15; Ⅴ Ⅵ: ≥1 h on winter solstice 9–15 · local planning rules prevail</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">Direct sun all year (h/day)</string>
     <string name="result_points">Shot points</string>
     <string name="result_points_count">Out %1$d · Ceil %2$d</string>

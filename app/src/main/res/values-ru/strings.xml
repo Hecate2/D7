@@ -98,7 +98,8 @@
     <string name="capture_no_pose">Ждём показания датчика</string>
     <string name="capture_ceiling_longpress">У потолка — только нажатие</string>
     <string name="capture_photo_failed">Фото не сохранено; угол сохранён</string>
-    <string name="capture_deleted">Точка %1$d удалена (фото осталось)</string>
+    <string name="capture_deleted">Точка %1$d удалена</string>
+    <string name="capture_deleted_with_photo">Точка %1$d и её фото удалены</string>
     <string name="capture_delete_no_candidate">Справа нечего удалять</string>
     <string name="capture_calib_label">Компас</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">День</string>
     <string name="result_timeline_legend">Белое = свет · тёмное = закрыто</string>
     <string name="result_gb_label">Большой холод 8:00–16:00 засвет</string>
-    <string name="result_gb_hint">Нормативы GB 50180 · зоны Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 ч в большой холод 8–16 (3 ч в малых городах); Ⅳ: ≥1 ч 9–15; Ⅴ Ⅵ: ≥1 ч в солнцестояние 9–15 · решают местные нормы</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">Прямой свет весь год (ч/день)</string>
     <string name="result_points">Точки</string>
     <string name="result_points_count">Снаружи %1$d · Потолок %2$d</string>

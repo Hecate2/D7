@@ -98,7 +98,8 @@
     <string name="capture_no_pose">Warte auf Sensorwert</string>
     <string name="capture_ceiling_longpress">An der Decke nur tippen</string>
     <string name="capture_photo_failed">Foto nicht gespeichert; Winkel behalten</string>
-    <string name="capture_deleted">Punkt %1$d gelöscht (Foto bleibt)</string>
+    <string name="capture_deleted">Punkt %1$d gelöscht</string>
+    <string name="capture_deleted_with_photo">Punkt %1$d und sein Foto gelöscht</string>
     <string name="capture_delete_no_candidate">Rechts steht nichts zum Löschen</string>
     <string name="capture_calib_label">Kompass</string>
     <string name="capture_calib_unknown">?</string>
@@ -145,7 +146,10 @@
     <string name="result_timeline">Tagesverlauf</string>
     <string name="result_timeline_legend">Weiß = Sonne · dunkel = verdeckt</string>
     <string name="result_gb_label">Große Kälte 8:00–16:00 wirksame Sonne</string>
-    <string name="result_gb_hint">GB 50180-Vorgaben · Zonen Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 h an der Großen Kälte 8–16 (3 h in Kleinstädten); Ⅳ: ≥1 h 9–15; Ⅴ Ⅵ: ≥1 h zur Sonnenwende 9–15 · örtliche Planungswerte gelten</string>
+    <!-- GB 50180-2018 is a Chinese national standard: its climate zones and time bands
+         only apply inside China, so this hint is deliberately empty here. Chinese is the
+         default locale (values/) and keeps the full text. -->
+    <string name="result_gb_hint"></string>
     <string name="result_year_label">Direktsonne ganzjährig (h/Tag)</string>
     <string name="result_points">Aufnahmepunkte</string>
     <string name="result_points_count">Außen %1$d · Decke %2$d</string>

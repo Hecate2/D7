@@ -737,7 +737,15 @@ class CaptureActivity : ComponentActivity() {
         )
     }
 
-    /** 删掉一个拍摄点连带它的照片。删点不可撤销，故另给文字确认（触觉由手势骨架统一给）。 */
+    /**
+     * 删掉一个拍摄点连带它的照片。删点不可撤销，故另给文字确认（触觉由手势骨架统一给）。
+     *
+     * 文案分两档：这点带着照片就说照片一并删了，本来没有照片（「不拍照」模式、批量编辑新增的点）
+     * 就只说删了点。原先一律写「照片保留在相册」，与删除实现正好相反。
+     *
+     * 删照片是否真成功不去回读：[util/MediaFiles.kt] 的 `deletePhoto` 对「本来就没有这条」
+     * 与「没权限」都返回 0，分不开，报错必带假警报。宁可少说一句，也不说一句假的。
+     */
     private fun deleteCandidate(index: Int) {
         if (index < 0) return
         // 先取照片再来删点：删完这一点就从列表里没了，拿不到它的 photoUri
@@ -745,7 +753,8 @@ class CaptureActivity : ComponentActivity() {
         repository.deletePoint(groupId, region, index)
         // 与结果页删单点同一套语义（见 util/MediaFiles.kt）
         lifecycleScope.launch { deletePointPhoto(this@CaptureActivity, photo) }
-        toast(getString(R.string.capture_deleted, index + 1))
+        val message = if (photo.isNullOrEmpty()) R.string.capture_deleted else R.string.capture_deleted_with_photo
+        toast(getString(message, index + 1))
     }
 
     /** 当前分区内「十字线右侧、离当前方位最近」的点：顺时针角距落在 (0°, 180°) 内取最小者。 */

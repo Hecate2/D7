@@ -106,7 +106,8 @@
     <string name="capture_no_pose">尚未取得姿态读数，请稍候</string>
     <string name="capture_ceiling_longpress">天花板区只支持短按连线</string>
     <string name="capture_photo_failed">照片保存失败，已仅记录角度</string>
-    <string name="capture_deleted">已删除第 %1$d 点（照片保留在相册）</string>
+    <string name="capture_deleted">已删除第 %1$d 点</string>
+    <string name="capture_deleted_with_photo">已删除第 %1$d 点及其照片</string>
     <string name="capture_delete_no_candidate">右侧没有可删除的点</string>
     <string name="capture_calib_label">罗盘校准</string>
     <string name="capture_calib_unknown">未知</string>
@@ -153,7 +154,13 @@
     <string name="result_timeline">当天时间线</string>
     <string name="result_timeline_legend">白=直射 深灰=被挡</string>
     <string name="result_gb_label">大寒日 8:00–16:00 有效直射</string>
-    <string name="result_gb_hint">GB 50180 预设 · Ⅰ Ⅱ Ⅲ Ⅶ 区 大寒 8–16 ≥2 h（小城市 3 h）· Ⅳ 区 大寒 9–15 ≥1 h · Ⅴ Ⅵ 区 冬至 9–15 ≥1 h · 以当地规划条件为准</string>
+    <!--
+      阈值抄自 GB 50180-2018 表 4.0.9：Ⅰ Ⅱ Ⅲ Ⅶ 区大寒日 8–16 时 ≥2 h（城区常住人口不足 50 万 3 h）、
+      Ⅳ 区大寒日 8–16 时 ≥3 h、Ⅴ Ⅵ 区冬至日 9–15 时 ≥1 h，均为当地真太阳时。
+      改这句之前先照表核一遍——原先这里把 Ⅳ 区写成了「大寒 9–15 ≥1 h」。
+      本机算的一直只是大寒日 8–16 时那一档（Summaries.gbWindowMinutes），其余档位只作对照。
+    -->
+    <string name="result_gb_hint">GB 50180 预设 · Ⅰ Ⅱ Ⅲ Ⅶ 区 大寒 8–16 ≥2 h（城区人口不足 50 万 3 h）· Ⅳ 区 大寒 8–16 ≥3 h · Ⅴ Ⅵ 区 冬至 9–15 ≥1 h · 以当地规划条件为准</string>
     <string name="result_year_label">全年直射时长（小时/天）</string>
     <string name="result_points">拍摄点</string>
     <string name="result_points_count">外 %1$d 点 · 天 %2$d 点</string>
