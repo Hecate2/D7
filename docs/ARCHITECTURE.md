@@ -141,7 +141,32 @@
 
 ## 12. 构建与工具链
 
-工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / activity-ktx / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view；camera-view 上 exclude 掉 appCompat，它对该库零引用）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），并只保留 zh/en 资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
+工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / activity-ktx / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view；camera-view 上 exclude 掉 appCompat，它对该库零引用）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），只保留 zh/en/ja/ko/de/fr/es/ru 八种语言资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
+
+**APK 体积预算（0.1.3，R8 产物 602,318 字节）。** 逐项实测：
+
+| 项 | 字节 | 说明 |
+| --- | --- | --- |
+| `classes.dex` | 875,640 | 压缩后约占 52%，APK 的大头 |
+| `resources.arsc` | 109,556 | 存根不压缩；八种语言的字符串池占大头 |
+| `res/` | 61,636 | 11 个布局 36.6 KB + 19 个 drawable 12.9 KB + 启动器图标 11.2 KB |
+| `AndroidManifest.xml` | 7,388 | |
+| `lib/` | 8,272 | arm64 4.8 KB + v7a 3.4 KB，均为 `libsurface_util_jni.so` |
+| `assets/` | 481 | baseline profile，启动加速用 |
+
+已做的三项减法，各有实测数字与代价说明：
+
+- **`packaging.resources.excludes` 剔除 `**/*.kotlin_builtins` 与 `**/*.kotlin_metadata`**（7 个文件共 29.2 KB，占 trim 前包 4.8%）。它们是 Kotlin 编译器与 kotlin-reflect 读的类库元数据；本工程没有 kotlin-reflect 依赖，也不做任何运行时反射（`kotlin.reflect`、`KClass.members`、`typeOf` 均未出现），kotlinx.serialization 的序列化器是编译期生成的代码、不读这些文件。613,873 → 602,318 字节。
+- **`jniLibs.excludes` 剔除 camera-core 的 `libimage_processing_util_jni.so`**（arm64+v7a 共 8.3 KB）。它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，走不到这些 native 方法；`ImageProcessingUtil` 类本身保留（R8 按 native 方法名 keep），缺的只是库文件。
+- **`resourceConfigurations` 限定八种语言**，把 AndroidX 自带的上百种翻译挡在包外。代价：多六种语言（相对只留 zh+en）约合 66,852 字节，占包的 11.1%——这是为界面多语言功能付的费用，属于产品取舍，不是冗余。
+
+**验证过但决定不做的精简**（写在这里是为了下一个人别再试一遍）：
+
+- **exclude 掉 `androidx.camera:camera-video`**。它经 camera-core / camera-camera2 / camera-lifecycle / camera-view 四条 `api` 边进依赖树，是未混淆包里的第三大包（379 个类，占非混淆 dex 的 6.1%），看着最像冗余。但 R8 已经把它删干净了（混淆包里 `androidx/camera/video` 命中数为 0）：实测把四条边全 exclude 后重新构建，APK 只从 602,318 变成 602,147 字节，**省 171 字节**，却要承担 `PreviewView` 触碰 video 类时 `NoClassDefFoundError` 的风险。不值得。
+- **把启动器图标 `mipmap/ic_launcher_foreground.webp`（10,268 字节）改成矢量**。它是带径向光晕与玻璃渐变的照片级位图（VP8 有损，432×432），矢量化必然掉画质，换 8 KB 不值。
+- **用 `org.json` 替掉 kotlinx.serialization**。序列化相关类在混淆包里约 62 个，估算值不了多少字节，而手写 JSON 会实打实地牺牲可维护性。
+
+对照参考：**关掉 R8 的 release 包是 2,903,779 字节**，dex 从 875,640 涨到 7,793,416——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 

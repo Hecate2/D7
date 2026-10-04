@@ -83,8 +83,14 @@ android {
             "kotlin-tooling-metadata.json",
             "**/DebugProbesKt.bin",
             "**/kotlin-tooling-metadata.json",
+            // Kotlin 的 7 个 *.kotlin_builtins（共 29 KB，占 release 包 4.8%）：给编译器与
+            // kotlin-reflect 读的类库元数据。本工程没有 kotlin-reflect 依赖（见依赖树），
+            // 也不做任何运行时反射——kotlinx.serialization 的序列化器是编译期生成的代码，
+            // 不读这些文件；会读它们的只有 kotlin-reflect 与 kotlinx-metadata 这类工具。
+            "**/*.kotlin_builtins",
+            "**/*.kotlin_metadata",
         )
-        // camera-core 的 AAR 自带 libimage_processing_util_jni.so（arm64+v7a 共 49 KB，占 APK 8.7%）。
+        // camera-core 的 AAR 自带 libimage_processing_util_jni.so（arm64 4.8 KB + v7a 3.4 KB = 8.3 KB，占 APK 1.4%）。
         // 它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，
         // 走不到这些 native 方法；ImageProcessingUtil 类本身仍保留（R8 按 native 方法名 keep），
         // 缺的只是库文件。真机 arm64 实拍已验证：照片正常落盘、EXIF 完整、无 UnsatisfiedLinkError。
