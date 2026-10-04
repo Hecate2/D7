@@ -62,6 +62,22 @@
             android:textSize="15sp" />
 
         <TextView
+            android:id="@+id/noPhoto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_pill"
+            android:gravity="center"
+            android:minWidth="42dp"
+            android:paddingStart="8dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="1dp"
+            android:text="@string/capture_no_photo"
+            android:textColor="@color/smoke"
+            android:textSize="10sp" />
+
+        <TextView
             android:id="@+id/plus180"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

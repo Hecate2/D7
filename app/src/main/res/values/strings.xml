@@ -62,6 +62,9 @@
     <string name="capture_meta">%1$s · 真北已校正</string>
     <string name="capture_reading">仰角 %1$s · 方位 %2$s</string>
     <string name="capture_plus180">+180°</string>
+    <string name="capture_no_photo">不拍照</string>
+    <string name="capture_no_photo_on">只记角度，不存照片</string>
+    <string name="capture_no_photo_off">恢复拍照</string>
     <string name="capture_chip_external">外部建筑</string>
     <string name="capture_chip_ceiling">天花板</string>
     <string name="capture_hint_north">面向南，从右（西）向左（东）依次拍</string>

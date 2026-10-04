@@ -6,9 +6,9 @@ import androidx.core.content.edit
 import io.github.hecate2.D7.view.LineVisibility
 
 /**
- * 采集页的持久化设置：显示线的显隐与 +180° 药丸状态。
+ * 采集页的持久化设置：显示线的显隐、+180° 药丸与「不拍照」开关状态。
  * 默认显示四条太阳参考弧、拍摄点连线、地面层与楼体遮挡区，隐藏地平线与铅垂线；
- * +180° 默认叠加。
+ * +180° 默认叠加，「不拍照」默认关。
  */
 class CaptureSettings(context: Context) {
 
@@ -18,6 +18,17 @@ class CaptureSettings(context: Context) {
     var plus180: Boolean
         get() = prefs.getBoolean("plus180", true)
         set(value) = prefs.edit { putBoolean("plus180", value) }
+
+    /**
+     * 「不拍照」：快门只落角度点，不拍照也不写相册。默认关。
+     *
+     * 取景预览、对焦与手电筒照常——预览就是瞄准工具；省掉的是 JPEG 编码、EXIF 回写
+     * 与 MediaStore 发布这一整条 IO。只想要轮廓、不想留照片（或不想在相册里留一堆
+     * 楼体照）时用它。
+     */
+    var noPhoto: Boolean
+        get() = prefs.getBoolean("no_photo", false)
+        set(value) = prefs.edit { putBoolean("no_photo", value) }
 
     var showSummer: Boolean
         get() = prefs.getBoolean("line_summer", true)

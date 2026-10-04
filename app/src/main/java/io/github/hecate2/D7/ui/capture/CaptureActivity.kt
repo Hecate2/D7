@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
  * 采集页：取景器上直接画出太阳参考弧与已拍点连线。
  *
  * 快门 450 毫秒阈值区分短按（直接连线）与长按（经地平线推断段，天花板区不支持）；
+ * 「不拍照」药丸开启时快门只落角度点、不存照片（photoUri 为空，下游已容错）；
  * 删除键长按生效，按下即锁定「十字线右侧、离当前方位最近」的一个候选点，按住只删一个；
  * 完成键跳转结果页。读数取融合瞬时值记录，显示值做轻度低通。
  */
@@ -116,6 +117,9 @@ class CaptureActivity : ComponentActivity() {
     /** 手动对焦次数（仅短按触发），供仪器测试断言手势确实发起了对焦。 */
     private var focusActions = 0
 
+    /** 快门发起拍照的次数（不管成没成），供仪器测试断言「不拍照」开关是否真的切断了拍照链路。 */
+    private var photoAttempts = 0
+
     /** 手电筒当前是否点亮，与 [CameraController] 实际状态同步。 */
     private var torchOn = false
 
@@ -163,6 +167,7 @@ class CaptureActivity : ComponentActivity() {
 
         applyHemisphere(group)
         updatePlus180Ui()
+        updateNoPhotoUi()
         applyLineSettings()
         updatePrecisionUi()
         setRegion(Region.EXTERNAL)
@@ -174,6 +179,7 @@ class CaptureActivity : ComponentActivity() {
 
         binding.doneButton.setOnClickListener { openResult() }
         binding.plus180.setOnClickListener { togglePlus180() }
+        binding.noPhoto.setOnClickListener { toggleNoPhoto() }
         binding.showLinesButton.setOnClickListener { showLinesDialog() }
         binding.chipExternal.setOnClickListener { setRegion(Region.EXTERNAL) }
         binding.chipCeiling.setOnClickListener { setRegion(Region.CEILING) }
@@ -574,6 +580,20 @@ class CaptureActivity : ComponentActivity() {
         }
         val az = aimAz(pose, smoothed = false)
         val el = rawEl.coerceIn(0.0, 90.0)
+        val takenAt = System.currentTimeMillis()
+
+        // 「不拍照」模式：只落角度点，photoUri 留空。appendPoint 本身是同步的（落盘排到
+        // 单线程写队列），所以这条路径不进协程、不锁快门、也不必打断在飞的定时对焦。
+        if (settings.noPhoto) {
+            repository.appendPoint(
+                groupId,
+                region,
+                PointRecord(az = az, el = el, photoUri = null, takenAt = takenAt),
+                viaHorizon = longPress,
+            )
+            return
+        }
+
         val seq = group.regionList(region).size + 1
         val meta = PhotoMeta(
             groupName = group.name,
@@ -585,7 +605,7 @@ class CaptureActivity : ComponentActivity() {
             gapAfter = longPress,
             lat = group.lat,
             lon = group.lon,
-            takenAt = System.currentTimeMillis(),
+            takenAt = takenAt,
         )
         capturing = true
         binding.shutter.alpha = 0.4f
@@ -593,11 +613,12 @@ class CaptureActivity : ComponentActivity() {
             // 快门优先：先掐掉在飞的定时对焦，否则拍照会排在它后面等
             camera.cancelFocusMetering()
             val imageCapture = camera.imageCapture
+            photoAttempts++
             val uri = if (imageCapture != null) photoStore.capture(imageCapture, meta) else null
             repository.appendPoint(
                 groupId,
                 region,
-                PointRecord(az = az, el = el, photoUri = uri?.toString(), takenAt = meta.takenAt),
+                PointRecord(az = az, el = el, photoUri = uri?.toString(), takenAt = takenAt),
                 viaHorizon = longPress,
             )
             capturing = false
@@ -801,6 +822,14 @@ class CaptureActivity : ComponentActivity() {
     @androidx.annotation.VisibleForTesting
     fun torchVisibleForTest(): Boolean = binding.torchSlot.isVisible
 
+    /** 仅供仪器测试：「不拍照」是否开启。 */
+    @androidx.annotation.VisibleForTesting
+    fun noPhotoForTest(): Boolean = settings.noPhoto
+
+    /** 仅供仪器测试：快门发起拍照的累计次数。 */
+    @androidx.annotation.VisibleForTesting
+    fun photoAttemptsForTest(): Int = photoAttempts
+
     /** 仅供仪器测试：本机后摄是否有闪光灯。 */
     @androidx.annotation.VisibleForTesting
     fun hasFlashUnitForTest(): Boolean = camera.hasFlashUnit
@@ -830,6 +859,23 @@ class CaptureActivity : ComponentActivity() {
 
     private fun updatePlus180Ui() {
         binding.plus180.setPillSelected(settings.plus180)
+    }
+
+    /**
+     * 「不拍照」开关：切换后快门只记角度点、不存照片。
+     *
+     * 切换时给一句 Toast 而不是只靠药丸变色：这个模式的后果（相册里没有照片）在按下
+     * 快门之前完全看不见，只用颜色表示的话，用户往往拍完半天才发现。
+     */
+    private fun toggleNoPhoto() {
+        settings.noPhoto = !settings.noPhoto
+        updateNoPhotoUi()
+        binding.noPhoto.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        toast(if (settings.noPhoto) R.string.capture_no_photo_on else R.string.capture_no_photo_off)
+    }
+
+    private fun updateNoPhotoUi() {
+        binding.noPhoto.setPillSelected(settings.noPhoto)
     }
 
     private fun applyLineSettings() {
