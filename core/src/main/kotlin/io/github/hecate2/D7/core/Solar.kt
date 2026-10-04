@@ -107,12 +107,6 @@ object Solar {
         return SolarPosition(azimuth, elevation)
     }
 
-    /**
-     * 真太阳时（分钟，0..1440），等于 UTC 当日分钟 + 均时差 + 经度修正（4 分钟/度）。
-     */
-    fun trueSolarTimeMinutes(utcMillis: Long, lonDeg: Double): Double =
-        trueSolarMinutes(utcMillis, lonDeg, julianDay(utcMillis))
-
     private fun trueSolarMinutes(utcMillis: Long, lonDeg: Double, jd: Double): Double =
         normalizeMinutes(utcMinutesOf(utcMillis) + equationOfTimeMinutes(jd) + 4.0 * lonDeg)
 

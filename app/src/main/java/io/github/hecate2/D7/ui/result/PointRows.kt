@@ -64,10 +64,7 @@ class PointRows(
 
     private fun bind(binding: ItemPointBinding, row: Row) {
         val context = binding.root.context
-        val regionTag = context.getString(
-            if (row.region == Region.EXTERNAL) R.string.result_region_external
-            else R.string.result_region_ceiling,
-        )
+        val regionTag = Format.region(context.resources, row.region)
         binding.title.text = context.getString(
             R.string.result_point_title,
             regionTag, row.index + 1,

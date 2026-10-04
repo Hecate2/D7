@@ -22,7 +22,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.hecate2.D7.R
-import io.github.hecate2.D7.core.CalcMode
 import io.github.hecate2.D7.data.GroupRecord
 import io.github.hecate2.D7.data.GroupRepository
 import io.github.hecate2.D7.databinding.ActivityGroupsBinding
@@ -332,13 +331,7 @@ class GroupsActivity : ComponentActivity() {
             return
         }
         val mode = Summaries.defaultMode(group)
-        val modeLabel = getString(
-            when (mode) {
-                CalcMode.EXTERNAL_ONLY -> R.string.result_mode_external
-                CalcMode.EXTERNAL_AND_CEILING -> R.string.result_mode_both
-                CalcMode.CEILING_ONLY -> R.string.result_mode_ceiling
-            },
-        )
+        val modeLabel = Format.calcMode(resources, mode)
         val year = LocalDate.now(ZoneId.of(group.zoneId)).year
         val date = Summaries.winterDate(year, group.lat)
         exportInFlight = true

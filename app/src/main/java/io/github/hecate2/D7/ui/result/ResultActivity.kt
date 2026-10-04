@@ -215,13 +215,7 @@ class ResultActivity : ComponentActivity() {
         }
     }
 
-    private fun modeLabel(): String = getString(
-        when (mode) {
-            CalcMode.EXTERNAL_ONLY -> R.string.result_mode_external
-            CalcMode.EXTERNAL_AND_CEILING -> R.string.result_mode_both
-            CalcMode.CEILING_ONLY -> R.string.result_mode_ceiling
-        },
-    )
+    private fun modeLabel(): String = Format.calcMode(resources, mode)
 
     private fun dateLabel(date: LocalDate): String = when (preset) {
         Preset.WINTER -> getString(R.string.result_date_winter)
@@ -435,10 +429,7 @@ class ResultActivity : ComponentActivity() {
         val view = DialogPointAnglesBinding.inflate(layoutInflater)
         view.azInput.setText(String.format(Locale.US, "%.1f", point.az))
         view.elInput.setText(String.format(Locale.US, "%.1f", point.el))
-        val regionTag = getString(
-            if (region == Region.EXTERNAL) R.string.result_region_external
-            else R.string.result_region_ceiling,
-        )
+        val regionTag = Format.region(resources, region)
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.point_edit_title, index + 1, regionTag))
             .setView(view.root)

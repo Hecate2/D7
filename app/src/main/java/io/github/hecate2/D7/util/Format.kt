@@ -2,6 +2,8 @@ package io.github.hecate2.D7.util
 
 import android.content.res.Resources
 import io.github.hecate2.D7.R
+import io.github.hecate2.D7.core.CalcMode
+import io.github.hecate2.D7.data.Region
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
@@ -58,15 +60,23 @@ object Format {
         )
     }
 
-    /** 角度写法：236.2°。 */
-    fun azimuth(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
-
-    /** 仰角写法：18.4°。 */
-    fun elevation(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
-
-    /** 滚转角等有正负的角度写法：-3.2°。 */
-    fun signedDegree(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
+    /** 角度写法（一位小数）：236.2°。方位、仰角、滚转角都走这里。 */
+    fun degree(deg: Double): String = String.format(Locale.US, "%.1f°", deg)
 
     /** 整度写法：236°。 */
     fun degreeInt(deg: Double): String = String.format(Locale.US, "%.0f°", deg)
+
+    /** 计算档位名：仅外部 / 外部+天花板 / 仅天花板。 */
+    fun calcMode(resources: Resources, mode: CalcMode): String = resources.getString(
+        when (mode) {
+            CalcMode.EXTERNAL_ONLY -> R.string.result_mode_external
+            CalcMode.EXTERNAL_AND_CEILING -> R.string.result_mode_both
+            CalcMode.CEILING_ONLY -> R.string.result_mode_ceiling
+        },
+    )
+
+    /** 分区名：外 / 天。 */
+    fun region(resources: Resources, region: Region): String = resources.getString(
+        if (region == Region.EXTERNAL) R.string.result_region_external else R.string.result_region_ceiling,
+    )
 }

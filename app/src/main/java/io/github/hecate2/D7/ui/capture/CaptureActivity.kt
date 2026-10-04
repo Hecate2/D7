@@ -402,11 +402,11 @@ class CaptureActivity : ComponentActivity() {
     private fun updateReading(pose: Pose) {
         binding.readingText.text = getString(
             R.string.capture_reading,
-            Format.elevation(aimEl(pose, smoothed = true)),
-            Format.azimuth(aimAz(pose, smoothed = true)),
+            Format.degree(aimEl(pose, smoothed = true)),
+            Format.degree(aimAz(pose, smoothed = true)),
         )
         smoothRoll = if (smoothRoll.isNaN()) pose.rollDeg else smoothRoll * 0.7 + pose.rollDeg * 0.3
-        binding.rollText.text = getString(R.string.capture_roll, Format.signedDegree(smoothRoll))
+        binding.rollText.text = getString(R.string.capture_roll, Format.degree(smoothRoll))
     }
 
     private fun updateMeta() {
