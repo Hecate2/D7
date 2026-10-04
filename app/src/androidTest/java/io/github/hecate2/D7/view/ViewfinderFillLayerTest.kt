@@ -97,6 +97,49 @@ class ViewfinderFillLayerTest {
     private fun shot(vararg azEl: Pair<Double, Double>) =
         azEl.mapIndexed { i, (az, el) -> PointRecord(az = az, el = el, takenAt = i.toLong()) }
 
+    /**
+     * 镜头正对南方（方位 180、仰角 0、无滚转）时，世界方向 (az, el) 落在哪个像素。
+     * 这是取景器针孔投影的独立复算，测试用它给出期望值，而**不是**读被测代码的输出。
+     * 焦距与 onDraw 一样取半视场角 32.5 度。
+     */
+    private fun screenX(az: Double): Double {
+        val focal = (W / 2f) / Math.tan(Math.toRadians(32.5))
+        return W / 2.0 + Math.tan(Math.toRadians(az - 180.0)) * focal
+    }
+
+    private fun screenY(az: Double, el: Double): Double {
+        val focal = (W / 2f) / Math.tan(Math.toRadians(32.5))
+        return H / 2.0 - Math.tan(Math.toRadians(el)) / Math.cos(Math.toRadians(az - 180.0)) * focal
+    }
+
+    /**
+     * 该列自上而下第一个属于填充层的像素；整列都没有填充返回 -1。
+     * 十字线的抗锯齿边缘会留下各种半透明像素，故照旧用 [mask] 扣掉。
+     */
+    private fun topFillY(scene: Bitmap, x: Int): Int {
+        for (y in 0 until H) {
+            if (alpha(scene, x, y) >= 32 && alpha(mask, x, y) == 0) return y
+        }
+        return -1
+    }
+
+    /**
+     * 该像素列左右各 [halfWidth] 列里最高的那个填充像素；全都没有返回 -1。
+     *
+     * 缺口端头不能只看它自己那一列：端头正是一道竖直崖边，四舍五入落进去的那一列可能
+     * 整个在崖边右侧（即缺口一侧），顶边自然在地平线上。取邻域的最小值，等于问「顶边有没有
+     * 到过这个点的高度」，这才对应「淡白覆盖与拍摄点对齐」这件事。
+     */
+    private fun topFillNear(scene: Bitmap, xCenter: Int, halfWidth: Int = 2): Int {
+        var best = -1
+        for (x in (xCenter - halfWidth)..(xCenter + halfWidth)) {
+            if (x < 0 || x >= W) continue
+            val y = topFillY(scene, x)
+            if (y >= 0 && (best < 0 || y < best)) best = y
+        }
+        return best
+    }
+
     @Test
     fun coveredSpanWiderThanViewFillsBelowSkyline() {
         // 已拍 90..270 远宽于可见半视角，画面内应整片都是遮挡区，天际线以上干净
@@ -156,5 +199,55 @@ class ViewfinderFillLayerTest {
         // 只有一个点不构成线段，天际线为空
         val scene = render(level(facingNorth = false), shot(180.0 to 30.0))
         assertTrue("单点不构成天际线，不该有填充", fillCount(scene, mask, 0, H) == 0)
+    }
+
+    /**
+     * 填充的顶边必须落在拍摄点上，缺口的崖边必须竖直。
+     *
+     * 这是「淡白覆盖准不准」的像素口径。旧实现沿着从方位 0 起、每 2 度一格的等间距网格
+     * 采样 [io.github.hecate2.D7.core.Skyline]，而天际线的折点落在拍摄点方位上——两者几乎
+     * 不会重合。于是顶边停在网格点上，拍摄点与它之间只连一根弦：实测最坏差 33.6 度，
+     * 正是缺口端头那种竖直跳变被整段摊平的位置（屏幕上两百多像素）。
+     *
+     * 方位角故意都不落在偶数度上（真实拍摄就该如此），每个点都能把这根弦揪出来。
+     */
+    @Test
+    fun fillTopEdgePassesThroughEveryShotPoint() {
+        // 166.4 之后是长按快门记下的经地平线段：崖边一条竖线，中间整段降到地平线。
+        // 方位刻意避开 ±8 度，那是画面正中，十字线占着，像素会被 mask 扣掉。
+        val points = listOf(
+            PointRecord(az = 152.6, el = 24.0, takenAt = 0),
+            PointRecord(az = 166.4, el = 33.0, gapAfter = true, takenAt = 1),
+            PointRecord(az = 196.7, el = 27.0, takenAt = 2),
+            PointRecord(az = 208.9, el = 15.0, takenAt = 3),
+        )
+        val scene = render(level(facingNorth = false), points)
+
+        for (p in points) {
+            val x = Math.round(screenX(p.az)).toInt()
+            val want = screenY(p.az, p.el)
+            val got = topFillNear(scene, x)
+            assertTrue(
+                "方位 ${p.az} 附近整片都没有填充，顶边根本没画到这个高度",
+                got >= 0,
+            )
+            assertTrue(
+                "方位 ${p.az} 附近的顶边最高只到 y=$got，拍摄点在 y=${want.toInt()}：" +
+                    "淡白覆盖与拍摄点对不上（差 ${got - want.toInt()} 像素）",
+                Math.abs(got - want) <= 4.0,
+            )
+        }
+
+        // 缺口中间：顶边必须降到地平线（画面正中），而不是斜着从两端连过去。
+        val gapX = Math.round(screenX(190.0)).toInt()
+        val gapY = topFillY(scene, gapX)
+        assertTrue(
+            "缺口中间没有填充，缺口段没画出来",
+            gapY >= 0,
+        )
+        assertTrue(
+            "缺口中间的顶边在 y=$gapY，地平线在 y=${H / 2}：缺口没有落到地平线",
+            Math.abs(gapY - H / 2) <= 4.0,
+        )
     }
 }

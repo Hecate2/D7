@@ -182,7 +182,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         /** 地面层的方位采样步长（度）：4 度约 91 个点，足够平滑且开销可忽略。 */
         const val GROUND_AZ_STEP = 4
 
-        /** 填充层的方位采样步长（度），与 [SkylineShape] 的绘图步长一致，整圈 181 点。 */
+        /**
+         * 填充层的等间距采样步长（度），与 [SkylineShape] 的绘图步长一致，整圈 181 点；
+         * 拍摄点方位及其两侧会额外插入，见 [Skyline.fillAzimuths]。
+         */
         const val FILL_AZ_STEP = 2.0
 
         /**
@@ -358,6 +361,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
      * 方位按全周扫描（与求值用的 [Skyline] 同口径）：拍摄点落在主半圆之外也照样画，
      * 否则「拍到了却看不见」与实际计算范围不一致，比半圆限制更容易让人误判。
      *
+     * 采样方位不是等间距网格，而是 [Skyline.fillAzimuths] 给的「网格 ∪ 拍摄点方位及其
+     * 两侧」：顶边必须落在拍摄点上、缺口的竖直崖边必须画成竖线，否则填出来的覆盖与
+     * 旁边那条实际画出的天际线自己就对不上。详见 [Skyline.fillAzimuths]。
+     *
      * 未覆盖方位 [Skyline.obstructionAt] 返回 -∞，这里断开不填——把未测区域画成
      * 「矮天际线」会被误读成「测过了但不挡」，反而比不画更糟。未测提示由覆盖条
      * 与结果页覆盖率承担。每段连续覆盖各自闭合（[closeFillRun]），共用一条路径往下
@@ -375,15 +382,17 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         downX = scratch[0] / downLen
         downY = scratch[1] / downLen
 
-        val sky = Skyline(shotPoints())
+        val plan = fillPlan()
+        val sky = plan.sky
+        val azimuths = plan.azimuths
         path.reset()
         var started = false
         var firstX = 0f
         var firstY = 0f
         var lastX = 0f
         var lastY = 0f
-        var step = 0.0
-        while (step < 360.0) {
+        for (i in azimuths.indices) {
+            val step = azimuths[i]
             val el = sky.obstructionAt(step)
             if (el.isFinite() && projector.project(step, el, pt)) {
                 if (started) {
@@ -400,10 +409,25 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
                 closeFillRun(firstX, firstY, lastX, lastY)
                 started = false
             }
-            step += FILL_AZ_STEP
         }
         if (started) closeFillRun(firstX, firstY, lastX, lastY)
         canvas.drawPath(path, fillPaint)
+    }
+
+    /** 填充用的天际线与采样方位：只依赖点列，按引用缓存，不必逐帧重建。 */
+    private class FillPlan(val sky: Skyline, val azimuths: DoubleArray)
+
+    private var cachedFillPoints: List<PointRecord>? = null
+    private var cachedFillPlan: FillPlan? = null
+
+    private fun fillPlan(): FillPlan {
+        val current = points
+        cachedFillPlan?.let { if (cachedFillPoints === current) return it }
+        val sky = Skyline(shotPoints())
+        return FillPlan(sky, sky.fillAzimuths(FILL_AZ_STEP)).also {
+            cachedFillPoints = current
+            cachedFillPlan = it
+        }
     }
 
     /**

@@ -69,6 +69,14 @@ data class ShotPoint(
 class Skyline(points: List<ShotPoint>) {
     private val pts: List<ShotPoint> = points.toList()
 
+    private companion object {
+        /**
+         * 竖直跳变两侧的取样间隔（度）。取屏幕中心约 0.015 像素，
+         * 小到跳变看上去就是一条竖线，又大到不会被浮点误差吞掉。
+         */
+        const val CLIFF_EPS_DEG = 1e-3
+    }
+
     /** 查询某方位角处的天际线边缘仰角；未覆盖时返回 -∞。 */
     fun obstructionAt(azDeg: Double): Double {
         var best = Double.NEGATIVE_INFINITY
@@ -93,6 +101,48 @@ class Skyline(points: List<ShotPoint>) {
             if (candidate > best) best = candidate
         }
         return best
+    }
+
+    /**
+     * 绘制「天际线以下」填充时要采样的方位角序列，升序且落在 [0, 360)。
+     *
+     * [obstructionAt] 是方位角的分段线性函数，折点恰好落在拍摄点的方位上；而经地平线
+     * 推断段在端点处是**竖直跳变**（端点取该点自身仰角，开区间内是 0）。照着等间距网格
+     * 采样会犯两类错，都与「准不准」直接相关：
+     *
+     * 1. 折点被跳过。拍摄点的方位几乎不会正好落在网格上，网格两侧最近的两个采样点之间
+     *    只是一根弦，于是填充的顶边到不了拍摄点——屏幕上就是淡白覆盖与白点、连线的
+     *    位置对不上，陡峭处（每度仰角变化几度）能差几十像素。
+     * 2. 竖直跳变被拉成斜边。跳变发生在跨过端点的那一小步里，网格采样会把整段落差摊在
+     *    两度宽的一条斜线上，缺口看着像被斜切了一刀。
+     *
+     * 所以返回的是「等间距网格 ∪ 每个拍摄点的方位及其左右各一丁点」。左邻取跳变前的值、
+     * 右邻取跳变后的值，折线依次连过去就是一根竖线。额外开销是每个拍摄点两三个采样，
+     * 几十个点也不过几十次投影，与逐帧重画的开销相比可以忽略。
+     */
+    fun fillAzimuths(stepDeg: Double = 2.0): DoubleArray {
+        val step = if (stepDeg > 0.0) stepDeg else 2.0
+        val grid = (360.0 / step).toInt() + 1
+        val buf = DoubleArray(grid + pts.size * 3)
+        var n = 0
+        var az = 0.0
+        while (az < 360.0) {
+            buf[n++] = az
+            az += step
+        }
+        for (p in pts) {
+            val a = Angles.normalize360(p.azDeg)
+            buf[n++] = a
+            buf[n++] = Angles.normalize360(a - CLIFF_EPS_DEG)
+            buf[n++] = Angles.normalize360(a + CLIFF_EPS_DEG)
+        }
+        buf.sort(0, n)
+        // 去重：网格点与拍摄点方位重合是常态，留着会得到零长线段
+        var m = 0
+        for (i in 0 until n) {
+            if (m == 0 || buf[i] - buf[m - 1] > 1e-9) buf[m++] = buf[i]
+        }
+        return buf.copyOf(m)
     }
 
     /** 所有经地平线推断段的方位角区间（起止以拍摄序为准，判定用短弧包含）。 */
