@@ -90,11 +90,11 @@
 
 投影用针孔模型：世界方向向量 v（由方位角、仰角生成 ENU 单位向量）依次点乘相机的右、上、前三个世界向量得到相机坐标 (x, y, z)，屏幕坐标 = 中心 + (x/z, -y/z) × 焦距像素（焦距由视场角推算）；z ≤ 0.01 的方向视为在相机背后予以剔除，剔除处把折线断开，因此跨视场边缘的弧线只画落在画面里的那一段，近天顶段自然裁剪。相机的右、上向量按显示旋转（`Display.getRotation()` 四种取值）从设备三轴映射得到；采集页已锁竖屏，常规使用即 ROTATION_0，四种映射用于兜底分屏等窗口形态。
 
-参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线；采样只依赖纬度与赤纬，按赤纬缓存在叠加层内（定位更新时失效），姿态变化仅重投影、不重算天文位置。采样取几何高度角（不含大气折射），与天际线求值的判定基准一致。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧、拍摄点连线、地面层与楼体遮挡区，隐藏地平线与铅垂线，设置持久化在 SharedPreferences（九项，顺序与对话框条目一一对应）。
+参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线；采样只依赖纬度与赤纬，按赤纬缓存在叠加层内（定位更新时失效），姿态变化仅重投影、不重算天文位置。采样取几何高度角（不含大气折射），与天际线求值的判定基准一致。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧、拍摄点连线、地面层与楼体遮挡区，隐藏地平线与铅垂线；九项的字面、线色、持久化键与默认值都记在 `ui/capture/CaptureSettings.kt` 的 `CaptureLine` 枚举里，对话框按它的顺序铺条目，设置按条目本身读写，下标不再跨文件约定。
 
-地面层与遮挡填充都画在参考弧之下，只依赖拍摄点与姿态，同样逐帧投影：地面层沿方位每 4 度取一点（91 点）填地平线以下；遮挡填充沿全周取天际线边缘仰角（`Skyline.obstructionAt`，与求值同一口径）填到画面底，采样方位由 `Skyline.fillAzimuths` 给出：等间距网格（每 2 度）**并上每个拍摄点的方位及其左右各 0.001 度**。这一步不是省事，而是准确性的前提——`obstructionAt` 是方位角的分段线性函数，折点恰好落在拍摄点方位上，而经地平线段在端点处是竖直跳变。照等间距网格采样会同时犯两个错：顶边停在网格点上、与拍摄点之间只连一根弦（实测最坏差 33.6 度，屏幕中心约 15 像素每度）；缺口端头那条本该竖直的崖边被摊成两度宽的斜线。两者闭合时都把边线延伸到远超屏幕的 `FAR_DOWN` 后交给画布裁切，不在可见段内部猜闭合点——那样会拉出横穿画面的错误斜边。两者闭合时都把边线延伸到远超屏幕的 `FAR_DOWN` 后交给画布裁切，不在可见段内部猜闭合点——那样会拉出横穿画面的错误斜边。下推方向一律取[世界下方的屏幕方向]（`Projector.screenDown`）而非屏幕正下方，手机横过来时世界下方在画面里偏到了侧面，两者必须一致；该方向在正对天顶时退化为零向量，此时整层不画（照直闭合会拉出一条横穿天空的弦）。
+地面层与遮挡填充都画在参考弧之下，只依赖拍摄点与姿态，同样逐帧投影：地面层沿方位每 4 度取一点（91 点）填地平线以下；遮挡填充沿全周取天际线边缘仰角（`Skyline.obstructionAt`，与求值同一口径）填到画面底，采样方位由 `Skyline.fillAzimuths` 给出：等间距网格（每 2 度）**并上每个拍摄点的方位及其左右各 0.001 度**。这一步不是省事，而是准确性的前提——`obstructionAt` 是方位角的分段线性函数，折点恰好落在拍摄点方位上，而经地平线段在端点处是竖直跳变。照等间距网格采样会同时犯两个错：顶边停在网格点上、与拍摄点之间只连一根弦（实测最坏差 33.6 度，屏幕中心约 15 像素每度）；缺口端头那条本该竖直的崖边被摊成两度宽的斜线。两者闭合时都把边线延伸到远超屏幕的 `FAR_DOWN` 后交给画布裁切，不在可见段内部猜闭合点——那样会拉出横穿画面的错误斜边。下推方向一律取[世界下方的屏幕方向]（`Projector.screenDown`）而非屏幕正下方，手机横过来时世界下方在画面里偏到了侧面，两者必须一致；该方向在正对天顶时退化为零向量，此时整层不画（照直闭合会拉出一条横穿天空的弦）。
 
-拍摄点渲染：每个点画白色圆点与序号（外部 1..n、天花板 1..n 各自编号），点与点之间按模式画线——直接连线画白色实线；经地平线段拆三段画月灰虚线（上点垂直降到地平线、沿地平线横走、垂直升到新点）。连线折线由 `:core` 的 `SkylineShape.direct/viaHorizon` 展开，取景器与导出参考图共用同一套采样，保证「求值、叠加层、导出图」三处几何语义一致；「显示线」关掉拍摄点连线时点与线一并隐藏。填充层的顶边也必须与这条线严丝合缝，所以它走的是同一批折点（见上）。覆盖条画在取景器下方，横轴为 90 到 270 度（南半球镜像），已达区间白色、未达区间炭灰，同时可点击该条的「显示线」按钮打开线显隐设置。覆盖条画在取景器下方，横轴为 90 到 270 度（南半球镜像），已达区间白色、未达区间炭灰，同时可点击该条的「显示线」按钮打开线显隐设置。
+拍摄点渲染：每个点画白色圆点与序号（外部 1..n、天花板 1..n 各自编号），点与点之间按模式画线——直接连线画白色实线；经地平线段拆三段画月灰虚线（上点垂直降到地平线、沿地平线横走、垂直升到新点）。连线折线由 `:core` 的 `SkylineShape.direct/viaHorizon` 展开成 `AzElTrack`（两条等长数组），参考弧采样、地平线与铅垂线也用同一个类型，叠加层里只有一个 `drawTrack` 负责把它们投到屏幕并断线，导出参考图按同一份采样取点，保证「求值、叠加层、导出图」三处几何语义一致；「显示线」关掉拍摄点连线时点与线一并隐藏。填充层的顶边也必须与这条线严丝合缝，所以它走的是同一批折点（见上）。覆盖条画在取景器下方，横轴为 90 到 270 度（南半球镜像），已达区间白色、未达区间炭灰，同时可点击该条的「显示线」按钮打开线显隐设置。
 
 ## 10. 界面与交互
 
@@ -143,21 +143,21 @@
 
 工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / activity-ktx / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view；camera-view 上 exclude 掉 appCompat，它对该库零引用）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），只保留 zh/en/ja/ko/de/fr/es/ru 八种语言资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
 
-**APK 体积预算（0.1.3，R8 产物 602,318 字节）。** 逐项实测：
+**APK 体积预算（0.1.3，R8 产物 602,318 字节）。** 逐项实测（下表为条目未压缩体积）：
 
 | 项 | 字节 | 说明 |
 | --- | --- | --- |
-| `classes.dex` | 875,640 | 压缩后约占 52%，APK 的大头 |
+| `classes.dex` | 875,404 | 压缩后约占 52%，APK 的大头 |
 | `resources.arsc` | 109,556 | 存根不压缩；八种语言的字符串池占大头 |
-| `res/` | 61,636 | 11 个布局 36.6 KB + 19 个 drawable 12.9 KB + 启动器图标 11.2 KB |
+| `res/` | 61,636 | 11 个布局 36.6 KB + 19 个 drawable 12.9 KB + 启动器图标 11.2 KB + `xml/locales_config.xml` 1.0 KB |
 | `AndroidManifest.xml` | 7,388 | |
 | `lib/` | 8,272 | arm64 4.8 KB + v7a 3.4 KB，均为 `libsurface_util_jni.so` |
-| `assets/` | 481 | baseline profile，启动加速用 |
+| `assets/` | 485 | baseline profile，启动加速用 |
 
 已做的三项减法，各有实测数字与代价说明：
 
-- **`packaging.resources.excludes` 剔除 `**/*.kotlin_builtins` 与 `**/*.kotlin_metadata`**（7 个文件共 29.2 KB，占 trim 前包 4.8%）。它们是 Kotlin 编译器与 kotlin-reflect 读的类库元数据；本工程没有 kotlin-reflect 依赖，也不做任何运行时反射（`kotlin.reflect`、`KClass.members`、`typeOf` 均未出现），kotlinx.serialization 的序列化器是编译期生成的代码、不读这些文件。613,873 → 602,318 字节。
-- **`jniLibs.excludes` 剔除 camera-core 的 `libimage_processing_util_jni.so`**（arm64+v7a 共 8.3 KB）。它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，走不到这些 native 方法；`ImageProcessingUtil` 类本身保留（R8 按 native 方法名 keep），缺的只是库文件。
+- **`packaging.resources.excludes` 剔除 `**/*.kotlin_builtins` 与 `**/*.kotlin_metadata`**（7 个文件共 29,945 字节，占 trim 前包 4.8%）。它们是 Kotlin 编译器与 kotlin-reflect 读的类库元数据；本工程没有 kotlin-reflect 依赖，也不做任何运行时反射（`kotlin.reflect`、`KClass.members`、`typeOf` 均未出现），kotlinx.serialization 的序列化器是编译期生成的代码、不读这些文件。613,873 → 602,318 字节。这 7 个文件是 deflate 存放的，压缩后合计只剩 10,468 字节，所以 APK 减幅（11,555）不到它们未压缩体积的一半。**逐条比就看未压缩，看总量就看压缩后，两个口径不能混着比。**
+- **`jniLibs.excludes` 剔除 camera-core 的 `libimage_processing_util_jni.so`**（arm64 29,008 + v7a 20,380 = 49,388 字节）。它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，走不到这些 native 方法；`ImageProcessingUtil` 类本身保留（R8 按 native 方法名 keep），缺的只是库文件。实测 APK 600,281 → 534,541 字节（−11%）。注意减幅比 49,388 字节还多出约 16 KB：这两个 `.so` 与 `lib/` 里留下的 `libsurface_util_jni.so` 一样是原样存放、按页对齐的，剔除它们时各自的页对齐填充也跟着消失。拆开看是条目数据 −49,405、对齐填充 −15,999、尾部 −184。
 - **`resourceConfigurations` 限定八种语言**，把 AndroidX 自带的上百种翻译挡在包外。代价：多六种语言（相对只留 zh+en）约合 66,852 字节，占包的 11.1%——这是为界面多语言功能付的费用，属于产品取舍，不是冗余。
 
 **验证过但决定不做的精简**（写在这里是为了下一个人别再试一遍）：
@@ -166,7 +166,9 @@
 - **把启动器图标 `mipmap/ic_launcher_foreground.webp`（10,268 字节）改成矢量**。它是带径向光晕与玻璃渐变的照片级位图（VP8 有损，432×432），矢量化必然掉画质，换 8 KB 不值。
 - **用 `org.json` 替掉 kotlinx.serialization**。序列化相关类在混淆包里约 62 个，估算值不了多少字节，而手写 JSON 会实打实地牺牲可维护性。
 
-对照参考：**关掉 R8 的 release 包是 2,903,779 字节**，dex 从 875,640 涨到 7,793,416——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
+对照参考：**关掉 R8 的 release 包是 2,903,779 字节**，dex 从 875,404 涨到 7,796,400——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
+
+0.1.3 的那批结构重构（合并三处按键手势、折线采样收成 `AzElTrack`、落盘三级兜底收进 util 等）对产物体积的影响是零：重构前后打 release 包都是 602,318 字节，dex 条目只在 236 字节的量级上浮动，被 zipalign 的填充吃掉。
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
@@ -186,7 +188,9 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 
 常用命令：`./gradlew :core:test`（算法单测）、`./gradlew :app:assembleDebug`（调试包）、`./gradlew :app:assembleRelease`（发布包，产物名带版本号）、`./gradlew :app:connectedDebugAndroidTest`（仪器测试，在已连接的模拟器或真机上运行，多设备时用 `ANDROID_SERIAL` 指定；该任务结束会自动卸载应用）。装机若 `installDebug` 遇到 ddmlib 超时，可改用 `adb install -r` 直接安装。
 
-反复调试单个测试类时用 `scripts/run-instrumentation.sh`：它走 `am instrument` 跳过 Gradle 的重新打包与安装，全量 21 个用例约 28 秒、单个类约 4 秒，而 `connectedAndroidTest` 即使命中缓存也要 35 秒以上（冷构建 57 秒）。可传类名或 `类#方法` 限定范围。脚本内把 `ANDROID_SERIAL` 默认为 `emulator-5554`——本机常同时连着真机，而 `connectedAndroidTest` 会跑遍所有连接设备，正式验收仍应显式指定设备。
+反复调试单个测试类时用 `scripts/run-instrumentation.sh`：它走 `am instrument` 跳过 Gradle 的重新打包与安装，模拟器上全量 64 个用例约 39 秒（最慢一次 58 秒，那次是相机链路把两个按快门的用例拖成了等 20 秒超时）、单个类约 3 秒，而 `connectedAndroidTest` 即使命中缓存也要 35 秒以上（冷构建 57 秒）。可传类名或 `类#方法` 限定范围。脚本内把 `ANDROID_SERIAL` 默认为 `emulator-5554`——本机常同时连着真机，而 `connectedAndroidTest` 会跑遍所有连接设备，正式验收仍应显式指定设备。
+
+仪器测试目前 64 例，分 `full`（模拟器，含多语言）与 `fast`（真机，跳过标了 `@NeedsI18n` 的用例）两种模式；用例数不是稳定值，文档里引用它的地方要跟着改。另有一类偶发失败要认得出来——`CaptureShutterGestureTest` 的长按用例等的是整条拍照链路（`takePicture` → EXIF 回写 → 整张 JPEG 发布到相册）落库，模拟器相机被别的负载拖慢时会等满 20 秒超时，而单独跑这个类稳定通过（约 3 秒）；它与代码改动无关，别据此回滚。
 
 ## 13. 实施阶段与提交计划
 
@@ -205,9 +209,10 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 `:core` 文件清单与关键 API：
 
 - `Solar.kt`：`data class SolarPosition(val azimuthDeg: Double, val elevationDeg: Double)`；`object Solar` 提供 `position(utcMillis: Long, latDeg: Double, lonDeg: Double, refraction: Boolean = true): SolarPosition`（NOAA 公式，见第 4 节）、`julianDay(utcMillis: Long): Double`。几何高度角配 -0.833 度阈值即日出日落。
-- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>)` 提供 `obstructionAt(azDeg: Double): Double`（返回天际线边缘仰角；未覆盖方位返回 -∞，由判定方向分化为外部开阔与天花板全遮挡，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）；`object SkylineShape` 提供 `direct(...)` 与 `viaHorizon(...)`，把线段按求值语义展开为 (az, el) 绘图折线，取景器叠加层与导出参考图共用，保证「求值、叠加层、导出图」三处语义一致。
+- `Skyline.kt`：`data class ShotPoint(val azDeg: Double, val elDeg: Double, val viaHorizonAfter: Boolean = false)`；`class Skyline(points: List<ShotPoint>)` 提供 `obstructionAt(azDeg: Double): Double`（返回天际线边缘仰角；未覆盖方位返回 -∞，由判定方向分化为外部开阔与天花板全遮挡，见第 5 节）、`gapArcs(): List<Pair<Double, Double>>`、`coverage(points: Int = 360): BooleanArray`（按 1 度采样全周是否被覆盖，供覆盖条与覆盖率用）；`object SkylineShape` 提供 `direct(...)` 与 `viaHorizon(...)`，把线段按求值语义展开为 `AzElTrack`，取景器叠加层与导出参考图共用，保证「求值、叠加层、导出图」三处语义一致。
+- `AzElTrack.kt`：`class AzElTrack(val azimuths: DoubleArray, val elevations: DoubleArray)`，两条等长数组按下标配对的一串世界方向采样。求值侧的折线展开、叠加层的参考弧与两条参考线、导出参考图四处共用它；`init` 里校验两数组等长，长度对不上当场报错而不是留到某次投影时越界。
 - `Sunlight.kt`：`enum class CalcMode { EXTERNAL_ONLY, EXTERNAL_AND_CEILING, CEILING_ONLY }`；`data class DailySunlight(date, sunriseMinute: Int?, sunsetMinute: Int?, directMinutes: Int, visibleIntervals: List<IntRange>, allFromGap: Boolean, daylightMinutes: Int)`（分钟序号自当地 0 时起）；`object SunlightEvaluator` 提供 `evaluate(lat, lon, zoneId: String, external: List<ShotPoint>, ceiling: List<ShotPoint>, mode, date: LocalDate, stepMinutes: Int = 1): DailySunlight`、`yearlyCurve(..., year: Int, mode): List<Double>`、`windowMinutes(..., date, fromMinute: Int, toMinute: Int, mode): Int`。点列为空按第 5 节退化：外部列空则全周开阔、天花板列空则全周遮挡（界面据此禁用涉及天花板的档位）。
-- 单测：`SolarTest.kt`（对拍第二套独立实现的低精度日下点公式与物理合理性断言：北半球正午方位约 180、夏至正午高度角约 90-lat+23.4、春秋分日出方位约 90、赤道昼长约 12h07m、南半球正午方位约 0）、`SkylineTest.kt`（插值、空隙三段、重叠取最大、环绕 350→10、覆盖度）、`SunlightTest.kt`（三档模式语义、空隙穿透、极夜零分钟、南半球镜像）。
+- 单测：`SolarTest.kt`（对拍第二套独立实现的低精度日下点公式与物理合理性断言：北半球正午方位约 180、夏至正午高度角约 90-lat+23.4、春秋分日出方位约 90、赤道昼长约 12h07m、南半球正午方位约 0）、`SkylineTest.kt`（插值、空隙三段、重叠取最大、环绕 350→10、覆盖度）、`SkylineShapeTest.kt`（`direct` 的线性插值与跨正北短弧、`viaHorizon` 的三段形状与端点原样保留、两条数组等长的校验；`SkylineShape` 此前零覆盖，而三处几何一旦对不上，看到的就是「屏幕上的覆盖与实际算出来的不一样」）、`SunlightTest.kt`（三档模式语义、空隙穿透、极夜零分钟、南半球镜像）。
 
 `:app` 文件清单（包 `io.github.hecate2.D7` 下）：
 
@@ -216,11 +221,11 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 - `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore 至 `Pictures/D7/<文件夹名>/`（文件夹名由 `photoFolderFor()` 给定，同名组带短 id 后缀；API 29+ IS_PENDING；API 28- 公共目录+扫描，扫描只 fire-and-forget、返回 URI 不等待回调）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
 - `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线；另有地平线以下的地面层与天际线遮挡填充，两者只依赖拍摄点，逐帧投影）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
 - `ui/capture/AimGuard.kt`：瞄准合法性与警告滞回的纯函数（`canCapture` / `shouldWarn` 及三个阈值常量），抽出来是为了能在 JVM 单测里锁死边界，不依赖 `Activity` 与传感器。
-- `:app` 的纯 JVM 单测（`app/src/test`，跑在 `:app:testDebugUnitTest`，不需要设备）：`ui/capture/AimGuardTest.kt`、`sensor/ScreenRotationTest.kt`、`data/GroupRepositoryConcurrencyTest.kt`。后者用 `GroupRepository` 的 `internal` 构造函数直接传临时文件（不碰 `Context`），锁三件事：两线程各 150 次 `appendPoint` 后 300 个点一个不少（去掉 `stateLock` 即失败）、两线程各建 40 组后 80 组一个不少、删中间点后前后两点的 `gapAfter` 都要被清掉；另含一条落盘回读（写队列是异步的，故轮询到磁盘追上内存态再断言）。仪器测试里另有一份同名用例走真机文件系统，两条各有分工。
-- `ui/groups/GroupsActivity.kt`（卡片列表用 LinearLayout 逐张 inflate、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门按住满 450 毫秒即记地平线点并给按住反馈（准星下方提示 + 准星进度环 + 快门转圈），滑出按钮即取消本次按压，天花板区长按给提示不拍照；删除长按单次删当前分区内十字线右侧最近点、滑出取消）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（SharedPreferences 存显示线显隐与 +180° 状态）。
-- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的原生 Material 暗色主题（`Theme.D7`，不引入 AppCompat 与 Material 支持库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化）、`util/MediaFiles.kt`（组名清洗、MediaStore 发布与删除共用；删除单独一份是因为删组与删单点必须同一套语义）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
+- `:app` 的纯 JVM 单测（`app/src/test`，跑在 `:app:testDebugUnitTest`，不需要设备）：`ui/capture/AimGuardTest.kt`、`ui/capture/CompassCheckTest.kt`、`sensor/ScreenRotationTest.kt`、`data/GroupRepositoryConcurrencyTest.kt`。后者用 `GroupRepository` 的 `internal` 构造函数直接传临时文件（不碰 `Context`），锁三件事：两线程各 150 次 `appendPoint` 后 300 个点一个不少（去掉 `stateLock` 即失败）、两线程各建 40 组后 80 组一个不少、删中间点后前后两点的 `gapAfter` 都要被清掉；另含一条落盘回读（写队列是异步的，故轮询到磁盘追上内存态再断言）。仪器测试里另有一份同名用例走真机文件系统，两条各有分工。
+- `ui/groups/GroupsActivity.kt`（卡片列表用 LinearLayout 逐张 inflate、建组对话框=组名+经纬度+GPS 按钮、长按改名/删除（可勾选连带删照片）/导出）、`ui/capture/CaptureActivity.kt`（布局自上而下：标题栏、大小读数+`+180°` 药丸、取景器+chip+覆盖条+显示线、方向提示、底部完成/快门/删除；快门、删除键、对焦键共用 `bindPressGesture` 一份「按下计时、按住满 450 毫秒就地触发长按、滑出即取消、抬手不补记」的骨架，各自的触发内容与准入检查作为参数传入——快门满阈值即记地平线点并给按住反馈（准星下方提示 + 准星进度环 + 快门转圈），天花板区长按给提示不拍照；删除键的准入检查是「右侧有没有可删的点」，没有就只给一句提示、本次不参与手势）、`ui/result/ResultActivity.kt`（日期药丸、三档、主卡、时间线、国标卡、全年曲线、点列区（删点、连线模式切换、单点与批量角度编辑）、导出 CSV/图片、回采集续拍）、`ui/capture/CaptureSettings.kt`（`CaptureLine` 枚举承载九条显示线的文案、线色、持久化键与默认值，`CaptureSettings` 只按条目读写 SharedPreferences 与 +180°、不拍照两个开关）。
+- 资源：`res/values/colors.xml`（第 9 节配色，含 `ink #000000`、`card #161618`、`moon #CAC2D1`、`smoke #8E8E93`、`stroke #2E2E32`、`winter #378ADD`、`equinox #E24B4A`、`summer #EF9F27`）、`res/values/themes.xml` 的原生 Material 暗色主题（`Theme.D7`，不引入 AppCompat 与 Material 支持库）、图标由根目录 `城市日照十字瞄准图标.png` 生成自适应图标。工具：`util/Format.kt`（角度、坐标、时长格式化，以及计算档位名与分区名这两处曾各写一遍的枚举文案）、`util/MediaFiles.kt`（组名清洗、删除照片、降采样解码，以及 `publishToPublicOrPrivate` 那套「MediaStore → 公共目录 + 扫描 → 应用私有目录」的三级落盘兜底；拍照与导出共用，`PublicDestination` 把同一处公共目录的两种说法绑在一起）、`util/Summaries.kt`（卡片与覆盖条派生数据）、`ui/PillStyle.kt`（药丸选中态着色扩展）、`ui/Extras.kt`（Activity 传参键）。
 
-实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛；自动化验证在模拟器 AVD 7d_api30（android-30）上运行 `:app:connectedDebugAndroidTest`，另有真机 vivo PD2164PA（Android 11 / API 30）供人工实测。
+实施时按第 13 节顺序提交，每阶段跑 `:core:test` 与 `:app:assembleDebug` 作为门槛；自动化验证在模拟器 AVD 7d_api30（android-30）上运行 `:app:connectedDebugAndroidTest`，另有真机 vivo V2164PA（Android 11 / API 30）供人工实测。
 
 ## 附录 B：国际化（internationalization，缩写 i18n）设计
 
@@ -234,4 +239,4 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 
 系统级「按应用设置语言」入口由两部分提供：`res/xml/locales_config.xml` 声明支持的语言清单（当前 8 种），`AndroidManifest.xml` 的 `android:localeConfig` 属性把它挂到应用上，Android 13 及以上即可在系统设置中为应用单独选语言。**新增语言目录时必须同步把该语言加进 `locales_config.xml`、`resourceConfigurations` 与 `Locales.TAGS`，且补齐条目后才算完成**：反过来，只声明不翻译会让用户在系统里选中该语言却拿到中文界面，而 lint 的 `MissingTranslation`（本工程已开启 `abortOnError`，属 error 级）正是用来拦住这种半成品的。
 
-当前处于只发布中文的阶段，明确不做的部分：不维护中文以外的翻译；不做应用内自有的语言切换界面（交给系统设置）；导出文件名与 CSV 内容随当前系统语言变化，不追求跨语言的稳定一致。以 `Format` 工具类为例，时长类函数全部改为接收 `Resources` 后从字符串资源取词（`durationShort` 与 `durationLong`），它在列表页、结果页与导出模块的三个调用场景共用同一套资源。唯一豁免是 `Format.coordinate` 拼接的半球符号 `N/E/S/W` 与度数符号 `°`：属于跨语言通用记号而非文案（模板为 `%.2f°%s %.2f°%s`），不单列资源；若将来某语言需要不同写法，随该语言一并处理。
+**明确不做的部分**（都在上面交代过理由，这里收拢成一份，免得再看见「以后要不要加」的讨论）：不引入 AppCompat 及其带来的 `AppCompatDelegate.setApplicationLocales`；不做导出内容的跨语言逐字节一致——导出文件名与 CSV 表头随当前界面语言变化，同一组数据在两种语言下导出的文件不同名也不同表头，这是刻意接受的；不为格式化型文案在代码里拼语序，一律走带位置参数的资源串。以 `Format` 工具类为例，时长、计算档位名与分区名都接收 `Resources` 后从字符串资源取词，在列表页、结果页与导出模块的三个调用场景共用同一套资源。唯一豁免是 `Format.coordinate` 拼接的半球符号 `N/E/S/W` 与度数符号 `°`：属于跨语言通用记号而非文案（模板为 `%.2f°%s %.2f°%s`），不单列资源；若将来某语言需要不同写法，随该语言一并处理。

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # 在已启动的设备上直接跑仪器测试，跳过 Gradle 的重新打包与安装。
 #
-# 背景（实测数据，21 个用例）：
+# 背景（前三行是 21 个用例时期实测的对照；本脚本与 Gradle 任务的差距全在
+# 「跳过重新打包与安装」上，与用例数无关，所以用例涨到 64 个这几行仍然说明得了问题）：
 #   ./gradlew :app:connectedDebugAndroidTest          56.6s  冷构建
 #   ./gradlew :app:connectedDebugAndroidTest          35.4s  构建命中缓存
 #   本脚本（首次会构建并安装，之后只跑）             26.6s  只跑用例
-# 用例本身的执行耗时约 26s，Gradle 的构建与安装占掉其余 30s。
+# 当前 64 个用例，am instrument 本身约 39s、单个类约 3s（模拟器实测）。
 # 反复调试单个测试类时用本脚本最划算；正式验收仍用 Gradle 任务。
 #
 # 三种模式：
