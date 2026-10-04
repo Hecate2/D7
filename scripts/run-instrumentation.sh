@@ -15,6 +15,10 @@
 #   full          全跑，含多语言
 #   fast          跳过多语言（标了 @NeedsI18n 的类/方法）
 #   <类名 | '类#方法'>  只跑这一个，模式按 auto 的规则套用
+#                    类名给全限定名（io.github.hecate2.D7.CaptureShutterGestureTest）；
+#                    不含点的简名会自动补上 io.github.hecate2.D7. 前缀——am instrument 的
+#                    -e class 只认全限定名，给简名不会报错，而是安静地跑一个名为「找不到
+#                    这个类」的失败用例（Tests run: 1, Failures: 1），白跑一趟还容易误判。
 #
 # 模拟器上还会顺手把三个动画时长全局设成 0：Espresso 等的是主线程空闲，动画没停就等着。
 # 实测 54 个用例 60.4s → 36.6s（省 40%），比跳过多语言那 14% 值钱得多。只改模拟器，
@@ -53,7 +57,13 @@ case "$MODE" in
     if [[ "$IS_EMULATOR" == yes ]]; then MODE=full; else MODE=fast; fi
     ;;
   full | fast) ;;
-  *) FILTER=(-e class "$MODE"); MODE=单类 ;;
+  *)
+    # 简名补包名；带点的原样传（子包要自己写全，如 view.ViewfinderFillLayerTest 不成立，
+    # 得写 io.github.hecate2.D7.view.ViewfinderFillLayerTest）
+    [[ "$MODE" == *.* ]] || MODE="io.github.hecate2.D7.$MODE"
+    FILTER=(-e class "$MODE")
+    MODE="单类 $MODE"
+    ;;
 esac
 
 # 装好两个 APK（Gradle 只在必要时才重装，这里先确保存在且是最新构建）
