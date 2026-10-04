@@ -60,7 +60,9 @@
 
 日出日落时刻单独扫描 -0.833 度阈值求得，供时间线两端与文字输出。全年曲线按同样方法逐日计算 365 天（闰年 366），在后台协程执行，结果缓存在内存。
 
-国标辅助卡按 GB 50180-2018 预设给出「大寒日 8:00-16:00 有效直射」的窗口内累计分钟数，并列出各气候区的考核标准文字供用户对照，不做自动达标判定。
+国标辅助卡按 GB 50180-2018 预设给出「大寒日 8:00-16:00 有效直射」的窗口内累计分钟数，并列出各气候区的考核标准文字供用户对照，不做自动达标判定。窗口固定取大寒日 8 至 16 时真太阳时（`Summaries.gbWindowMinutes` 传 480/960 分），其余档位只出现在说明文字里，不参与计算。
+
+说明文字里的阈值抄自该标准表 4.0.9：Ⅰ、Ⅱ、Ⅲ、Ⅶ 气候区大寒日 8 至 16 时 ≥2 h（城区常住人口不足 50 万 ≥3 h），Ⅳ 气候区大寒日 8 至 16 时 ≥3 h，Ⅴ、Ⅵ 气候区冬至日 9 至 15 时 ≥1 h。**这句只在中文界面出现**，其余七种语言在各自的 `strings.xml` 里取空串：气候区划是中国大陆的行政与气候划分，出了国境没有对照意义，译过去只会把一句「本地不适用」的标准说成通用结论。空串也是合法资源，`tools/check-locale-parity.py` 只比键集、占位符与换行数，不要求值非空；界面侧由 `ResultActivity` 在 `onCreate` 里按是否为空决定 `gbHint` 的 `isVisible`，否则那一行的高度与 6dp 间距会留在卡片底部。
 
 ## 7. 传感器管线
 
@@ -88,6 +90,8 @@
 
 叠加层是一个覆盖在 `PreviewView` 上的自定义 View，每帧（传感器更新驱动，约 30 到 60 次每秒，做 30 毫秒节流）按当前姿态重绘：参考弧、拍摄点与连线、十字线、空隙标记。
 
+十字线画在画面正中，画法收在 `view/AimCrosshair.kt` 的 `AimCrosshair` 里。它对应的是后摄视轴（第 3 节那条「记录拍摄点所用的方向」），而针孔投影的主点就在 `width/2, height/2`，所以视轴与画面正中必定是同一处。结果页点开的大图用同一份画法（`AimCrosshairView`）把准星叠在照片正中：照片按 `fitCenter` 居中缩放，其中心与屏幕上那个 View 的中心重合，于是准星正好落在「当时对着的那一点」上——用户在大图上看到的点，必须就是拍照时对的那个点，所以两处共用一份画法而不是各写一遍，`AimCrosshairTest` 拿同一尺寸把两处各渲染一遍逐像素比对。尺寸由 `AimCrosshair.sizePx` 自己报（约 33dp，取偶数是让中心落在整像素上，奇数会因抗锯齿左右不对称而看着发歪）。若哪天大图改成非居中的裁剪，那边必须跟着改。
+
 投影用针孔模型：世界方向向量 v（由方位角、仰角生成 ENU 单位向量）依次点乘相机的右、上、前三个世界向量得到相机坐标 (x, y, z)，屏幕坐标 = 中心 + (x/z, -y/z) × 焦距像素（焦距由视场角推算）；z ≤ 0.01 的方向视为在相机背后予以剔除，剔除处把折线断开，因此跨视场边缘的弧线只画落在画面里的那一段，近天顶段自然裁剪。相机的右、上向量按显示旋转（`Display.getRotation()` 四种取值）从设备三轴映射得到；采集页已锁竖屏，常规使用即 ROTATION_0，四种映射用于兜底分屏等窗口形态。
 
 参考弧按赤纬生成：对给定赤纬按小时角采样全天太阳位置，得到 (az, el) 序列后投影成折线；采样只依赖纬度与赤纬，按赤纬缓存在叠加层内（定位更新时失效），姿态变化仅重投影、不重算天文位置。采样取几何高度角（不含大气折射），与天际线求值的判定基准一致。夏至橙、春秋分红、冬至蓝（均虚线）、今日白（实线）、地平线与铅垂线灰短虚线（默认隐藏）。铅垂线定义为当前十字线方位角上的等方位弧（仰角 0 到 90），作为对垂直参考。显隐由「显示线」设置控制，默认显示四条太阳弧、拍摄点连线、地面层与楼体遮挡区，隐藏地平线与铅垂线；九项的字面、线色、持久化键与默认值都记在 `ui/Settings.kt` 的 `CaptureLine` 枚举里，对话框按它的顺序铺条目，设置按条目本身读写，下标不再跨文件约定。
@@ -104,7 +108,7 @@
 
 采集页自上而下：标题栏（左上角返回键、组名与经纬度元信息）、大号仰角与方位读数（读数行右侧依次为「不拍照」与 `+180°` 两枚药丸）、罗盘校准与读数精度两枚分级药丸及滚转角读数（左右倾斜，正值=机顶向右倒，非航向）、取景器（左上分区 chip：外部建筑/天花板，右侧为覆盖条与「显示线」）、取景器下方的瞄准警告红条（镜头低于地平线时常驻，默认隐藏）、方向提示（北半球「面向南，西·先拍 → 东·后拍」、南半球镜像）、底部一行五键（左「完成」，快门两侧依次为手电筒与对焦两枚纯图标键，右「删除」）。快门短按：抬手时记录当前十字线指向为新的拍摄点并与上一点直接连线；长按（外部区）：按住满 0.45 秒即当场记录并以经地平线推断段与上一点连接，继续按住不重复记点；天花板区仅短按，且与上一点直接连线。两种按法都在记录前经 `AimGuard.canCapture` 校验仰角，低于 -3 度视为瞄到地面而拒绝。删除键长按：在当前分区内删除「十字线右侧、离当前瞄准方位最近」的一个点（判定为相对当前方位角的顺时针角距最小者，即 `normalize(az_point - az_now) ∈ (0°, 180°)` 中角距最小），按住一次只删一个；左侧的点不受影响。短按不删任何东西，只弹一句「长按删右侧最近点」——这句提示原先常驻在删除键下方、占掉一整行，改成按需弹一次后那一行的高度还给了取景器。删点的同时把该点带的那张照片从相册里删掉——留着它只会是一张再也对不上任何点的图。`photoUri` 为空是常态而非异常（「不拍照」模式录的点、结果页批量编辑新增的点、继承不到照片的点），直接跳过；删不掉也静默（照片可能早已被用户在相册里清掉，而 `ContentResolver.delete` 对「本来就没有」与「没权限」一律回 0，分不开），批量删组的路径才会报「N 张失败」。完成键保存并跳转结果页。覆盖条之外，取景器内直接画出已拍点与连线（第 9 节）。页面锁竖屏运行，横屏时保持竖屏版式（见第 10 节）。续拍：从结果页「回采集续拍」返回该组，新点按分区各自原序续接。
 
-结果页自上而下：左上角返回键、标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器；这一行与下一行的计算档都放在横向滚动容器里——中文下五个药丸排得下，德俄等长词语言下一行放不下，而横向 LinearLayout 溢出时不报错、只是把选项默默推出屏幕，用户根本点不到）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注，以及常驻的主半圆覆盖率提示，见第 5 节）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与右边相邻点（拍摄序前一点，即列表上一行）的连线模式切换按钮、删除按钮；点缩略图整屏看大图（黑底、按比例缩到屏幕内、点任意处或返回键关闭，按屏幕最长边降采样解码——原图可能四千万像素）；缩略图没有照片时不挂监听，否则它会吃掉本该落到整行的点击；点删除按钮删这一个点并连带删掉它的照片，与采集页长按删除同一套语义；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
+结果页自上而下：左上角返回键、标题与元信息、日期药丸（冬至/大寒/春分/夏至/自定义，自定义弹日期选择器；这一行与下一行的计算档都放在横向滚动容器里——中文下五个药丸排得下，德俄等长词语言下一行放不下，而横向 LinearLayout 溢出时不报错、只是把选项默默推出屏幕，用户根本点不到）、计算档三档（仅外部默认/外部+天花板/仅天花板）、主结果卡（选中日期在该档下的直射时长、日出日落、来自空隙标注，以及常驻的主半圆覆盖率提示，见第 5 节）、当天时间线（日出到日落一条横条，白=直射、炭灰=被挡，标注起止时刻）、国标卡（大寒 8:00-16:00 有效直射与预设说明）、全年曲线（365 天时长折线，横轴月份刻度）、点列区（每行：分区标记、序号、缩略图、方位、仰角、与右边相邻点（拍摄序前一点，即列表上一行）的连线模式切换按钮、删除按钮；点缩略图整屏看大图（黑底、按比例缩到屏幕内、点任意处或返回键关闭，按屏幕最长边降采样解码——原图可能四千万像素；照片正中叠一个准星，见第 9 节）；缩略图没有照片时不挂监听，否则它会吃掉本该落到整行的点击；点删除按钮删这一个点并连带删掉它的照片，与采集页长按删除同一套语义；整行可点开单点角度编辑；标题行右侧「编辑」按钮打开批量编辑；天花板点无模式切换）、底部导出 CSV / 导出图片 / 回采集续拍。所有计算在后台协程执行，界面先显示上次缓存或加载态。
 
 结果页点列区的编辑动作直接改组数据：删除任意点；切换某点与右边相邻点（拍摄序前一点，列表上一行；存储上段即前一点的 `gapAfter`）的连线模式（直接连线 ⇄ 走地平线，仅外部点可切换）。删除点后其前后两点的连接改为直接连线（避免悬空的经地平线段），这与「删除即撤掉该点及其连接段」一致。
 
@@ -145,22 +149,22 @@
 
 工程使用 Gradle Wrapper 固定版本，不依赖本机 Gradle。版本矩阵：JDK 17（Temurin）、Gradle 8.11.1、Android Gradle Plugin 8.7.3、Kotlin 2.0.21（含 kotlinx.serialization 插件）、compileSdk 35、targetSdk 35、minSdk 26。依赖：androidx core-ktx / activity-ktx / lifecycle-runtime-ktx、CameraX 1.4.x（core、camera2、lifecycle、view；camera-view 上 exclude 掉 appCompat，它对该库零引用）、kotlinx-serialization-json、androidx exifinterface、coroutines（不引入 Material 库）；测试为 `:core` 的 JUnit4 单测，以及 `:app` 的仪器测试（Espresso、espresso-intents、runner、rules、ext-junit、uiautomator）。release 构建开启 R8 缩减（`isMinifyEnabled`/`isShrinkResources`），只保留 zh/en/ja/ko/de/fr/es/ru 八种语言资源、裁剪 x86/x86_64 ABI、图标转 WebP 以压缩体积。
 
-**APK 体积预算（0.1.3，R8 产物 604,518 字节）。** 逐项实测（下表为条目未压缩体积）：
+**APK 体积预算（0.1.3，R8 产物 603,458 字节）。** 逐项实测（下表为条目未压缩体积）：
 
 | 项 | 字节 | 说明 |
 | --- | --- | --- |
-| `classes.dex` | 875,968 | 压缩后约占 52%，APK 的大头 |
-| `resources.arsc` | 110,404 | 存根不压缩；八种语言的字符串池占大头 |
-| `res/` | 64,444 | 11 个布局 36.6 KB + 21 个 drawable 14.4 KB + 启动器图标 11.2 KB + `xml/locales_config.xml` 1.0 KB |
+| `classes.dex` | 876,796 | 压缩后约占 48%，APK 的大头 |
+| `resources.arsc` | 109,276 | 存根不压缩；八种语言的字符串池占大头 |
+| `res/` | 64,632 | 11 个布局 36.6 KB + 21 个 drawable 14.4 KB + 启动器图标 11.2 KB + `xml/locales_config.xml` 1.0 KB |
 | `AndroidManifest.xml` | 7,388 | |
 | `lib/` | 8,272 | arm64 4.8 KB + v7a 3.4 KB，均为 `libsurface_util_jni.so` |
-| `assets/` | 452 | baseline profile，启动加速用 |
+| `assets/` | 487 | baseline profile，启动加速用 |
 
 已做的三项减法，各有实测数字与代价说明：
 
 - **`packaging.resources.excludes` 剔除 `**/*.kotlin_builtins` 与 `**/*.kotlin_metadata`**（7 个文件共 29,945 字节，占 trim 前包 4.8%）。它们是 Kotlin 编译器与 kotlin-reflect 读的类库元数据；本工程没有 kotlin-reflect 依赖，也不做任何运行时反射（`kotlin.reflect`、`KClass.members`、`typeOf` 均未出现），kotlinx.serialization 的序列化器是编译期生成的代码、不读这些文件。613,873 → 602,318 字节。这 7 个文件是 deflate 存放的，压缩后合计只剩 10,468 字节，所以 APK 减幅（11,555）不到它们未压缩体积的一半。**逐条比就看未压缩，看总量就看压缩后，两个口径不能混着比。**
 - **`jniLibs.excludes` 剔除 camera-core 的 `libimage_processing_util_jni.so`**（arm64 29,008 + v7a 20,380 = 49,388 字节）。它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，走不到这些 native 方法；`ImageProcessingUtil` 类本身保留（R8 按 native 方法名 keep），缺的只是库文件。实测 APK 600,281 → 534,541 字节（−11%）。注意减幅比 49,388 字节还多出约 16 KB：这两个 `.so` 与 `lib/` 里留下的 `libsurface_util_jni.so` 一样是原样存放、按页对齐的，剔除它们时各自的页对齐填充也跟着消失。拆开看是条目数据 −49,405、对齐填充 −15,999、尾部 −184。
-- **`resourceConfigurations` 限定八种语言**，把 AndroidX 自带的上百种翻译挡在包外。代价：多六种语言（相对只留 zh+en）约合 66,852 字节，占包的 11.1%——这是为界面多语言功能付的费用，属于产品取舍，不是冗余。
+- **`resourceConfigurations` 限定八种语言**，把 AndroidX 自带的上百种翻译挡在包外。代价：多六种语言（相对只留 zh+en）实测 66,244 字节，占包的 11.0%——这是为界面多语言功能付的费用，属于产品取舍，不是冗余。这个数字随着译文增减而变化：`result_gb_hint` 在七种语言里清空之后，它从 66,852 降到 66,244。
 
 **验证过但决定不做的精简**（写在这里是为了下一个人别再试一遍）：
 
@@ -168,9 +172,11 @@
 - **把启动器图标 `mipmap/ic_launcher_foreground.webp`（10,268 字节）改成矢量**。它是带径向光晕与玻璃渐变的照片级位图（VP8 有损，432×432），矢量化必然掉画质，换 8 KB 不值。
 - **用 `org.json` 替掉 kotlinx.serialization**。序列化相关类在混淆包里约 62 个，估算值不了多少字节，而手写 JSON 会实打实地牺牲可维护性。
 
-对照参考：**关掉 R8 的 release 包是 2,906,003 字节**，dex 从 875,968 涨到 7,799,140——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
+对照参考：**关掉 R8 的 release 包是 2,904,947 字节**，dex 从 876,796 涨到 7,801,684——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
 
-把 0.1.3 这一版拉直看：上面那三步减法做完是 602,318 字节。随后的结构重构（合并三处按键手势、折线采样收成 `AzElTrack`、落盘三级兜底收进 util、导出结果删掉冗余字段）对产物体积的影响是零——前后打 release 包都是 602,318 字节，dex 从 875,640 走到 875,280 的那点零头全被 zipalign 的填充吃掉。同一版最后补的三处界面改动（采集页与结果页的返回键、照片组页的常亮键、删除键提示改 Toast）连同两枚矢量图标与八种语言各两条新文案，把包推到 **604,518 字节**：逐项看是 dex +688、`resources.arsc` +848、`res/` +2,808、`assets/` −33。**看这类改动值不值，看 dex 而不是看 APK 总量，后者在这些量级上量不出来。**
+把 0.1.3 这一版拉直看：上面那三步减法做完是 602,318 字节。随后的结构重构（合并三处按键手势、折线采样收成 `AzElTrack`、落盘三级兜底收进 util、导出结果删掉冗余字段）对产物体积的影响是零——前后打 release 包都是 602,318 字节，dex 从 875,640 走到 875,280 的那点零头全被 zipalign 的填充吃掉。同一版最后补的三处界面改动（采集页与结果页的返回键、照片组页的常亮键、删除键提示改 Toast）连同两枚矢量图标与八种语言各两条新文案，把包推到 604,518 字节：逐项看是 dex +688、`resources.arsc` +848、`res/` +2,808、`assets/` −33。**看这类改动值不值，看 dex 而不是看 APK 总量，后者在这些量级上量不出来。**
+
+收尾的改动反过来把包压回 **603,458 字节**（−1,060），这也是同一版里唯一一次体积下降，原因值得记一笔：新增了一个准星控件（`view/AimCrosshair.kt`，dex 未压缩 +828）与一处布局（`res/` +188），同时把七种非中文语言的国标说明清成空串。`resources.arsc` 是**原样存放不压缩**的，字符串池里少掉的字节就是包上少掉的字节，这一项直接减了 1,128，比新增的两项加起来还多。压缩侧逐段对上：dex +473、`resources.arsc` −1,128、`res/` +70、`META-INF` +73、`assets/` +35、中央目录与对齐填充等 −583，合计 −1,060。各段压缩后的大小会牵动后续条目的对齐填充，所以最后那一项是链式位移的残差，不必逐字节解释。
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
@@ -222,7 +228,7 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 - `data/Model.kt`：`@Serializable PointRecord(az, el, gapAfter, photoUri: String?, takenAt: Long)`、`@Serializable GroupRecord(id, name, lat, lon, altitude, zoneId, createdAt, updatedAt, external: MutableList<PointRecord>, ceiling: MutableList<PointRecord>)`、`@Serializable Store(version = 1, groups)`；`GroupRepository`（单例，`filesDir/groups.json` 单线程后台异步原子写、原子改名失败回退普通覆盖，`StateFlow<List<GroupRecord>>`，CRUD、`photoFolderFor()`〔同名组的相册文件夹消歧〕、`updatePointAngles()` 与 `setRegionPoints()`）。
 - `sensor/OrientationSensor.kt`：注册旋转矢量，输出 `Pose(forward, right, up: FloatArray, frontAzDeg, frontElDeg, smoothAzDeg, smoothElDeg, rollDeg: Double, accuracy: Int)`；后摄视轴 `-col2(R)`，显示旋转到屏幕右/上向量的映射四种取值，滚转角 `atan2(-right[2], up[2])`，磁偏角经 `GeomagneticField` 叠加（绕世界 z 轴旋转三个基向量）。`sensor/LocationProvider.kt`：系统融合定位（多 provider 并发、`warmUp()` 预热与 `shutdown()` 注销〔由照片组管理页 `onStart`/`onStop` 驱动〕、`lastFresh()` 新鲜缓存、`requestSingleUpdate()` 快慢三档返回、`capability()` 能力快照），另提供静态 `declination()` 磁偏角计算（`GeomagneticField` 的球谐展开较贵，而采集页以传感器频率调用，故按坐标 + 30 秒有效期做了一层缓存）。
 - `camera/PhotoStore.kt`：快门拍照 → cacheDir 临时文件 → ExifInterface 写 `TAG_USER_COMMENT`（JSON：az/el/zone/group/seq/gap）+ GPS → 发布 MediaStore 至 `Pictures/D7/<文件夹名>/`（文件夹名由 `photoFolderFor()` 给定，同名组带短 id 后缀；API 29+ IS_PENDING；API 28- 公共目录+扫描，扫描只 fire-and-forget、返回 URI 不等待回调）→ 返回 content URI。`camera/CameraController.kt`：CameraX 绑定，`focalPx` 计算（见第 9 节，`focal_mm × max(viewW/传感器转屏宽mm, viewH/传感器转屏高mm)`，含 FILL_CENTER 裁剪），失败退回 65 度水平视场假设（半视场角 32.5 度）。
-- `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线；另有地平线以下的地面层与天际线遮挡填充，两者只依赖拍摄点，逐帧投影）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
+- `view/ViewfinderOverlayView.kt`：叠加层（参考弧按赤纬采样小时角生成，投影公式 `screenX = cx + (x/z)·focalPx`，`z ≤ 0.01` 剔除并断线；另有地平线以下的地面层与天际线遮挡填充，两者只依赖拍摄点，逐帧投影）；`view/AimCrosshair.kt`（`AimCrosshair` 是准星画法，`AimCrosshairView` 是结果页大图上那一个，取景器与它共用同一份，见第 9 节）；`view/CoverageBarView.kt`；`view/DayTimelineView.kt`；`view/YearCurveView.kt`（导出参考图的极坐标天际线由 `export/Exporter.kt` 直接在 Canvas 上绘制）。
 - `ui/capture/AimGuard.kt`：瞄准合法性与警告滞回的纯函数（`canCapture` / `shouldWarn` 及三个阈值常量），抽出来是为了能在 JVM 单测里锁死边界，不依赖 `Activity` 与传感器。
 - `ui/capture/CompassCheck.kt`：罗盘可信度定档的纯函数，平台精度与静置漂移取较差的一档（`DRIFT_GOOD_DEG = 3`、`DRIFT_OK_DEG = 10`），两路都没依据时给 `Grade.UNKNOWN` 而不是假装「高」。之所以要加自己测的那一路：实测本机（vivo，联发科方案）的 HAL 对旋转矢量恒定上报「高」，只信平台精度的话校准药丸等于没有信息。
 - `ui/Grade.kt`：四态分级 `Grade`（好 / 中 / 差 / 未知）与取色的 `colorRes()`，沿用 `colors.xml` 的 `precision_*`。采集页的校准药丸与读数药丸、结果页的覆盖率提示都要「按档位给颜色与措辞」，收敛到一处之前每处都写两遍同样的 `when`，改一处漏一处。
@@ -238,6 +244,8 @@ printf 'storeFile=release.jks\nstorePassword=<密码>\nkeyAlias=d7\nkeyPassword=
 界面文案一律只从资源文件 `res/values/strings.xml` 读取，Kotlin 代码中不写死任何面向用户的中文文本；这条约定覆盖的不只是布局里的标签，还包括 Toast 提示、导出逗号分隔值（comma-separated values，缩写 CSV）文件的表头与字段名、导出参考图 PNG 内绘制的文字、自绘视图画布上的刻度与提示文字。中文是默认资源（`values/` 目录），因此新增文案先以中文写进默认资源；格式化型文案（时长、日期档位名、方位刻度等）同样进资源，用带位置参数（如 `%1$s`、`%2$02d`）的格式串在代码侧填充，避免在代码里拼接语序。
 
 第二语言的落地流程是纯机械的：新建 `res/values-<语言>/strings.xml`，补齐需要翻译的条目即可，未翻译的条目自动回退到中文默认值。当前已落地 8 种：中文（`values/`）、英、日、韩、德、法、西、俄。语言名一律用 endonym（各自语言自己的写法，如 `Deutsch`），全部标 `translatable="false"` 只存一份——翻译成中文的「德语」对想切德语的用户毫无帮助，反而多一份要维护的文案。
+
+个别条目刻意不给译文。`result_gb_hint` 是一条例外：它讲的是中国大陆的国标 GB 50180-2018，气候区划与有效时间带出了国境没有对照意义，八种语言里只有中文给出正文，其余七种在各自文件里写空串并附一句英文注释说明这是有意为之，免得后人当成漏译补上。空串是合法资源，`tools/check-locale-parity.py` 只比键集、占位符与换行数，不要求值非空；但空值不自动等于不占位，布局里那个 `TextView` 仍会量出那一行的高度与间距，所以界面侧要显式收起（见第 6 节）。
 
 界面语言的选择存 `SharedPreferences("locale")` 的 `tag` 键，空串表示跟随系统；核心逻辑在 `util/Locales.kt`。实现刻意**不引入 AppCompat**——`AppCompatDelegate.setApplicationLocales` 虽是省事的一条路，但等于为一件小事把 appcompat + fragment + material 全拖回来，与第 12 节「依赖树收到最小」的约定冲突。所以走最朴素可靠的一套：三个 Activity 各自在 `attachBaseContext` 里用 `createConfigurationContext` 覆写一份配置，minSdk 26 到 targetSdk 35 行为一致，也不必把用户领去系统设置里找。`Locale.setDefault` 必须跟着一起改，否则日期与数字（`String.format`）仍按默认语言拼，中文界面下会出现「12月21日」这种混搭。
 
