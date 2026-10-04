@@ -43,7 +43,7 @@ Each group holds two zones: the external-building zone for the towers across the
 5. Resume and edit points. Going back from results to capture resumes shooting on the same group: pick the zone with the chip first, and new points append to that zone's order. Editing captured points lives in the results screen's point list: delete any point, or switch the segment between a point and its neighbor to the right (the previous shot, i.e. the row above in the list) between "direct connect" and "via horizon" modes (ceiling points are direct only).
 6. Read the results.
 
-The capture and results screens each carry a back arrow at the top left that returns to the list of photo sets. Some phones have no bottom navigation key at all (gesture navigation, or a hidden nav bar), and that arrow is the way out. On the group screen, next to the language key at the top right, a sun icon toggles whether the screen stays awake. It is on by default: while you hold the phone up tapping the shutter or comparing the timeline, a screen that sleeps costs you an unlock every time. Amber means on, moon gray means off, the same toggle convention as the torch and focus keys on the capture screen. All of these switches, along with the line visibility, the no-photo mode and `+180°`, are remembered on the device, so the next visit starts where you left it.
+The capture and results screens each carry a back arrow at the top left that returns to the list of photo sets. Some phones have no bottom navigation key at all (gesture navigation, or a hidden nav bar), and that arrow is the way out. On the group screen, next to the language key at the top right, a sun icon toggles whether the screen stays awake. It is on by default: while you hold the phone up tapping the shutter or comparing the timeline, a screen that sleeps costs you an unlock every time. Amber means on, moon gray means off, the same toggle convention as the torch and focus keys on the capture screen. **What is remembered**: whether the screen stays awake, the visibility of each of the nine reference lines, the no-photo mode, `+180°`, and the interface language. They live in the app's local preferences, so the next visit starts where you left it, whichever group or window you open. **What is not**: the torch follows the state of the phone's lamp when you enter the capture screen, and auto-focus starts on every time. Those two are per-session settings you adjust on the spot.
 
 All groups live on the group management screen, one card per group: the name, the solstice verdict, and each zone's state (external point count with coverage, ceiling point count or an empty dashed box). Tap a card for results, long-press to rename, delete or export; creating a group from the top-right button names it and jumps straight into capture.
 
@@ -94,7 +94,7 @@ Listed honestly:
 
 ## Privacy
 
-The app requests no network permission. Photos, angles and location stay on the phone; Android auto-backup is off (allowBackup=false), so nothing is uploaded to the cloud. Export to CSV and images anytime, delete anytime.
+The app requests no network permission. Photos, angles and location stay on the phone; Android auto-backup is off (allowBackup=false), so nothing is uploaded to the cloud. Export to CSV and images anytime, delete anytime. The preferences listed above also live only in local storage and take part in no sync.
 
 ## UI and palette
 
