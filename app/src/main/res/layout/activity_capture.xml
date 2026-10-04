@@ -320,8 +320,10 @@
     </LinearLayout>
 
     <!-- 底部只留这一行：快门提示已并入 hintSeg（原文与它重复），删除的长按提示
-         贴在删除键正下方，省掉原先单独的 captionRow 一整行。三个控件都占 52dp、
-         顶端对齐，删除键与快门中心线保持一致。 -->
+         贴在删除键正下方，省掉原先单独的 captionRow 一整行。五个控件都占 52dp、
+         顶端对齐，删除键与快门中心线保持一致。
+         闪光灯键与对焦键夹在快门两侧，是纯图标键：48dp 见方、无文字，
+         宽度写死以便两个文字键（完成/删除）继续用 weight 平分剩余空间。 -->
     <LinearLayout
         android:id="@+id/buttonRow"
         android:layout_width="match_parent"
@@ -351,6 +353,26 @@
                 android:textSize="11sp" />
         </FrameLayout>
 
+        <!-- 闪光灯（手电筒）键：无闪光灯的机型直接隐藏，不占位 -->
+        <FrameLayout
+            android:id="@+id/torchSlot"
+            android:layout_width="48dp"
+            android:layout_height="52dp">
+
+            <ImageView
+                android:id="@+id/torchButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_icon_button"
+                android:clickable="true"
+                android:contentDescription="@string/capture_torch"
+                android:focusable="true"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_torch" />
+        </FrameLayout>
+
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="52dp"
@@ -372,6 +394,25 @@
                 android:layout_gravity="center"
                 android:indeterminateTint="@color/press"
                 android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- 对焦键：短按立刻对焦一次，长按开关自动对焦 -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="52dp">
+
+            <ImageView
+                android:id="@+id/focusButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_icon_button"
+                android:clickable="true"
+                android:contentDescription="@string/capture_focus"
+                android:focusable="true"
+                android:padding="12dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_focus" />
         </FrameLayout>
 
         <LinearLayout

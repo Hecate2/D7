@@ -18,6 +18,7 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,6 +50,8 @@ import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.keepScreenOn
 import kotlin.math.abs
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -63,6 +66,9 @@ class CaptureActivity : ComponentActivity() {
     companion object {
         private const val LONG_PRESS_MS = 450L
         private const val POSE_THROTTLE_MS = 30L
+
+        /** 自动对焦的重复间隔：取景中每隔几秒重新对一次中心，兼顾耗电与“始终合焦”。 */
+        private const val AUTO_FOCUS_INTERVAL_MS = 3000L
 
         /**
          * 「显示线」对话框的条目（文案与线色成对），下标顺序与 [CaptureSettings] 的
@@ -106,6 +112,12 @@ class CaptureActivity : ComponentActivity() {
     private var lastAccuracy = OrientationSensor.ACCURACY_UNKNOWN
     private var lastUiAt = 0L
     private var capturing = false
+
+    /** 手动对焦次数（仅短按触发），供仪器测试断言手势确实发起了对焦。 */
+    private var focusActions = 0
+
+    /** 手电筒当前是否点亮，与 [CameraController] 实际状态同步。 */
+    private var torchOn = false
 
     /** 瞄准警告条当前是否显示（带滞回，避免阈值附近闪烁）。 */
     private var aimWarnShown = false
@@ -156,6 +168,9 @@ class CaptureActivity : ComponentActivity() {
         setRegion(Region.EXTERNAL)
         setupShutter()
         setupDelete()
+        setupTorch()
+        setupFocus()
+        startAutoFocusLoop()
 
         binding.doneButton.setOnClickListener { openResult() }
         binding.plus180.setOnClickListener { togglePlus180() }
@@ -575,6 +590,8 @@ class CaptureActivity : ComponentActivity() {
         capturing = true
         binding.shutter.alpha = 0.4f
         lifecycleScope.launch {
+            // 快门优先：先掐掉在飞的定时对焦，否则拍照会排在它后面等
+            camera.cancelFocusMetering()
             val imageCapture = camera.imageCapture
             val uri = if (imageCapture != null) photoStore.capture(imageCapture, meta) else null
             repository.appendPoint(
@@ -663,6 +680,142 @@ class CaptureActivity : ComponentActivity() {
         return best
     }
 
+    // ---------- 闪光灯与对焦 ----------
+
+    /**
+     * 闪光灯键：单击切换。灯的初始状态由 [CameraController] 在绑定相机前从系统读到并复原，
+     * 这里只负责之后的切换与着色。无闪光灯的机型整个位次隐藏。
+     */
+    private fun setupTorch() {
+        binding.torchButton.setOnClickListener {
+            torchOn = !torchOn
+            camera.setTorch(torchOn)
+            binding.torchButton.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            paintToggle(binding.torchButton, torchOn)
+        }
+        paintToggle(binding.torchButton, false)
+    }
+
+    /**
+     * 对焦键：短按立即对准取景中心对焦一次，长按开关自动对焦。
+     *
+     * 手势分段与快门一致（滑出即取消、长按只认一次），避免两个相邻按钮手感不同。
+     */
+    private fun setupFocus() {
+        var canceled = false
+        var longHandled = false
+        val longRunnable = Runnable {
+            longHandled = true
+            binding.focusButton.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            toggleAutoFocus()
+        }
+        binding.focusButton.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    canceled = false
+                    longHandled = false
+                    view.alpha = 0.6f
+                    uiHandler.postDelayed(longRunnable, LONG_PRESS_MS)
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    if (!canceled && !insideView(view, event)) {
+                        canceled = true
+                        uiHandler.removeCallbacks(longRunnable)
+                        view.alpha = 1f
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    view.alpha = 1f
+                    uiHandler.removeCallbacks(longRunnable)
+                    if (!canceled) {
+                        // 与快门同理：自行处理了按下/抬起，需补一次 performClick
+                        view.performClick()
+                        if (!longHandled) focusNow()
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_CANCEL -> {
+                    view.alpha = 1f
+                    canceled = true
+                    uiHandler.removeCallbacks(longRunnable)
+                    true
+                }
+
+                else -> false
+            }
+        }
+        paintToggle(binding.focusButton, true)
+    }
+
+    /** 自动对焦循环：仅在前台跑（[repeatOnLifecycle]），关掉自动对焦时空转不动作。 */
+    private fun startAutoFocusLoop() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (isActive) {
+                    delay(AUTO_FOCUS_INTERVAL_MS)
+                    val vf = binding.viewfinder
+                    if (camera.autoFocusEnabled) camera.focusAtCenter(vf.width, vf.height)
+                }
+            }
+        }
+    }
+
+    /** 短按对焦：只计手动这一次，定时循环不计入，免得测试断言被后台动作干扰。 */
+    private fun focusNow() {
+        focusActions++
+        val vf = binding.viewfinder
+        camera.focusAtCenter(vf.width, vf.height)
+        binding.focusButton.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+    }
+
+    private fun toggleAutoFocus() {
+        val next = !camera.autoFocusEnabled
+        camera.setAutoFocusEnabled(next)
+        paintToggle(binding.focusButton, next)
+    }
+
+    /**
+     * 开关态着色：开用按住快门的琥珀色（[R.color.press]，黑底上最显眼），
+     * 关用快门中心的月灰（[R.color.moon]）。
+     */
+    private fun paintToggle(view: ImageView, on: Boolean) {
+        view.imageTintList = ColorStateList.valueOf(
+            ContextCompat.getColor(this, if (on) R.color.press else R.color.moon)
+        )
+    }
+
+    /** 仅供仪器测试：自动对焦是否开启。 */
+    @androidx.annotation.VisibleForTesting
+    fun autoFocusEnabledForTest(): Boolean = camera.autoFocusEnabled
+
+    /** 仅供仪器测试：手动对焦累计次数。 */
+    @androidx.annotation.VisibleForTesting
+    fun focusActionsForTest(): Int = focusActions
+
+    /** 仅供仪器测试：闪光灯键是否可见（无闪光灯机型为 false）。 */
+    @androidx.annotation.VisibleForTesting
+    fun torchVisibleForTest(): Boolean = binding.torchSlot.isVisible
+
+    /** 仅供仪器测试：本机后摄是否有闪光灯。 */
+    @androidx.annotation.VisibleForTesting
+    fun hasFlashUnitForTest(): Boolean = camera.hasFlashUnit
+
+    /** 仅供仪器测试：相机是否已绑定成功（闪光灯能力只在绑定后才有意义）。 */
+    @androidx.annotation.VisibleForTesting
+    fun cameraReadyForTest(): Boolean = camera.isBound
+
+    /** 仅供仪器测试：强制指定本机有无闪光灯并重跑能力对齐；传 null 恢复真实值。 */
+    @androidx.annotation.VisibleForTesting
+    fun setFlashUnitOverrideForTest(hasFlash: Boolean?) {
+        camera.flashUnitOverride = hasFlash
+        applyCameraCapabilities()
+    }
+
     // ---------- 设置与顶部按钮 ----------
 
     private fun togglePlus180() {
@@ -731,8 +884,22 @@ class CaptureActivity : ComponentActivity() {
         camera.start(this, binding.preview) { ok ->
             if (!ok) {
                 if (!binding.notice.isVisible) showNotice(getString(R.string.capture_camera_failed), false)
+            } else {
+                applyCameraCapabilities()
             }
         }
+    }
+
+    /**
+     * 相机就绪后对齐两个开关键：无闪光灯则隐藏手电筒位次；
+     * 手电筒初始为绑定前读到的系统状态（[CameraController] 已经把它恢复回去了）。
+     */
+    private fun applyCameraCapabilities() {
+        val hasFlash = camera.hasFlashUnit
+        binding.torchSlot.isVisible = hasFlash
+        torchOn = hasFlash && camera.torchStateBeforeBind == true
+        paintToggle(binding.torchButton, torchOn)
+        paintToggle(binding.focusButton, camera.autoFocusEnabled)
     }
 
     private fun showCameraNotice() {

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 手电筒：描边式漏斗轮廓（灯头 → 收腰 → 灯身），上方三条向外发散的光线，
+     灯身内一道短竖线当开关。用描边而非实心，内部镂空，在 48dp 键上不糊成一坨。
+     图形横向 4.0–20.0、纵向 3.9–20.4（含描边外扩），视觉上保持正方形。
+     运行时用 imageTintList 改色（开=琥珀 @color/press，关=月灰 @color/moon）。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="@color/moon"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 三条光线：中间竖直，两侧向外上方发散，圆头短线 -->
+    <path
+        android:pathData="M7.5,7.0 L5.7,4.2"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.7" />
+    <path
+        android:pathData="M12,3.9 L12,7.0"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.7" />
+    <path
+        android:pathData="M16.5,7.0 L18.3,4.2"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.7" />
+
+    <!-- 灯头与灯身轮廓：左上 → 左下 → 收腰 → 灯身 → 收腰 → 右上 → 闭合顶部 -->
+    <path
+        android:pathData="M4.0,9.2 L4.0,13.4 L9.2,16.4 L9.2,20.4 L14.8,20.4 L14.8,16.4 L20.0,13.4 L20.0,9.2 Z"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.9" />
+
+    <!-- 灯身内的开关 -->
+    <path
+        android:pathData="M12,17.5 L12,19.5"
+        android:strokeColor="@color/paper"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.6" />
+</vector>

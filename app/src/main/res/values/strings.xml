@@ -81,6 +81,8 @@
     <string name="capture_delete">删除</string>
     <string name="capture_press_hint">按住不放：新点经地平线连到上一点</string>
     <string name="capture_delete_hint">长按删右侧最近点</string>
+    <string name="capture_torch">手电筒</string>
+    <string name="capture_focus">对焦</string>
     <string name="capture_camera_needed">需要相机权限才能取景拍摄\n点此授权</string>
     <string name="capture_camera_failed">相机启动失败，仍可记录角度</string>
     <string name="capture_sensor_missing">本机缺少姿态传感器，无法采集仰角与方位</string>
