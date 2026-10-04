@@ -37,8 +37,17 @@ fi
 "$ADB" -s "$DEVICE" install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk >/dev/null
 
 RUNNER=io.github.hecate2.D7.test/androidx.test.runner.AndroidJUnitRunner
+REPORT="$(mktemp)"
+trap 'rm -f "$REPORT"' EXIT
+
+# 注意：`am instrument` 就算有用例失败也一律返回 0，直接看 $? 会把红灯当绿灯放过去
+# （实测过：54 跑挂 1，脚本仍然退出 0）。所以输出留一份，最后只认 `OK (n tests)`。
 if [ $# -gt 0 ]; then
-  "$ADB" -s "$DEVICE" shell am instrument -w -e class "$1" "$RUNNER"
+  "$ADB" -s "$DEVICE" shell am instrument -w -e class "$1" "$RUNNER" \
+    | tr -d '\r' | tee "$REPORT"
 else
-  "$ADB" -s "$DEVICE" shell am instrument -w "$RUNNER"
+  "$ADB" -s "$DEVICE" shell am instrument -w "$RUNNER" \
+    | tr -d '\r' | tee "$REPORT"
 fi
+
+grep -qE '^OK \([0-9]+ tests?\)$' "$REPORT"

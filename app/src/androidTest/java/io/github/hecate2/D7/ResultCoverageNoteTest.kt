@@ -3,6 +3,7 @@ package io.github.hecate2.D7
 import android.content.Context
 import android.content.Intent
 import android.widget.TextView
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -20,6 +21,7 @@ import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.result.ResultActivity
+import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.Summaries
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -34,6 +36,11 @@ import java.time.ZoneId
  * 拍摄点不足两个、覆盖率低于阈值、覆盖率达标三档分别给出红/黄/不着色的提示，
  * 且提示与主结果同屏（用户点「完成」后就看不到覆盖条了，这里是最后一道告知）。
  * 另外两条盯住「仅天花板」档：未覆盖语义与外部档相反，提示必须换区、换方向。
+ *
+ * 全类固定中文：`Locales.SYSTEM` 下界面语言等于系统语言（仪器测试的模拟器是英文），
+ * 「偏保守 / 偏乐观」这种方向判据是对中文文案本身的断言，跑到别的语言上就没有意义了。
+ * 期望值也一律从 Activity 上取字符串而不是从 application context 取——后者没经过
+ * `Locales.wrap`，两边的语言可以不同，比出来的相等是假的。
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -46,12 +53,14 @@ class ResultCoverageNoteTest {
 
     @Before
     fun setUp() {
+        Locales.setTag(context, "zh-Hans")
         TestSupport.deleteAllGroups(repository)
     }
 
     @After
     fun tearDown() {
         scene?.close()
+        Locales.setTag(context, Locales.SYSTEM)
         TestSupport.deleteAllGroups(repository)
     }
 
@@ -62,7 +71,7 @@ class ResultCoverageNoteTest {
         assertTrue("拍摄点不足时提示应可见", note.isShown)
         assertEquals(
             "单点应显示「太少」文案",
-            context.getString(R.string.result_coverage_toofew),
+            stringOnActivity(R.string.result_coverage_toofew),
             note.text.toString(),
         )
     }
@@ -123,7 +132,7 @@ class ResultCoverageNoteTest {
         onView(withId(R.id.chipCeilingOnly)).perform(scrollTo(), click())
 
         val expectedPercent = Summaries.coveragePercent(31.23, ceiling)
-        val expected = context.getString(R.string.result_coverage_ceiling_low, expectedPercent)
+        val expected = stringOnActivity(R.string.result_coverage_ceiling_low, expectedPercent)
         val note = TestSupport.waitFor { noteView().takeIf { it.text.toString() == expected } }
 
         onView(withId(R.id.coverageNote)).check(matches(isDisplayed()))
@@ -131,7 +140,7 @@ class ResultCoverageNoteTest {
         assertEquals("天花板区覆盖过低同样着红色", LOW, note.currentTextColor)
         assertTrue(
             "不该再出现外部区的「偏乐观」文案",
-            note.text.toString() != context.getString(R.string.result_coverage_toofew),
+            note.text.toString() != stringOnActivity(R.string.result_coverage_toofew),
         )
     }
 
@@ -152,13 +161,13 @@ class ResultCoverageNoteTest {
         )
         onView(withId(R.id.chipCeilingOnly)).perform(scrollTo(), click())
 
-        val expected = context.getString(R.string.result_coverage_ceiling_toofew)
+        val expected = stringOnActivity(R.string.result_coverage_ceiling_toofew)
         val note = TestSupport.waitFor { noteView().takeIf { it.text.toString() == expected } }
         assertEquals(expected, note.text.toString())
         assertTrue(
             "单点文案必须是「偏保守」而不是外部档的「偏乐观」",
             expected.contains("保守") &&
-                context.getString(R.string.result_coverage_toofew).contains("乐观"),
+                stringOnActivity(R.string.result_coverage_toofew).contains("乐观"),
         )
     }
 
@@ -180,6 +189,13 @@ class ResultCoverageNoteTest {
         )
         // 覆盖率是纯函数，但主结果要等后台协程算完才刷新
         TestSupport.waitUntil(8000) { noteView()?.isShown == true }
+    }
+
+    /** 从 Activity 上取文案：只有 Activity 的 context 被 `Locales.wrap` 过，语言才对得上。 */
+    private fun stringOnActivity(@StringRes id: Int, vararg args: Any): String {
+        var value = ""
+        scene?.onActivity { value = it.getString(id, *args) }
+        return value
     }
 
     private fun noteView(): TextView {
