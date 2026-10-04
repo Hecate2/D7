@@ -18,6 +18,9 @@
 
 <!-- 结果页日期药丸（选中态由代码切 bg_pill_filled 与黑色文字） -->
     <style name="ResultPill" parent="">
+        <!-- 定高药丸不能折行：长词折了第二行会被 26dp 的框直接切掉 -->
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">26dp</item>
         <item name="android:layout_marginEnd">6dp</item>
@@ -33,6 +36,8 @@
 
     <!-- 结果页计算档（选中态由代码切 bg_pill_filled 与黑色文字） -->
     <style name="ResultChip" parent="">
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">24dp</item>
         <item name="android:layout_marginEnd">6dp</item>

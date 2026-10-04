@@ -4,22 +4,30 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.view.View
+import android.widget.DatePicker
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.pressBack
+import androidx.test.espresso.action.ViewActions.scrollTo
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.rule.GrantPermissionRule
 import io.github.hecate2.D7.data.GroupRepository
+import io.github.hecate2.D7.data.PointRecord
+import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.groups.GroupsActivity
+import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.util.Locales
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -39,6 +47,7 @@ import java.time.ZoneId
  */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
+@NeedsI18n
 class LanguageSwitchTest {
 
     @get:Rule
@@ -188,6 +197,63 @@ class LanguageSwitchTest {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 结果页两行药丸在长语言下必须仍然点得到。
+     *
+     * 横向 LinearLayout 放不下时既不报错也不裁剪，只是把子视图推到屏幕外——选项还在，
+     * 就是点不着。实测俄语下「夏至 / 自定义」两档整个掉出屏幕，「仅天花板」档被截掉一半。
+     * 改成横向滚动之前，这条用例报的是
+     * “Scrolling to view was attempted, but the view is not displayed”，正对着「自定义日期」。
+     *
+     * 所以这里不量像素，走真实交互：`scrollTo()` 会让 Espresso 找到最近的滚动祖先把它滚进
+     * 可视区，滚不进来就当场失败；点下去再确认状态真的变了。
+     */
+    @Test
+    fun longTranslationsKeepResultPillsReachable() {
+        Locales.setTag(context, "ru")
+        val id = repository.createGroup(
+            "可达性组", 31.23, 121.47, 0.0, ZoneId.systemDefault().id,
+        ).id
+        // 「仅天花板」档在没有天花板点时是锁着的（会弹提示不切换），那验不到可点性
+        (100..260 step 20).forEach { az ->
+            repository.appendPoint(id, Region.EXTERNAL, PointRecord(az.toDouble(), 30.0), false)
+        }
+        repository.appendPoint(id, Region.CEILING, PointRecord(165.0, 30.0), false)
+
+        val intent = Intent(context, ResultActivity::class.java).putExtra(Extras.GROUP_ID, id)
+        ActivityScenario.launch<ResultActivity>(intent).use { scenario ->
+            TestSupport.waitUntil(10000) {
+                var ready = false
+                scenario.onActivity {
+                    ready = it.findViewById<TextView>(R.id.chipCeilingOnly).text.isNotEmpty()
+                }
+                ready
+            }
+
+            // 「仅天花板」：这一档原先在俄语下被截掉一半，够不着
+            onView(withId(R.id.chipCeilingOnly)).perform(scrollTo(), click())
+            var switched = false
+            TestSupport.waitUntil(8000) {
+                scenario.onActivity { activity ->
+                    switched = activity.findViewById<TextView>(R.id.mainLabel).text.toString()
+                        .contains(activity.getString(R.string.result_mode_ceiling))
+                }
+                switched
+            }
+            assertTrue("「仅天花板」档点不动或没生效", switched)
+
+            // 「自定义日期」：最后一个药丸，原先整个掉出屏幕外
+            onView(withId(R.id.pillCustom)).perform(scrollTo(), click())
+            // 断言用 DatePicker 本身而不是标题文字：对话框标题与按钮都是框架文案，
+            // 跟着系统语言走，这里不该去猜它长什么样
+            onView(isAssignableFrom(DatePicker::class.java)).inRoot(isDialog())
+                .check(matches(isDisplayed()))
+            pressBack()
+
+            repository.deleteGroup(id)
         }
     }
 }
