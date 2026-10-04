@@ -58,6 +58,19 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
             invalidate()
         }
 
+    /**
+     * 遮挡填充往折线的哪一侧画。
+     *
+     * 外部建筑区填下方：楼挡的是折线以下那片天，太阳要爬过折线才见得到。
+     * 天花板区反过来——窗框挡的是折线以上那片天，太阳要低于折线才见得到，所以填上方。
+     * 两者都由求值侧同一套语义决定（见 [Skyline.obstructionAt] 与判定方向）。
+     */
+    var fillAbove: Boolean = false
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     /** 所在纬度（南半球参考弧镜像）。 */
     var latDeg: Double = 39.0
         set(value) {
@@ -188,11 +201,11 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         const val FILL_AZ_STEP = 2.0
 
         /**
-         * 填充多边形向下闭合时用的「远处」坐标。取远大于任何屏幕尺寸的值，
-         * 配合画布裁剪即可得到「从天际线一路填到画面底」的效果，
-         * 避免在可见段内部猜测闭合点而拉出错误斜边。
+         * 闭合多边形往「远处」推点的距离（像素）。取远大于任何屏幕尺寸的值，
+         * 配合画布裁剪即可得到「从这条线一路铺到画面外」的效果，避免在可见段内部
+         * 猜测闭合点而拉出错误斜边。地面层与遮挡填充共用，只差一个方向。
          */
-        const val FAR_DOWN = 100_000f
+        const val FAR_REACH = 100_000f
     }
 
     /** 地面层：地平线以下的土色，仿飞机姿态仪。 */
@@ -203,10 +216,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     }
 
     /**
-     * 遮挡填充：天际线以下到画面底的淡白半透明层。
+     * 遮挡填充：折线挡光那一侧的淡白半透明层（外部区是折线以下，天花板区是折线以上）。
      *
      * alpha 26（10%）在取景器的亮天空上几乎看不出遮挡区，等于白画；64（约 25%）才既
-     * 能一眼看出「这片被楼挡了」，又压不住画在它上面的轨迹弧与连线。
+     * 能一眼看出「这片被挡了」，又压不住画在它上面的轨迹弧与连线。
      */
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
@@ -221,9 +234,12 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     private val scratch = FloatArray(2)
     private val arcRect = RectF()
 
-    /** 填充层下推方向的单位向量（世界下方的屏幕方向），由 [drawSkylineFill] 每帧归一化后写入。 */
-    private var downX = 0f
-    private var downY = 1f
+    /**
+     * 填充层从折线往外推的方向（单位向量）。外部区取世界下方、天花板区取世界上方，
+     * 由 [drawSkylineFill] 每帧按 [fillAbove] 定好符号后写入。
+     */
+    private var fillDirX = 0f
+    private var fillDirY = 1f
 
     /** 拍摄点转算法点的缓存：点列按引用比对，拍照/删点后自然失效。 */
     private var cachedPoints: List<PointRecord>? = null
@@ -343,19 +359,20 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         ex /= downLen
         ey /= downLen
 
-        // 地平线两侧各延伸 FAR_DOWN，再沿地面方向推出同样远的一个平行四边形，
+        // 地平线两侧各延伸 FAR_REACH，再沿地面方向推出同样远的一个平行四边形，
         // 靠画布自身裁切，不在可见范围内猜测闭合点
         path.reset()
-        path.moveTo(ax - dx * FAR_DOWN, ay - dy * FAR_DOWN)
-        path.lineTo(bx + dx * FAR_DOWN, by + dy * FAR_DOWN)
-        path.lineTo(bx + dx * FAR_DOWN + ex * FAR_DOWN, by + dy * FAR_DOWN + ey * FAR_DOWN)
-        path.lineTo(ax - dx * FAR_DOWN + ex * FAR_DOWN, ay - dy * FAR_DOWN + ey * FAR_DOWN)
+        path.moveTo(ax - dx * FAR_REACH, ay - dy * FAR_REACH)
+        path.lineTo(bx + dx * FAR_REACH, by + dy * FAR_REACH)
+        path.lineTo(bx + dx * FAR_REACH + ex * FAR_REACH, by + dy * FAR_REACH + ey * FAR_REACH)
+        path.lineTo(ax - dx * FAR_REACH + ex * FAR_REACH, ay - dy * FAR_REACH + ey * FAR_REACH)
         path.close()
         canvas.drawPath(path, groundPaint)
     }
 
     /**
-     * 天际线遮挡填充：沿天际线边缘仰角取样，向下填到画面底。
+     * 遮挡填充：沿折线的边缘仰角取样，往它挡光的那一侧铺满（外部区向下、天花板区向上，
+     * 见 [fillAbove]）。
      *
      * 方位按全周扫描（与求值用的 [Skyline] 同口径）：拍摄点落在主半圆之外也照样画，
      * 否则「拍到了却看不见」与实际计算范围不一致，比半圆限制更容易让人误判。
@@ -372,14 +389,16 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
      */
     private fun drawSkylineFill(canvas: Canvas, projector: Projector) {
         if (points.size < 2) return
-        // 填充要往「天际线的下方」填，而这个「下方」是 [Projector.screenDown]：
-        // 世界天顶正对相机时它退化到零向量，画面里根本没有下方可言，
+        // 填充从折线出发，往它「挡光的那一侧」铺：外部区是世界下方，天花板区是世界
+        // 上方（见 [fillAbove]）。两侧都从 [Projector.screenDown] 取方向，天花板区取
+        // 反向——世界天顶正对相机时它退化到零向量，画面里根本没有那一侧可言，
         // 此时闭合只能拉出一条横穿天空的弦，索性整层不画（与地面层同一处理）。
         projector.screenDown(scratch)
-        val downLen = hypot(scratch[0], scratch[1])
-        if (downLen < 1e-3f) return
-        downX = scratch[0] / downLen
-        downY = scratch[1] / downLen
+        val reach = hypot(scratch[0], scratch[1])
+        if (reach < 1e-3f) return
+        val sign = if (fillAbove) -1f else 1f
+        fillDirX = sign * scratch[0] / reach
+        fillDirY = sign * scratch[1] / reach
 
         val plan = fillPlan()
         val sky = plan.sky
@@ -430,12 +449,12 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     }
 
     /**
-     * 闭合一段天际线填充：首尾两点各沿 [downX]/[downY]（世界下方的屏幕方向）推出
-     * [FAR_DOWN]，靠画布裁剪得到「从天际线一路填到画面底」。
+     * 闭合一段遮挡填充：首尾两点各沿 [fillDirX]/[fillDirY] 推出 [FAR_REACH]，
+     * 靠画布裁剪得到「从折线一路铺满挡光那一侧」。哪一侧由 [fillAbove] 定。
      */
     private fun closeFillRun(firstX: Float, firstY: Float, lastX: Float, lastY: Float) {
-        path.lineTo(lastX + downX * FAR_DOWN, lastY + downY * FAR_DOWN)
-        path.lineTo(firstX + downX * FAR_DOWN, firstY + downY * FAR_DOWN)
+        path.lineTo(lastX + fillDirX * FAR_REACH, lastY + fillDirY * FAR_REACH)
+        path.lineTo(firstX + fillDirX * FAR_REACH, firstY + fillDirY * FAR_REACH)
         path.close()
     }
 

@@ -26,6 +26,8 @@ import org.junit.runner.RunWith
  *    [io.github.hecate2.D7.core.Skyline] 口径不一致。
  * 3. 闭合方向——下推点写死屏幕正下方，手机横过来时填充方向与地面层不一致；
  *    正对天顶时更会拉出一条横穿天空的弦。
+ * 4. 分区方向——天花板区的淡白曾一律往下填，而窗框挡的是它上方那片天，
+ *    方向正好填反（见 [ceilingRegionFillsAboveTheFrameLine]）。
  */
 @RunWith(AndroidJUnit4::class)
 class ViewfinderFillLayerTest {
@@ -47,10 +49,11 @@ class ViewfinderFillLayerTest {
     private fun pose(forward: FloatArray, right: FloatArray, up: FloatArray) =
         Pose(forward, right, up, 0.0, 0.0, 0.0, 0.0, 0.0, 0)
 
-    private fun render(p: Pose?, points: List<PointRecord>): Bitmap {
+    private fun render(p: Pose?, points: List<PointRecord>, fillAbove: Boolean = false): Bitmap {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
         val view = ViewfinderOverlayView(ctx)
         view.show = ONLY_FILL
+        view.fillAbove = fillAbove
         view.layout(0, 0, W, H)
         view.pose = p
         view.points = points
@@ -136,6 +139,29 @@ class ViewfinderFillLayerTest {
             if (x < 0 || x >= W) continue
             val y = topFillY(scene, x)
             if (y >= 0 && (best < 0 || y < best)) best = y
+        }
+        return best
+    }
+
+    /**
+     * 该列自下而上第一个属于填充层的像素；整列都没有返回 -1。
+     *
+     * 天花板区填在折线上方，折线就是填充的**下**边沿，所以量的是「最低的那个填充像素」。
+     */
+    private fun bottomFillY(scene: Bitmap, x: Int): Int {
+        for (y in H - 1 downTo 0) {
+            if (alpha(scene, x, y) >= 32 && alpha(mask, x, y) == 0) return y
+        }
+        return -1
+    }
+
+    /** [bottomFillY] 的邻域版：取左右各 [halfWidth] 列里最低的填充像素，理由同 [topFillNear]。 */
+    private fun bottomFillNear(scene: Bitmap, xCenter: Int, halfWidth: Int = 2): Int {
+        var best = -1
+        for (x in (xCenter - halfWidth)..(xCenter + halfWidth)) {
+            if (x < 0 || x >= W) continue
+            val y = bottomFillY(scene, x)
+            if (y > best) best = y
         }
         return best
     }
@@ -250,4 +276,65 @@ class ViewfinderFillLayerTest {
             Math.abs(gapY - H / 2) <= 4.0,
         )
     }
+    /**
+     * 天花板区的填充必须落在折线**上方**。
+     *
+     * 用户提的：切到天花板区拍窗框上沿，淡白却铺在点下面——那是外部建筑区的方向。
+     * 窗框挡的是它上面那片天（太阳要低于框沿才照得进来），填在下面正好填反：
+     * 该看见遮挡的上半屏干干净净，太阳根本照不到的窗口下方反而一片白。
+     */
+    @Test
+    fun ceilingRegionFillsAboveTheFrameLine() {
+        // 正对南方、镜头水平，框沿仰角 10 度：折线在画面中线稍上方，其上应整片填满
+        val scene = render(level(facingNorth = false), shot(90.0 to 10.0, 270.0 to 10.0), fillAbove = true)
+        val frameY = screenY(180.0, 10.0).toInt()
+        assertTrue(
+            "窗框以上应整片都是遮挡区",
+            fillCount(scene, mask, 0, frameY - 12) > (W * (frameY - 12)) * 0.9f,
+        )
+        assertTrue(
+            "窗框以下不该有填充——那一侧是太阳照得进来的方向",
+            fillCount(scene, mask, frameY + 12, H) == 0,
+        )
+    }
+
+    /** 天花板区填充的下边沿同样要落在拍摄点上，不能停在采样格上（与外部区的顶边同一件事）。 */
+    @Test
+    fun ceilingFillBottomEdgePassesThroughEveryShotPoint() {
+        val points = listOf(
+            PointRecord(az = 152.6, el = 24.0, takenAt = 0),
+            PointRecord(az = 196.7, el = 33.0, takenAt = 1),
+            PointRecord(az = 208.9, el = 15.0, takenAt = 2),
+        )
+        val scene = render(level(facingNorth = false), points, fillAbove = true)
+
+        for (p in points) {
+            val x = Math.round(screenX(p.az)).toInt()
+            val want = screenY(p.az, p.el)
+            val got = bottomFillNear(scene, x)
+            assertTrue("方位 ${p.az} 附近整片都没有填充，下边沿根本没画到这个高度", got >= 0)
+            assertTrue(
+                "方位 ${p.az} 附近的下边沿最低只到 y=$got，拍摄点在 y=${want.toInt()}：" +
+                    "淡白覆盖与拍摄点对不上（差 ${got - want.toInt()} 像素）",
+                Math.abs(got - want) <= 4.0,
+            )
+        }
+    }
+
+    /**
+     * 天花板区未拍到的方位依然不填。
+     *
+     * 这里两处口径**故意**不同：求值把天花板区未拍方位当作全遮挡（偏保守），
+     * 而填充层只画量过的那一段，没量过的由覆盖条与结果页覆盖率去说。
+     * 把整屏都涂白的「按模型算」看着更一致，却会盖掉用户正要对准的画面。
+     */
+    @Test
+    fun ceilingRegionStillDrawsNothingForUnshotAzimuths() {
+        // 只拍正北 300..60，却正对南方看：可见方位全未拍，不该有任何填充
+        val scene = render(
+            level(facingNorth = false), shot(300.0 to 25.0, 60.0 to 25.0), fillAbove = true,
+        )
+        assertTrue("未拍方位不该凭空出现填充", fillCount(scene, mask, 0, H) == 0)
+    }
+
 }

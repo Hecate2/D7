@@ -286,6 +286,8 @@ class CaptureActivity : ComponentActivity() {
         )
         regionPoints = repository.get(groupId)?.regionList(next) ?: emptyList()
         binding.overlay.points = regionPoints
+        // 遮挡填充跟着分区换边：外部区楼挡的是折线以下，天花板区窗框挡的是折线以上
+        binding.overlay.fillAbove = next == Region.CEILING
     }
 
     // ---------- 姿态 ----------
