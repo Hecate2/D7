@@ -46,6 +46,14 @@ class CaptureShutterGestureTest {
     private companion object {
         /** 锁定的瞄准仰角（度）：正数，确保不被 AimGuard 判为瞄地面。 */
         const val TEST_ELEVATION_DEG = 20.0
+
+        /**
+         * 等一个拍摄点落库的超时。给得比默认值宽得多：快门背后是整条拍照链路
+         * （takePicture → EXIF 回写 → 整张 JPEG 发布到相册），模拟器的相机偶尔要好几秒，
+         * 短超时会把「相机慢」误报成「点没记上」。而这条用例真正要守的是「到阈值就记、
+         * 不等抬手」——等待期间手指一直按着，拉长等待并不放宽这个语义。
+         */
+        const val POINT_TIMEOUT_MS = 20_000L
     }
 
     @Before
@@ -91,12 +99,12 @@ class CaptureShutterGestureTest {
         // 先短按记一个直接连线点，作为长按的参照
         touch(MotionEvent.ACTION_DOWN)
         touch(MotionEvent.ACTION_UP)
-        TestSupport.waitFor { repository.get(groupId)?.external?.takeIf { it.size >= 1 } }
+        TestSupport.waitFor(POINT_TIMEOUT_MS) { repository.get(groupId)?.external?.takeIf { it.size >= 1 } }
         waitShutterIdle()
 
         // 再长按：到阈值时（还没抬手）就该已经记下第二个点
         touch(MotionEvent.ACTION_DOWN)
-        TestSupport.waitFor { repository.get(groupId)?.external?.takeIf { it.size >= 2 } }
+        TestSupport.waitFor(POINT_TIMEOUT_MS) { repository.get(groupId)?.external?.takeIf { it.size >= 2 } }
         val fired = snapshot()
         // 再多按一会儿也不该多记
         Thread.sleep(900)
