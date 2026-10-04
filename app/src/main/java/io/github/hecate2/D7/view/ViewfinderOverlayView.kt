@@ -35,8 +35,8 @@ data class LineVisibility(
     val segments: Boolean = true,
     val horizon: Boolean = false,
     val vertical: Boolean = false,
-    /** 天际线以下到地平线的填充（遮挡区）。 */
-    val fill: Boolean = false,
+    /** 天际线以下的半透明遮挡区。默认开：拍完就该一眼看到挡在哪。 */
+    val fill: Boolean = true,
     /** 地平线以下的地面层（土色）。 */
     val ground: Boolean = true,
 )
@@ -182,11 +182,8 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         /** 地面层的方位采样步长（度）：4 度约 91 个点，足够平滑且开销可忽略。 */
         const val GROUND_AZ_STEP = 4
 
-        /** 填充层的方位采样步长（度），与 [SkylineShape] 的绘图步长一致。 */
+        /** 填充层的方位采样步长（度），与 [SkylineShape] 的绘图步长一致，整圈 181 点。 */
         const val FILL_AZ_STEP = 2.0
-
-        /** 主半圆跨度（度）：北半球 90..270，南半球 270..90（经 0）。 */
-        const val FILL_MAIN_HALF_SPAN = 180.0
 
         /**
          * 填充多边形向下闭合时用的「远处」坐标。取远大于任何屏幕尺寸的值，
@@ -203,11 +200,16 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         alpha = 70
     }
 
-    /** 遮挡填充：天际线以下到地平线，浅色半透明。 */
+    /**
+     * 遮挡填充：天际线以下到画面底的淡白半透明层。
+     *
+     * alpha 26（10%）在取景器的亮天空上几乎看不出遮挡区，等于白画；64（约 25%）才既
+     * 能一眼看出「这片被楼挡了」，又压不住画在它上面的轨迹弧与连线。
+     */
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = colorPaper
-        alpha = 26
+        alpha = 64
     }
 
     private val path = Path()
@@ -216,6 +218,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     /** [Projector.screenDown] 等方向向量的暂存，避免逐帧装箱。 */
     private val scratch = FloatArray(2)
     private val arcRect = RectF()
+
+    /** 填充层下推方向的单位向量（世界下方的屏幕方向），由 [drawSkylineFill] 每帧归一化后写入。 */
+    private var downX = 0f
+    private var downY = 1f
 
     /** 拍摄点转算法点的缓存：点列按引用比对，拍照/删点后自然失效。 */
     private var cachedPoints: List<PointRecord>? = null
@@ -347,38 +353,67 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     }
 
     /**
-     * 天际线遮挡填充：主半圆上沿天际线边缘仰角取样，向下填到画面底。
+     * 天际线遮挡填充：沿天际线边缘仰角取样，向下填到画面底。
      *
-     * 未覆盖方位 [Skyline.obstructionAt] 返回 -∞，这里跳过不填——把未测区域画成
+     * 方位按全周扫描（与求值用的 [Skyline] 同口径）：拍摄点落在主半圆之外也照样画，
+     * 否则「拍到了却看不见」与实际计算范围不一致，比半圆限制更容易让人误判。
+     *
+     * 未覆盖方位 [Skyline.obstructionAt] 返回 -∞，这里断开不填——把未测区域画成
      * 「矮天际线」会被误读成「测过了但不挡」，反而比不画更糟。未测提示由覆盖条
-     * 与结果页覆盖率承担。采样步长与 [SkylineShape] 的绘图步长一致，最多 91 个点。
+     * 与结果页覆盖率承担。每段连续覆盖各自闭合（[closeFillRun]），共用一条路径往下
+     * 推点会把两段之间的天空也填进去。可见段末尾若落在未覆盖方位上，先前画的那段
+     * 仍要正常闭合，否则整段会被丢弃——实测可见半视角略大于已拍跨度时填充全消失。
      */
     private fun drawSkylineFill(canvas: Canvas, projector: Projector) {
         if (points.size < 2) return
+        // 填充要往「天际线的下方」填，而这个「下方」是 [Projector.screenDown]：
+        // 世界天顶正对相机时它退化到零向量，画面里根本没有下方可言，
+        // 此时闭合只能拉出一条横穿天空的弦，索性整层不画（与地面层同一处理）。
+        projector.screenDown(scratch)
+        val downLen = hypot(scratch[0], scratch[1])
+        if (downLen < 1e-3f) return
+        downX = scratch[0] / downLen
+        downY = scratch[1] / downLen
+
         val sky = Skyline(shotPoints())
-        // 主半圆：北半球 90..270，南半球 270..90（经 0），与 Summaries.isMainHalf 同口径
-        val start = if (latDeg >= 0) 90.0 else 270.0
         path.reset()
         var started = false
+        var firstX = 0f
+        var firstY = 0f
+        var lastX = 0f
+        var lastY = 0f
         var step = 0.0
-        while (step <= FILL_MAIN_HALF_SPAN) {
-            val az = Angles.normalize360(start + step)
-            val el = sky.obstructionAt(az)
-            if (el.isFinite() && projector.project(az, el, pt)) {
-                if (started) path.lineTo(pt[0], pt[1]) else {
+        while (step < 360.0) {
+            val el = sky.obstructionAt(step)
+            if (el.isFinite() && projector.project(step, el, pt)) {
+                if (started) {
+                    path.lineTo(pt[0], pt[1])
+                } else {
                     path.moveTo(pt[0], pt[1])
+                    firstX = pt[0]
+                    firstY = pt[1]
                     started = true
                 }
-            } else {
+                lastX = pt[0]
+                lastY = pt[1]
+            } else if (started) {
+                closeFillRun(firstX, firstY, lastX, lastY)
                 started = false
             }
             step += FILL_AZ_STEP
         }
-        if (!started) return
-        path.lineTo(FAR_DOWN, FAR_DOWN)
-        path.lineTo(-FAR_DOWN, FAR_DOWN)
-        path.close()
+        if (started) closeFillRun(firstX, firstY, lastX, lastY)
         canvas.drawPath(path, fillPaint)
+    }
+
+    /**
+     * 闭合一段天际线填充：首尾两点各沿 [downX]/[downY]（世界下方的屏幕方向）推出
+     * [FAR_DOWN]，靠画布裁剪得到「从天际线一路填到画面底」。
+     */
+    private fun closeFillRun(firstX: Float, firstY: Float, lastX: Float, lastY: Float) {
+        path.lineTo(lastX + downX * FAR_DOWN, lastY + downY * FAR_DOWN)
+        path.lineTo(firstX + downX * FAR_DOWN, firstY + downY * FAR_DOWN)
+        path.close()
     }
 
     /** 拍摄点转算法点。点列每次拍照/ 删点才会换，故按引用缓存，避免逐帧重建列表。 */

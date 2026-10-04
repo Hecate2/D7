@@ -7,7 +7,8 @@ import io.github.hecate2.D7.view.LineVisibility
 
 /**
  * 采集页的持久化设置：显示线的显隐与 +180° 药丸状态。
- * 默认显示四条太阳参考弧与拍摄点连线，隐藏地平线与铅垂线；+180° 默认叠加。
+ * 默认显示四条太阳参考弧、拍摄点连线、地面层与楼体遮挡区，隐藏地平线与铅垂线；
+ * +180° 默认叠加。
  */
 class CaptureSettings(context: Context) {
 
@@ -46,9 +47,15 @@ class CaptureSettings(context: Context) {
         get() = prefs.getBoolean("line_vertical", false)
         set(value) = prefs.edit { putBoolean("line_vertical", value) }
 
-    /** 遮挡填充：默认关（会压低参考弧与连线的对比度，按需在「显示线」里开）。 */
+    /**
+     * 遮挡填充：默认开。
+     *
+     * 曾默认关，理由是会压低参考弧的对比度；但那层淡白（alpha 64）压不暗什么，
+     * 关掉的后果却是「拍完看不到挡在哪」——颜色不够明显该靠调 alpha 解决，
+     * 不该拿默认关闭来绕。不想要的人仍可在「显示线」里关。
+     */
     var showFill: Boolean
-        get() = prefs.getBoolean("line_fill", false)
+        get() = prefs.getBoolean("line_fill", true)
         set(value) = prefs.edit { putBoolean("line_fill", value) }
 
     /** 地面层：默认开。 */
