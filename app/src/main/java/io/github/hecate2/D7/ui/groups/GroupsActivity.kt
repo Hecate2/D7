@@ -349,8 +349,8 @@ class GroupsActivity : ComponentActivity() {
                         )
                     }
                 }
-                if (outcome.error == null) {
-                    toast(getString(R.string.result_export_done, outcome.location.orEmpty()))
+                if (outcome.location != null) {
+                    toast(getString(R.string.result_export_done, outcome.location))
                 } else {
                     toast(getString(R.string.result_export_failed))
                 }

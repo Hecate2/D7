@@ -39,8 +39,8 @@ import kotlin.math.sin
  */
 object Exporter {
 
-    /** location 为可读的保存位置，error 非空即失败。 */
-    data class Outcome(val location: String?, val error: String?)
+    /** 导出结果：location 是可读的保存位置，为 null 即整条落盘链路都失败。 */
+    data class Outcome(val location: String?)
 
     // ---------------- CSV ----------------
 
@@ -461,11 +461,11 @@ object Exporter {
             public = PublicDestination(mediaRelativeDir, mediaCollection, legacySubDir),
             privateDir = appPrivateDir(context),
             scan = scan,
-        ) { it.write(bytes) } ?: return Outcome(null, "save failed")
+        ) { it.write(bytes) } ?: return Outcome(null)
         return if (result.where == PublishWhere.PUBLIC) {
-            Outcome("$locationLabel/$displayName", null)
+            Outcome("$locationLabel/$displayName")
         } else {
-            Outcome("Android/data/${context.packageName}/files/D7/$displayName", null)
+            Outcome("Android/data/${context.packageName}/files/D7/$displayName")
         }
     }
 
