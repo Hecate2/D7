@@ -12,6 +12,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import io.github.hecate2.D7.R
 import io.github.hecate2.D7.core.Angles
+import io.github.hecate2.D7.core.AzElTrack
 import io.github.hecate2.D7.core.ShotPoint
 import io.github.hecate2.D7.core.Skyline
 import io.github.hecate2.D7.core.SkylineShape
@@ -86,11 +87,9 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     /**
      * 地平线/铅垂线的缓存方位角。这两条参考线的采样只是固定的角度偏移集合，
      * 每帧真正变的只有 aimAzDeg 一个数，故整段重建缓存即可——姿态每秒刷新数十次，
-     * 逐帧重建装箱列表会在采集时持续制造垃圾。
+     * 逐帧重建采样数组会在采集时持续制造垃圾。
      */
     private var guideCacheAz = Double.NaN
-    private var horizonAzimuths: DoubleArray = DoubleArray(0)
-    private var verticalAzimuths: DoubleArray = DoubleArray(0)
 
     /** 焦距像素提供者（相机就绪后由 CameraController 计算，失败时用半视场角假设）。 */
     var focalPxProvider: ((Int, Int) -> Float)? = null
@@ -256,8 +255,8 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         }
         if (show.horizon || show.vertical) {
             ensureGuideAzimuths()
-            if (show.horizon) drawGuide(canvas, projector, horizonAzimuths, groundLevel)
-            if (show.vertical) drawGuide(canvas, projector, verticalAzimuths, verticalElevations)
+            if (show.horizon) drawTrack(canvas, projector, smokeLine, horizonTrack)
+            if (show.vertical) drawTrack(canvas, projector, smokeLine, verticalTrack)
         }
         if (show.segments) {
             drawSegments(canvas, projector)
@@ -451,21 +450,16 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     }
 
     /**
-     * 一条参考弧的全天采样。方位与仰角分装两条 [DoubleArray] 而不用 `List<Pair<Double, Double>>`：
-     * 叠加层每秒重绘数十次，每帧要过 4 条弧 × 181 个采样，用 Pair 会逐帧拆装箱
-     * 两次 double（约 1400 次/帧）。采样只依赖纬度与赤纬、缓存命中率极高，
-     * 多留两条数组在内存上毫无压力。
+     * 参考弧采样缓存：只依赖纬度与赤纬，姿态变化仅重投影，不重算天文位置。
+     * 缓存命中率极高，多留几条数组在内存上毫无压力。
      */
-    private class ArcSamples(val azimuths: DoubleArray, val elevations: DoubleArray)
-
-    /** 参考弧采样缓存：只依赖纬度与赤纬，姿态变化仅重投影，不重算天文位置。 */
-    private val arcCache = HashMap<Int, ArcSamples>()
+    private val arcCache = HashMap<Int, AzElTrack>()
 
     /**
      * 给定赤纬的全天太阳位置采样（按小时角 [ARC_HA_STEP_DEG] 度步长）。
      * 用几何高度角（不含大气折射），与天际线求值的判定基准一致。
      */
-    private fun arcSamples(declDeg: Double): ArcSamples =
+    private fun arcTrack(declDeg: Double): AzElTrack =
         arcCache.getOrPut((declDeg * 100.0).roundToInt()) {
             val azimuths = DoubleArray(ARC_SAMPLE_COUNT)
             val elevations = DoubleArray(ARC_SAMPLE_COUNT)
@@ -478,22 +472,34 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
                 k++
                 ha += ARC_HA_STEP_DEG
             }
-            ArcSamples(azimuths, elevations)
+            AzElTrack(azimuths, elevations)
         }
 
-    /** 给定赤纬的全天参考弧（按小时角 [ARC_HA_STEP_DEG] 度步长采样）。 */
-    private fun drawSunArc(canvas: Canvas, projector: Projector, declDeg: Double, paint: Paint) {
-        val samples = arcSamples(declDeg)
-        val azimuths = samples.azimuths
-        val elevations = samples.elevations
+    /**
+     * 把一串方位/仰角采样投到屏幕上连成折线。太阳参考弧、地平线、铅垂线、经地平线推断段
+     * 四处形状不同、投影规则完全一样，共用这一份：相机背后的采样（z ≤ 0）断开，
+     * 断开处各自重新起笔。
+     *
+     * [cutBelowSunrise] 为真时，仰角低于 [Solar.SUNRISE_THRESHOLD_DEG] 的采样也断开——
+     * 参考弧在地平线上下那截不该画出来。只有太阳参考弧要这一刀。
+     */
+    private fun drawTrack(
+        canvas: Canvas,
+        projector: Projector,
+        paint: Paint,
+        track: AzElTrack,
+        cutBelowSunrise: Boolean = false,
+    ) {
         path.reset()
         var started = false
-        for (i in azimuths.indices) {
-            val el = elevations[i]
-            if (el < Solar.SUNRISE_THRESHOLD_DEG) {
-                started = false
-            } else if (projector.project(azimuths[i], el, pt)) {
-                if (started) path.lineTo(pt[0], pt[1]) else {
+        for (i in 0 until track.size) {
+            val el = track.elevations[i]
+            val onScreen = !(cutBelowSunrise && el < Solar.SUNRISE_THRESHOLD_DEG) &&
+                projector.project(track.azimuths[i], el, pt)
+            if (onScreen) {
+                if (started) {
+                    path.lineTo(pt[0], pt[1])
+                } else {
                     path.moveTo(pt[0], pt[1])
                     started = true
                 }
@@ -503,6 +509,10 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         }
         canvas.drawPath(path, paint)
     }
+
+    /** 给定赤纬的全天参考弧（按小时角 [ARC_HA_STEP_DEG] 度步长采样），地平线以下不画。 */
+    private fun drawSunArc(canvas: Canvas, projector: Projector, declDeg: Double, paint: Paint) =
+        drawTrack(canvas, projector, paint, arcTrack(declDeg), cutBelowSunrise = true)
 
     /** 地平线：沿方位展开 ±75°，仰角恒为 0。 */
     private val horizonOffsets = DoubleArray(61) { -75.0 + it * 2.5 }
@@ -513,67 +523,29 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     /** 地平线各采样点的仰角，恒为 0。 */
     private val groundLevel = DoubleArray(horizonOffsets.size)
 
-    /**
-     * 按给定的方位/仰角数组画一条参考线，避免逐帧装箱新的采样列表。
-     * 两数组等长，逐点投影；背后点（z ≤ 0）断开，与 [drawPolyline] 行为一致。
-     */
-    private fun drawGuide(
-        canvas: Canvas,
-        projector: Projector,
-        azimuths: DoubleArray,
-        elevations: DoubleArray,
-    ) {
-        path.reset()
-        var started = false
-        for (i in azimuths.indices) {
-            if (projector.project(azimuths[i], elevations[i], pt)) {
-                if (started) path.lineTo(pt[0], pt[1]) else {
-                    path.moveTo(pt[0], pt[1])
-                    started = true
-                }
-            } else {
-                started = false
-            }
-        }
-        canvas.drawPath(path, smokeLine)
-    }
+    /** 两条参考线的采样，由 [ensureGuideAzimuths] 在首次绘制前建好。 */
+    private lateinit var horizonTrack: AzElTrack
+    private lateinit var verticalTrack: AzElTrack
 
-    /** 按当前 aimAzDeg 重建两条参考线的方位角序列（NaN 判定保证每帧至多重建一次）。 */
+    /** 按当前 aimAzDeg 重建两条参考线的采样（NaN 判定保证每帧至多重建一次）。 */
     private fun ensureGuideAzimuths() {
         if (guideCacheAz == aimAzDeg) return
         guideCacheAz = aimAzDeg
-        horizonAzimuths = DoubleArray(horizonOffsets.size) { i ->
-            Angles.normalize360(aimAzDeg + horizonOffsets[i])
-        }
-        verticalAzimuths = DoubleArray(verticalElevations.size) { aimAzDeg }
-    }
-
-    private fun drawPolyline(
-        canvas: Canvas,
-        projector: Projector,
-        paint: Paint,
-        samples: List<Pair<Double, Double>>,
-    ) {
-        path.reset()
-        var started = false
-        for ((az, el) in samples) {
-            if (projector.project(az, el, pt)) {
-                if (started) path.lineTo(pt[0], pt[1]) else {
-                    path.moveTo(pt[0], pt[1])
-                    started = true
-                }
-            } else {
-                started = false
-            }
-        }
-        canvas.drawPath(path, paint)
+        horizonTrack = AzElTrack(
+            DoubleArray(horizonOffsets.size) { Angles.normalize360(aimAzDeg + horizonOffsets[it]) },
+            groundLevel,
+        )
+        verticalTrack = AzElTrack(
+            DoubleArray(verticalElevations.size) { aimAzDeg },
+            verticalElevations,
+        )
     }
 
     /**
      * 经地平线段的采样缓存，键为段起止点位。路径形状只取决于两端点，与姿态无关，
      * 而姿态每秒刷新数十次，故按点位缓存：新增/删除拍摄点时整体作废重建。
      */
-    private val gapPathCache = HashMap<GapKey, List<Pair<Double, Double>>>()
+    private val gapPathCache = HashMap<GapKey, AzElTrack>()
 
     private data class GapKey(val az0: Double, val el0: Double, val az1: Double, val el1: Double)
 
@@ -587,7 +559,7 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
                 val samples = gapPathCache.getOrPut(key) {
                     SkylineShape.viaHorizon(a.az, a.el, b.az, b.el)
                 }
-                drawPolyline(canvas, projector, moonLine, samples)
+                drawTrack(canvas, projector, moonLine, samples)
             } else if (projector.project(a.az, a.el, pt)) {
                 val x0 = pt[0]
                 val y0 = pt[1]

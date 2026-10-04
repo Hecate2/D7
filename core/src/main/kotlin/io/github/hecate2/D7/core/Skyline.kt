@@ -186,25 +186,31 @@ class Skyline(points: List<ShotPoint>) {
  */
 object SkylineShape {
 
-    /** 直接连线：两端点之间按方位角线性插值仰角。 */
+    /** 直接连线：两端点之间按方位角线性插值仰角。点数固定，直接开两条定长数组。 */
     fun direct(
         az0: Double,
         el0: Double,
         az1: Double,
         el1: Double,
         stepDeg: Double = 2.0,
-    ): List<Pair<Double, Double>> {
+    ): AzElTrack {
         val delta = Angles.shortArcDelta(az0, az1)
         val steps = max(1, ceil(abs(delta) / stepDeg).toInt())
-        return (0..steps).map { k ->
+        val azimuths = DoubleArray(steps + 1)
+        val elevations = DoubleArray(steps + 1)
+        for (k in 0..steps) {
             val t = k.toDouble() / steps
-            Angles.normalize360(az0 + delta * t) to el0 + (el1 - el0) * t
+            azimuths[k] = Angles.normalize360(az0 + delta * t)
+            elevations[k] = el0 + (el1 - el0) * t
         }
+        return AzElTrack(azimuths, elevations)
     }
 
     /**
      * 经地平线推断段的三段展开：起点垂直降到地平线、沿地平线走到终点方位、再垂直升到终点。
      * 端点处垂直、开区间内沿地平线，与求值语义一致；避免两点间直接插值画出假遮挡。
+     *
+     * 三段各自的点数随仰角与跨度变，先攒再定长拷出来。
      */
     fun viaHorizon(
         az0: Double,
@@ -213,26 +219,31 @@ object SkylineShape {
         el1: Double,
         azStepDeg: Double = 2.0,
         elStepDeg: Double = 3.0,
-    ): List<Pair<Double, Double>> {
-        val out = ArrayList<Pair<Double, Double>>()
-        out.add(az0 to el0)
+    ): AzElTrack {
+        val azimuths = ArrayList<Double>()
+        val elevations = ArrayList<Double>()
+        fun add(az: Double, el: Double) {
+            azimuths.add(az)
+            elevations.add(el)
+        }
+        add(az0, el0)
         var drop = el0
         while (drop > elStepDeg) {
             drop -= elStepDeg
-            out.add(az0 to drop)
+            add(az0, drop)
         }
-        out.add(az0 to 0.0)
+        add(az0, 0.0)
         val delta = Angles.shortArcDelta(az0, az1)
         val steps = max(1, ceil(abs(delta) / azStepDeg).toInt())
         for (k in 1..steps) {
-            out.add(Angles.normalize360(az0 + delta * k / steps) to 0.0)
+            add(Angles.normalize360(az0 + delta * k / steps), 0.0)
         }
         var rise = elStepDeg
         while (rise < el1) {
-            out.add(az1 to rise)
+            add(az1, rise)
             rise += elStepDeg
         }
-        out.add(az1 to el1)
-        return out
+        add(az1, el1)
+        return AzElTrack(azimuths.toDoubleArray(), elevations.toDoubleArray())
     }
 }

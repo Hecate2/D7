@@ -417,8 +417,9 @@ object Exporter {
                 SkylineShape.direct(a.az, a.el, b.az, b.el)
             }
             path.reset()
-            samples.forEachIndexed { k, (az, el) ->
-                val p = project(cx, cy, radius, az, el.coerceIn(0.0, 90.0))
+            for (k in 0 until samples.size) {
+                val el = samples.elevations[k].coerceIn(0.0, 90.0)
+                val p = project(cx, cy, radius, samples.azimuths[k], el)
                 if (k == 0) path.moveTo(p[0], p[1]) else path.lineTo(p[0], p[1])
             }
             canvas.drawPath(path, paint)
