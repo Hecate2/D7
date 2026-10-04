@@ -516,7 +516,7 @@ class CaptureActivity : ComponentActivity() {
         view.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, colorRes))
     }
 
-    // ---------- 快门（短按连线 / 长按经地平线断开） ----------
+    // ---------- 按钮手势（快门 / 删除键 / 对焦键共用）与快门动作 ----------
 
     /**
      * 按住快门时的进度动画：450ms 走完即触发长按记录。
@@ -528,64 +528,71 @@ class CaptureActivity : ComponentActivity() {
     }
 
     /**
-     * 快门手势：
-     * 短按在抬手时记录连线点；长按在按住满 [LONG_PRESS_MS] 时就地记录经地平线推断的空隙点，
-     * 之后无论按多久都不再记录，抬手也不补记——必须松手再按才算下一次。
-     * 按住期间手指滑出按钮即取消本次操作：未到阈值时什么也不记。
+     * 给一个按钮装「短按 / 长按 / 滑出取消」三态手势。三个相邻按钮共用这一份，
+     * 免得各有各的手感（曾经快门、删除键、对焦键各写一遍，改一处忘两处）。
+     *
+     * 按下即压暗并开始计时；按住满 [LONG_PRESS_MS] 就地触发 [onLongPress]，此后按多久都不再触发；
+     * 抬手时长按没触发过，就按实际按住时长走 [onShortPress]；手指滑出按钮即整场作废，双方都不触发。
+     *
+     * @param arm 按下那一刻的准入检查：返回 false 表示本次只留按压反馈，不计时也不响应抬手
+     *   （删除键右侧没有可删的点时就是这样）。
+     * @param withProgress 是否连带准星进度环与提示文字那套按住反馈，只有快门要。
      */
-    private fun setupShutter() {
+    private fun bindPressGesture(
+        view: View,
+        onLongPress: () -> Unit,
+        onShortPress: (heldMillis: Long) -> Unit = {},
+        arm: () -> Boolean = { true },
+        withProgress: Boolean = false,
+    ) {
         var downAt = 0L
         var canceled = false
-        var longRecorded = false
-        val longPressRunnable = Runnable {
+        var longFired = false
+        val longPress = Runnable {
             if (canceled) return@Runnable
-            longRecorded = true
-            binding.shutter.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            onShutter(true)
+            longFired = true
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            onLongPress()
         }
-        binding.shutter.setOnTouchListener { view, event ->
+        val cancelPress = {
+            canceled = true
+            view.alpha = 1f
+            uiHandler.removeCallbacks(longPress)
+            if (withProgress) stopPressFeedback()
+        }
+        view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downAt = SystemClock.uptimeMillis()
                     canceled = false
-                    longRecorded = false
-                    view.alpha = 0.6f
-                    startPressFeedback()
-                    uiHandler.postDelayed(longPressRunnable, LONG_PRESS_MS)
+                    longFired = false
+                    v.alpha = 0.6f
+                    if (withProgress) startPressFeedback()
+                    if (arm()) uiHandler.postDelayed(longPress, LONG_PRESS_MS)
                     true
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    if (!canceled && !insideView(view, event)) {
-                        canceled = true
-                        uiHandler.removeCallbacks(longPressRunnable)
-                        view.alpha = 1f
-                        stopPressFeedback()
-                    }
+                    if (!canceled && !insideView(v, event)) cancelPress()
                     true
                 }
 
                 MotionEvent.ACTION_UP -> {
-                    view.alpha = 1f
-                    uiHandler.removeCallbacks(longPressRunnable)
-                    stopPressFeedback()
+                    v.alpha = 1f
+                    uiHandler.removeCallbacks(longPress)
+                    if (withProgress) stopPressFeedback()
                     if (!canceled) {
                         // 自行处理了按下/抬起，故需补一次 performClick，
                         // 否则 TalkBack 与开关控制等辅助服务认为该按钮不可用
-                        view.performClick()
-                        // 长按已在阈值处记过点；这里只处理还没记过的短按
-                        if (!longRecorded) {
-                            onShutter(SystemClock.uptimeMillis() - downAt >= LONG_PRESS_MS)
-                        }
+                        v.performClick()
+                        // 长按已在阈值处触发过；这里只处理还没触发的那次短按
+                        if (!longFired) onShortPress(SystemClock.uptimeMillis() - downAt)
                     }
                     true
                 }
 
                 MotionEvent.ACTION_CANCEL -> {
-                    view.alpha = 1f
-                    canceled = true
-                    uiHandler.removeCallbacks(longPressRunnable)
-                    stopPressFeedback()
+                    cancelPress()
                     true
                 }
 
@@ -593,6 +600,20 @@ class CaptureActivity : ComponentActivity() {
             }
         }
     }
+
+    /**
+     * 快门手势：短按在抬手时记录连线点；长按在按住满 [LONG_PRESS_MS] 时就地记录经地平线推断的
+     * 空隙点，之后无论按多久都不再记录，抬手也不补记——必须松手再按才算下一次。
+     * 按住期间手指滑出按钮即取消本次操作：未到阈值时什么也不记。
+     */
+    private fun setupShutter() = bindPressGesture(
+        view = binding.shutter,
+        withProgress = true,
+        onLongPress = { onShutter(true) },
+        // 长按已在阈值处记过点。计时器偶尔会被主线程拖过阈值才跑到，此时抬手仍按实际
+        // 按住时长判定，免得把一次长按降级成直接连线的短按。
+        onShortPress = { held -> onShutter(held >= LONG_PRESS_MS) },
+    )
 
     /** 事件坐标是否仍在视图范围内（滑出按钮即取消本次操作）。 */
     private fun insideView(view: View, event: MotionEvent): Boolean =
@@ -684,63 +705,32 @@ class CaptureActivity : ComponentActivity() {
 
     // ---------- 删除（长按删十字线右侧最近点） ----------
 
+    /**
+     * 删除键手势：长按删掉十字线右侧离当前方位最近的那个点。按下即锁定候选点，按住只删一个；
+     * 右侧没有点时只给一句提示，不参与这次手势。
+     */
     private fun setupDelete() {
         var candidate = -1
-        val deleteRunnable = Runnable {
-            val index = candidate
-            candidate = -1
-            if (index >= 0) {
-                // 先取照片再来删点：删完这一点就从列表里没了，拿不到它的 photoUri
-                val photo = repository.get(groupId)?.regionList(region)?.getOrNull(index)?.photoUri
-                repository.deletePoint(groupId, region, index)
-                // 与结果页删单点同一套语义（见 util/MediaFiles.kt）
-                lifecycleScope.launch { deletePointPhoto(this@CaptureActivity, photo) }
-                // 与快门长按同一套反馈：触觉 + 文字确认，删点是不可撤销的操作
-                binding.deleteButton.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                toast(getString(R.string.capture_deleted, index + 1))
-            }
-        }
-        binding.deleteButton.setOnTouchListener { view, event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    view.alpha = 0.6f
-                    candidate = findDeleteCandidate()
-                    if (candidate < 0) {
-                        toast(R.string.capture_delete_no_candidate)
-                    } else {
-                        uiHandler.postDelayed(deleteRunnable, LONG_PRESS_MS)
-                    }
-                    true
-                }
+        bindPressGesture(
+            view = binding.deleteButton,
+            onLongPress = { deleteCandidate(candidate) },
+            arm = {
+                candidate = findDeleteCandidate()
+                if (candidate < 0) toast(R.string.capture_delete_no_candidate)
+                candidate >= 0
+            },
+        )
+    }
 
-                MotionEvent.ACTION_MOVE -> {
-                    if (candidate >= 0 && !insideView(view, event)) {
-                        uiHandler.removeCallbacks(deleteRunnable)
-                        candidate = -1
-                        view.alpha = 1f
-                    }
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    view.alpha = 1f
-                    uiHandler.removeCallbacks(deleteRunnable)
-                    candidate = -1
-                    // 同快门：自行处理了触摸，需补 performClick 供辅助服务识别
-                    view.performClick()
-                    true
-                }
-
-                MotionEvent.ACTION_CANCEL -> {
-                    view.alpha = 1f
-                    uiHandler.removeCallbacks(deleteRunnable)
-                    candidate = -1
-                    true
-                }
-
-                else -> false
-            }
-        }
+    /** 删掉一个拍摄点连带它的照片。删点不可撤销，故另给文字确认（触觉由手势骨架统一给）。 */
+    private fun deleteCandidate(index: Int) {
+        if (index < 0) return
+        // 先取照片再来删点：删完这一点就从列表里没了，拿不到它的 photoUri
+        val photo = repository.get(groupId)?.regionList(region)?.getOrNull(index)?.photoUri
+        repository.deletePoint(groupId, region, index)
+        // 与结果页删单点同一套语义（见 util/MediaFiles.kt）
+        lifecycleScope.launch { deletePointPhoto(this@CaptureActivity, photo) }
+        toast(getString(R.string.capture_deleted, index + 1))
     }
 
     /** 当前分区内「十字线右侧、离当前方位最近」的点：顺时针角距落在 (0°, 180°) 内取最小者。 */
@@ -776,59 +766,13 @@ class CaptureActivity : ComponentActivity() {
         paintToggle(binding.torchButton, false)
     }
 
-    /**
-     * 对焦键：短按立即对准取景中心对焦一次，长按开关自动对焦。
-     *
-     * 手势分段与快门一致（滑出即取消、长按只认一次），避免两个相邻按钮手感不同。
-     */
+    /** 对焦键：短按立即对准取景中心对焦一次，长按开关自动对焦。 */
     private fun setupFocus() {
-        var canceled = false
-        var longHandled = false
-        val longRunnable = Runnable {
-            longHandled = true
-            binding.focusButton.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            toggleAutoFocus()
-        }
-        binding.focusButton.setOnTouchListener { view, event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    canceled = false
-                    longHandled = false
-                    view.alpha = 0.6f
-                    uiHandler.postDelayed(longRunnable, LONG_PRESS_MS)
-                    true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    if (!canceled && !insideView(view, event)) {
-                        canceled = true
-                        uiHandler.removeCallbacks(longRunnable)
-                        view.alpha = 1f
-                    }
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    view.alpha = 1f
-                    uiHandler.removeCallbacks(longRunnable)
-                    if (!canceled) {
-                        // 与快门同理：自行处理了按下/抬起，需补一次 performClick
-                        view.performClick()
-                        if (!longHandled) focusNow()
-                    }
-                    true
-                }
-
-                MotionEvent.ACTION_CANCEL -> {
-                    view.alpha = 1f
-                    canceled = true
-                    uiHandler.removeCallbacks(longRunnable)
-                    true
-                }
-
-                else -> false
-            }
-        }
+        bindPressGesture(
+            view = binding.focusButton,
+            onLongPress = { toggleAutoFocus() },
+            onShortPress = { focusNow() },
+        )
         paintToggle(binding.focusButton, true)
     }
 
