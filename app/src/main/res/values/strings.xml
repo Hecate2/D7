@@ -32,28 +32,27 @@
     <string name="group_ceiling_pill">天花板 %1$d 点</string>
     <string name="group_ceiling_none">天花板未拍</string>
 
-    <!-- 建组 / 改名对话框 -->
+    <!-- 建组 / 编辑对话框 -->
     <string name="new_group_title">新建照片组</string>
-    <string name="rename_group_title">改名</string>
-    <string name="group_name_hint">组名，例如：客厅阳台</string>
+    <string name="edit_group_title">编辑照片组</string>
+    <!-- 时区那一行的样例值：故意用带半小时的时区，让用户知道偏移量可以有分钟；
+         不加 UTC 前缀是因为它会把这一格撑到贴着右边的图标键，而 `+05:30` 才是最短的合法写法 -->
+    <string name="label_timezone_hint" translatable="false">+05:30</string>
+    <string name="zone_invalid" translatable="false">Asia/Kolkata · +05:30</string>
+    <string name="group_name_hint">组名</string>
+    <string name="group_name_default">客厅阳台</string>
     <string name="group_name_required">组名不能为空</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">用 GPS 定位</string>
+    <!-- 两行经纬度左侧的轴名：LON / LAT 是跨语言通用的记号，不翻译 -->
+    <string name="label_lon" translatable="false">LON</string>
+    <string name="label_lat" translatable="false">LAT</string>
+    <string name="label_latitude_hint" translatable="false">31.23</string>
+    <string name="label_longitude_hint" translatable="false">121.47</string>
+    <string name="use_gps" translatable="false">GPS</string>
     <string name="gps_locating">定位中…</string>
     <string name="gps_done">已定位 %1$s</string>
     <string name="gps_done_accuracy">已定位 %1$s · ±%2$d m</string>
     <string name="gps_failed">定位失败：请到空旷处重试，或手动输入经纬度</string>
-    <string name="gps_cap_gps_on">GPS 可用</string>
-    <string name="gps_cap_gps_off">GPS 关闭</string>
-    <string name="gps_cap_net_on">网络定位 可用</string>
-    <string name="gps_cap_net_off">网络定位 关闭</string>
-    <string name="gps_cap_fused_on">系统融合 可用</string>
-    <string name="gps_cap_accuracy">当前精度 ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">精度未知</string>
-    <string name="gps_cap_waiting">尚无定位</string>
-    <string name="gps_cap_none">系统定位已关闭，可手动输入经纬度</string>
     <string name="hemisphere_north">北纬：面向南侧拍摄，从右（西）拍到左（东）</string>
     <string name="hemisphere_south">南纬：面向北侧拍摄，从右（东）拍到左（西）</string>
     <string name="hemisphere_tropic">赤道附近：夏冬正午太阳分居两侧，建议南北两侧都拍</string>
@@ -64,7 +63,7 @@
     <string name="confirm">确定</string>
 
     <!-- 长按菜单 -->
-    <string name="menu_rename">改名</string>
+    <string name="menu_edit">编辑</string>
     <string name="menu_delete">删除</string>
     <string name="menu_export">导出</string>
     <string name="delete_group_title">删除照片组</string>
@@ -246,7 +245,7 @@
     <string name="export_png_footer">七日 D7 · 本地离线计算 · 方位误差约 2–4°、仰角约 1° · 供参考，不替代官方日照分析报告</string>
 
     <!-- 点位编辑（单点 / 批量，强行改角度、允许无图点） -->
-    <string name="result_edit_points">编辑</string>
+    <string name="edit">编辑</string>
     <string name="point_edit_title">编辑点 %1$d · %2$s</string>
     <string name="point_edit_az">方位角（0–360）</string>
     <string name="point_edit_el">仰角（0–90）</string>

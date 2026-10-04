@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">천장 %1$d</string>
     <string name="group_ceiling_none">천장 미촬영</string>
 
-    <!-- 새로 만들기 / 이름 변경 -->
+    <!-- 새로 만들기 / 편집 -->
     <string name="new_group_title">새 촬영 세트</string>
-    <string name="rename_group_title">이름 변경</string>
-    <string name="group_name_hint">이름 (예: 거실 창가)</string>
+    <string name="edit_group_title">촬영 세트 편집</string>
+    <string name="group_name_hint">이름</string>
+    <string name="group_name_default">거실 창가</string>
     <string name="group_name_required">이름을 입력하세요</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">GPS 사용</string>
     <string name="gps_locating">위치 확인 중…</string>
     <string name="gps_done">위치 %1$s</string>
     <string name="gps_done_accuracy">위치 %1$s · ±%2$d m</string>
     <string name="gps_failed">위치를 못 잡았습니다: 실외에서 다시 시도하거나 좌표를 직접 입력</string>
-    <string name="gps_cap_gps_on">GPS 켬</string>
-    <string name="gps_cap_gps_off">GPS 끔</string>
-    <string name="gps_cap_net_on">통신 켬</string>
-    <string name="gps_cap_net_off">통신 끔</string>
-    <string name="gps_cap_fused_on">융합 켬</string>
-    <string name="gps_cap_accuracy">정확도 ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">정확도 알 수 없음</string>
-    <string name="gps_cap_waiting">아직 위치 없음</string>
-    <string name="gps_cap_none">위치 꺼짐 · 좌표를 직접 입력</string>
     <string name="hemisphere_north">북반구: 남을 보고 오른쪽(서)에서 왼쪽(동)으로</string>
     <string name="hemisphere_south">남반구: 북을 보고 오른쪽(동)에서 왼쪽(서)으로</string>
     <string name="hemisphere_tropic">적도 부근: 태양이 양쪽으로 옮겨 가므로 둘 다 찍으세요</string>
@@ -56,7 +45,7 @@
     <string name="confirm">확인</string>
 
     <!-- 길게 누르기 메뉴 -->
-    <string name="menu_rename">이름 변경</string>
+    <string name="menu_edit">편집</string>
     <string name="menu_delete">삭제</string>
     <string name="menu_export">내보내기</string>
     <string name="delete_group_title">촬영 세트 삭제</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">칠일 D7 · 기기 안에서 계산 · 방위 2–4°, 고도 약 1° 오차 · 참고용이며 공식 일조 조사 보고서를 대신하지 않습니다</string>
 
     <!-- 점 편집 -->
-    <string name="result_edit_points">편집</string>
+    <string name="edit">편집</string>
     <string name="point_edit_title">%1$d번 점 · %2$s</string>
     <string name="point_edit_az">방위각(0–360)</string>
     <string name="point_edit_el">고도(0–90)</string>

@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  编辑照片组：名称、经纬度、时区。列表页长按与结果页两处共用这一份（见 GroupEditor.kt）。
+  与 dialog_new_group 的差别：没有 GPS 定位（这里改的是已有组的记录，不是现场取点），
+  多一行时区；半球提示也不放，改完回结果页看冬至/夏至两档即可知道南北。
+
+  三个输入框的 hint 都是数值样例（31.23 / 121.47 / +05:30），不写「经度」「时区」这类字样，
+  所以它们在八种语言里是同一份字符串（values/ 里标了 translatable="false"）。
+  时区那一行右侧两个图标键是「填本机时区」与「按经度推算」，同样不放文字。
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -110,41 +119,53 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
+        android:layout_marginBottom="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/gpsButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_pill"
-            android:paddingStart="14dp"
-            android:paddingTop="6dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="6dp"
-            android:text="@string/use_gps"
-            android:textColor="@color/paper"
-            android:textSize="12sp" />
-
-        <TextView
-            android:id="@+id/gpsStatus"
+        <!-- editText 的 hint 不会滚动，长一点就被拦腰截断、紧贴着右边的图标键；
+             ellipsize 让它以省略号收尾，识别得出「这里还有内容」而不是像被图标签字盖住 -->
+        <EditText
+            android:id="@+id/zoneInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:textColor="@color/smoke"
-            android:textSize="11sp" />
-    </LinearLayout>
+            android:backgroundTint="@color/stroke2"
+            android:ellipsize="end"
+            android:hint="@string/label_timezone_hint"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textColor="@color/paper"
+            android:textColorHint="@color/smoke"
+            android:textSize="15sp" />
 
-    <TextView
-        android:id="@+id/hemisphereHint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="4dp"
-        android:lineSpacingExtra="3dp"
-        android:text="@string/hemisphere_unknown"
-        android:textColor="@color/moon"
-        android:textSize="12sp" />
+        <!-- contentDescription 在代码里改成「按下去会填成什么」，XML 里的只是打开前的占位 -->
+        <ImageView
+            android:id="@+id/zoneDeviceButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_icon_button"
+            android:clickable="true"
+            android:contentDescription="@string/label_timezone_hint"
+            android:focusable="true"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_zone_device" />
+
+        <ImageView
+            android:id="@+id/zoneLongitudeButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_icon_button"
+            android:clickable="true"
+            android:contentDescription="@string/label_timezone_hint"
+            android:focusable="true"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_zone_longitude" />
+    </LinearLayout>
 
 </LinearLayout>

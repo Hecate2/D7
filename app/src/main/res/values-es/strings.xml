@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">Techo %1$d</string>
     <string name="group_ceiling_none">Sin fotos de techo</string>
 
-    <!-- Nuevo / renombrar -->
+    <!-- Nuevo / editar -->
     <string name="new_group_title">Nueva serie</string>
-    <string name="rename_group_title">Renombrar</string>
-    <string name="group_name_hint">Nombre, p. ej. balcón del salón</string>
+    <string name="edit_group_title">Editar serie</string>
+    <string name="group_name_hint">Nombre</string>
+    <string name="group_name_default">Balcón del salón</string>
     <string name="group_name_required">Falta el nombre</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">Usar GPS</string>
     <string name="gps_locating">Localizando…</string>
     <string name="gps_done">Posición %1$s</string>
     <string name="gps_done_accuracy">Posición %1$s · ±%2$d m</string>
     <string name="gps_failed">Sin posición: prueba al aire libre o escribe las coordenadas</string>
-    <string name="gps_cap_gps_on">GPS activo</string>
-    <string name="gps_cap_gps_off">GPS apagado</string>
-    <string name="gps_cap_net_on">Red activa</string>
-    <string name="gps_cap_net_off">Red apagada</string>
-    <string name="gps_cap_fused_on">Fusión activa</string>
-    <string name="gps_cap_accuracy">Precisión ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">Precisión desconocida</string>
-    <string name="gps_cap_waiting">Aún sin posición</string>
-    <string name="gps_cap_none">Ubicación apagada; escribe las coordenadas</string>
     <string name="hemisphere_north">Norte: mira al sur, de derecha (O) a izquierda (E)</string>
     <string name="hemisphere_south">Sur: mira al norte, de derecha (E) a izquierda (O)</string>
     <string name="hemisphere_tropic">Ecuador: el sol cambia de lado, mide ambos</string>
@@ -56,7 +45,7 @@
     <string name="confirm">Aceptar</string>
 
     <!-- Menú de pulsación larga -->
-    <string name="menu_rename">Renombrar</string>
+    <string name="menu_edit">Editar</string>
     <string name="menu_delete">Eliminar</string>
     <string name="menu_export">Exportar</string>
     <string name="delete_group_title">Eliminar serie</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">Siete días D7 · cálculo sin red · unos 2–4° de acimut y 1° de altura · orientativo, no sustituye a un informe oficial de soleamiento</string>
 
     <!-- Edición de puntos -->
-    <string name="result_edit_points">Editar</string>
+    <string name="edit">Editar</string>
     <string name="point_edit_title">Punto %1$d · %2$s</string>
     <string name="point_edit_az">Azimut (0–360)</string>
     <string name="point_edit_el">Altura (0–90)</string>

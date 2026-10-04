@@ -107,7 +107,13 @@ class GroupRepository internal constructor(private val file: File) {
         group
     }
 
-    fun renameGroup(id: String, name: String) = update(id) { it.copy(name = name) }
+    /**
+     * 改组名、经纬度与时区。**三样一起改**而不是各写一个 setter：界面上它们本来就是同一个
+     * 对话框，拆开容易出现「改了名以为坐标也存了」。合法性由调用方先校验，这里不再设防，
+     * 免得两处各写一遍规则再慢慢漂开。
+     */
+    fun editGroup(id: String, name: String, lat: Double, lon: Double, zoneId: String) =
+        update(id) { it.copy(name = name, lat = lat, lon = lon, zoneId = zoneId) }
 
     fun deleteGroup(id: String) = synchronized(stateLock) {
         publish(_groups.value.filterNot { it.id == id })

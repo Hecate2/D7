@@ -12,6 +12,7 @@ import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.WindowManager
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,18 +28,18 @@ import io.github.hecate2.D7.data.GroupRecord
 import io.github.hecate2.D7.data.GroupRepository
 import io.github.hecate2.D7.databinding.ActivityGroupsBinding
 import io.github.hecate2.D7.databinding.DialogDeleteGroupBinding
-import io.github.hecate2.D7.databinding.DialogGroupNameBinding
 import io.github.hecate2.D7.databinding.DialogNewGroupBinding
 import io.github.hecate2.D7.databinding.ItemGroupBinding
 import io.github.hecate2.D7.export.Exporter
 import io.github.hecate2.D7.sensor.FixLocation
-import io.github.hecate2.D7.sensor.LocationCapability
 import io.github.hecate2.D7.sensor.LocationProvider
 import io.github.hecate2.D7.ui.Extras
+import io.github.hecate2.D7.ui.bindHemisphereSuffix
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.ui.setToggleTint
+import io.github.hecate2.D7.ui.showGroupEditor
 import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.deletePhoto
 import io.github.hecate2.D7.util.Format
@@ -57,7 +58,8 @@ import kotlin.math.roundToInt
 
 /**
  * 照片组管理（应用入口）。
- * 卡片列表来自仓库的 StateFlow；点卡片进结果页，长按改名、删除或导出；右上「+ 新建」建组后直接进采集页。
+ * 卡片列表来自仓库的 StateFlow；点卡片进结果页，长按编辑（组名 / 经纬度 / 时区）、删除或导出；
+ * 右上「+ 新建」建组后直接进采集页。
  */
 class GroupsActivity : ComponentActivity() {
 
@@ -251,13 +253,14 @@ class GroupsActivity : ComponentActivity() {
 
     private fun showGroupMenu(group: GroupRecord, anchor: View) {
         PopupMenu(this, anchor).apply {
-            menu.add(0, MENU_RENAME, 0, R.string.menu_rename)
+            menu.add(0, MENU_EDIT, 0, R.string.menu_edit)
             menu.add(0, MENU_DELETE, 1, R.string.menu_delete)
             menu.add(0, MENU_EXPORT, 2, R.string.menu_export)
             setOnMenuItemClickListener { item ->
                 when (item.itemId) {
-                    MENU_RENAME -> {
-                        showRenameDialog(group)
+                    MENU_EDIT -> {
+                        // 限定到 Activity：apply 里的 this 是 PopupMenu
+                        showGroupEditor(this@GroupsActivity, group)
                         true
                     }
 
@@ -275,29 +278,6 @@ class GroupsActivity : ComponentActivity() {
                 }
             }
         }.show()
-    }
-
-    private fun showRenameDialog(group: GroupRecord) {
-        val nameBinding = DialogGroupNameBinding.inflate(layoutInflater)
-        nameBinding.nameInput.setText(group.name)
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.rename_group_title)
-            .setView(nameBinding.root)
-            .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.confirm, null)
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val name = nameBinding.nameInput.text.toString().trim()
-                if (name.isEmpty()) {
-                    nameBinding.nameInput.error = getString(R.string.group_name_required)
-                } else {
-                    repository.renameGroup(group.id, name)
-                    dialog.dismiss()
-                }
-            }
-        }
-        dialog.show()
     }
 
     private fun confirmDelete(group: GroupRecord) {
@@ -415,26 +395,11 @@ class GroupsActivity : ComponentActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) = updateHemisphereHint(view)
         })
-        // 未点击定位前，状态行每秒刷新定位能力（GPS / 网络 / 融合是否可用 + 当前精度）；点击后交给定位流程
-        var liveCapability = true
-        val capabilityTicker = object : Runnable {
-            override fun run() {
-                if (liveCapability) view.gpsStatus.text = capabilityText(locationProvider.capability())
-                view.root.postDelayed(this, CAPABILITY_TICK_MS)
-            }
-        }
-        view.gpsButton.setOnClickListener {
-            liveCapability = false
-            locate(
-                onStart = { view.gpsStatus.setText(R.string.gps_locating) },
-                onFix = { fix ->
-                    view.latInput.setText(String.format(Locale.US, "%.6f", fix.lat))
-                    view.lonInput.setText(String.format(Locale.US, "%.6f", fix.lon))
-                    view.gpsStatus.text = fixStatusText(fix)
-                },
-                onFail = { view.gpsStatus.setText(R.string.gps_failed) },
-            )
-        }
+        // 先替用户起好名字；三个框都是进焦点即全选（见布局里的 selectAllOnFocus）
+        view.nameInput.setText(getString(R.string.group_name_default))
+        view.lonInput.bindHemisphereSuffix(view.lonSuffix, Format::longitudeSuffix)
+        view.latInput.bindHemisphereSuffix(view.latSuffix, Format::latitudeSuffix)
+        view.gpsButton.setOnClickListener { locateFromButton(view) }
 
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.new_group_title)
@@ -469,28 +434,50 @@ class GroupsActivity : ComponentActivity() {
                     Intent(this, CaptureActivity::class.java).putExtra(Extras.GROUP_ID, group.id),
                 )
             }
-            view.root.post(capabilityTicker)
+            // 光标与键盘都放进组名框：用户十有八九先动名字，动完再抬头看坐标填好没有。
+            // 全选由布局里的 selectAllOnFocus 负责，获得焦点时自己就选了，不必再调一次
+            view.nameInput.requestFocus()
+            dialog.window?.setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE,
+            )
+            // 坐标是必填项：打开就替用户定位，省掉「先点一下 GPS 再等」这一步
+            autoLocate(view)
         }
-        dialog.setOnDismissListener { view.root.removeCallbacks(capabilityTicker) }
         dialog.show()
         updateHemisphereHint(view)
     }
 
-    /** 「GPS 可用 · 网络定位 可用 · 系统融合 可用 · 当前精度 ±35 m」。 */
-    private fun capabilityText(cap: LocationCapability): String {
-        if (cap.noneEnabled) return getString(R.string.gps_cap_none)
-        val parts = mutableListOf(
-            getString(if (cap.gpsEnabled) R.string.gps_cap_gps_on else R.string.gps_cap_gps_off),
-            getString(if (cap.networkEnabled) R.string.gps_cap_net_on else R.string.gps_cap_net_off),
+    /**
+     * 打开对话框时的自动定位：**只填用户还没动过的坐标**。
+     *
+     * 键盘是弹着的，用户很可能先改组名再手输经纬度，而定位结果要几秒才回来；
+     * 不加这道门就会把人家刚敲进去的数字盖掉。手动点 GPS 则一律覆盖（见 [locateFromButton]）。
+     */
+    private fun autoLocate(view: DialogNewGroupBinding) {
+        val latBefore = view.latInput.text.toString()
+        val lonBefore = view.lonInput.text.toString()
+        locate(
+            onStart = { view.gpsStatus.setText(R.string.gps_locating) },
+            onFix = { fix ->
+                val untouched = view.latInput.text.toString() == latBefore &&
+                    view.lonInput.text.toString() == lonBefore
+                if (untouched) applyFix(view, fix)
+            },
+            onFail = { view.gpsStatus.setText(R.string.gps_failed) },
         )
-        if (cap.fusedAvailable) parts += getString(R.string.gps_cap_fused_on)
-        val fix = cap.lastFix
-        parts += when {
-            fix == null -> getString(R.string.gps_cap_waiting)
-            fix.accuracyMeters > 0f -> getString(R.string.gps_cap_accuracy, fix.accuracyMeters.roundToInt())
-            else -> getString(R.string.gps_cap_accuracy_unknown)
-        }
-        return parts.joinToString(" · ")
+    }
+
+    /** 手动点 GPS：输入框里原来有什么都按定位结果覆盖。 */
+    private fun locateFromButton(view: DialogNewGroupBinding) = locate(
+        onStart = { view.gpsStatus.setText(R.string.gps_locating) },
+        onFix = { applyFix(view, it) },
+        onFail = { view.gpsStatus.setText(R.string.gps_failed) },
+    )
+
+    private fun applyFix(view: DialogNewGroupBinding, fix: FixLocation) {
+        view.latInput.setText(String.format(Locale.US, "%.6f", fix.lat))
+        view.lonInput.setText(String.format(Locale.US, "%.6f", fix.lon))
+        view.gpsStatus.text = fixStatusText(fix)
     }
 
     private fun fixStatusText(fix: FixLocation): String {
@@ -541,11 +528,8 @@ class GroupsActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val MENU_RENAME = 1
+        const val MENU_EDIT = 1
         const val MENU_DELETE = 2
         const val MENU_EXPORT = 3
-
-        /** 建组对话框中定位能力提示的刷新间隔（毫秒）。 */
-        const val CAPABILITY_TICK_MS = 1_000L
     }
 }

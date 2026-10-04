@@ -27,19 +27,6 @@ data class FixLocation(
     val timeMillis: Long,
 )
 
-/** 设备定位能力快照：供界面显示「GPS / 网络 / 系统融合是否可用」与当前精度。 */
-data class LocationCapability(
-    val gpsEnabled: Boolean,
-    val networkEnabled: Boolean,
-    /** 系统融合定位（fused provider，API 31+）是否可用。 */
-    val fusedAvailable: Boolean,
-    /** 5 分钟内的最近定位；为空表示尚未取得可用结果。 */
-    val lastFix: FixLocation?,
-) {
-    /** GPS、网络、融合全部不可用（如系统定位开关被关）。 */
-    val noneEnabled: Boolean get() = !gpsEnabled && !networkEnabled && !fusedAvailable
-}
-
 /**
  * 系统融合定位：只用 Android 自带的 [LocationManager]，对多个 provider（系统融合 / 网络 / GPS）
  * 并发取位，不引入任何第三方定位 SDK（零额外体积、零 key）。
@@ -48,7 +35,6 @@ data class LocationCapability(
  *   无定位权限、无可用 provider 时安静跳过，不打扰用户也不崩溃。
  * - [lastFresh]：取新鲜缓存（默认 5 分钟内），命中即秒回，用户不必干等。
  * - [requestSingleUpdate]：多 provider 并发请求；精度够好立即返回，超时快速失败（默认 6 秒）。
- * - [capability]：查询 GPS / 网络 / 融合的开关状态与当前精度，供界面展示。
  */
 class LocationProvider(private val context: Context) {
 
@@ -182,22 +168,6 @@ class LocationProvider(private val context: Context) {
                 finish { if (fix != null) onResult(fix) else onTimeout() }
             },
             timeoutMillis,
-        )
-    }
-
-    /** 当前定位能力（provider 开关与新鲜结果），用于界面显示。 */
-    fun capability(): LocationCapability {
-        fun enabled(provider: String): Boolean = try {
-            manager.isProviderEnabled(provider)
-        } catch (_: IllegalArgumentException) {
-            false
-        }
-        return LocationCapability(
-            gpsEnabled = enabled(LocationManager.GPS_PROVIDER),
-            networkEnabled = enabled(LocationManager.NETWORK_PROVIDER),
-            fusedAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                enabled(LocationManager.FUSED_PROVIDER),
-            lastFix = lastFresh(),
         )
     }
 

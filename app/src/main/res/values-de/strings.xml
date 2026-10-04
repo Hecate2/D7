@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">Decke %1$d</string>
     <string name="group_ceiling_none">Keine Deckenaufnahmen</string>
 
-    <!-- Neu / Umbenennen -->
+    <!-- Neu / Bearbeiten -->
     <string name="new_group_title">Neue Fotostrecke</string>
-    <string name="rename_group_title">Umbenennen</string>
-    <string name="group_name_hint">Name, z. B. Wohnzimmer-Balkon</string>
+    <string name="edit_group_title">Fotostrecke bearbeiten</string>
+    <string name="group_name_hint">Name</string>
+    <string name="group_name_default">Wohnzimmer-Balkon</string>
     <string name="group_name_required">Name nötig</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">GPS nutzen</string>
     <string name="gps_locating">Suche…</string>
     <string name="gps_done">Gefunden %1$s</string>
     <string name="gps_done_accuracy">Gefunden %1$s · ±%2$d m</string>
     <string name="gps_failed">Kein Empfang: im Freien versuchen oder Koordinaten eintippen</string>
-    <string name="gps_cap_gps_on">GPS an</string>
-    <string name="gps_cap_gps_off">GPS aus</string>
-    <string name="gps_cap_net_on">Netz an</string>
-    <string name="gps_cap_net_off">Netz aus</string>
-    <string name="gps_cap_fused_on">Fusion an</string>
-    <string name="gps_cap_accuracy">Genauigkeit ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">Genauigkeit unbekannt</string>
-    <string name="gps_cap_waiting">Noch kein Empfang</string>
-    <string name="gps_cap_none">Ortung ist aus; Koordinaten eintippen</string>
     <string name="hemisphere_north">Nördlich: nach Süden sehen, rechts (W) nach links (O)</string>
     <string name="hemisphere_south">Südlich: nach Norden sehen, rechts (O) nach links (W)</string>
     <string name="hemisphere_tropic">Äquator: die Sonne wechselt die Seite, beide Seiten aufnehmen</string>
@@ -56,7 +45,7 @@
     <string name="confirm">OK</string>
 
     <!-- Langdruck-Menü -->
-    <string name="menu_rename">Umbenennen</string>
+    <string name="menu_edit">Bearbeiten</string>
     <string name="menu_delete">Löschen</string>
     <string name="menu_export">Export</string>
     <string name="delete_group_title">Fotostrecke löschen</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">Sieben Tage D7 · offline gerechnet · etwa 2–4° Azimut- und 1° Höhenfehler · zur Orientierung, kein offizieller Sonnenscheinbericht</string>
 
     <!-- Punkbearbeitung -->
-    <string name="result_edit_points">Bearbeiten</string>
+    <string name="edit">Bearbeiten</string>
     <string name="point_edit_title">Punkt %1$d · %2$s</string>
     <string name="point_edit_az">Azimut (0–360)</string>
     <string name="point_edit_el">Höhe (0–90)</string>

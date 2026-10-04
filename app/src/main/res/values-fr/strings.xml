@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">Plafond %1$d</string>
     <string name="group_ceiling_none">Aucun cliché de plafond</string>
 
-    <!-- Nouveau / renommer -->
+    <!-- Nouveau / modifier -->
     <string name="new_group_title">Nouvelle série</string>
-    <string name="rename_group_title">Renommer</string>
-    <string name="group_name_hint">Nom, ex. balcon du séjour</string>
+    <string name="edit_group_title">Modifier la série</string>
+    <string name="group_name_hint">Nom</string>
+    <string name="group_name_default">Balcon du séjour</string>
     <string name="group_name_required">Nom obligatoire</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">Utiliser le GPS</string>
     <string name="gps_locating">Localisation…</string>
     <string name="gps_done">Position %1$s</string>
     <string name="gps_done_accuracy">Position %1$s · ±%2$d m</string>
     <string name="gps_failed">Pas de position : essayez en extérieur ou saisissez les coordonnées</string>
-    <string name="gps_cap_gps_on">GPS actif</string>
-    <string name="gps_cap_gps_off">GPS coupé</string>
-    <string name="gps_cap_net_on">Réseau actif</string>
-    <string name="gps_cap_net_off">Réseau coupé</string>
-    <string name="gps_cap_fused_on">Fusion active</string>
-    <string name="gps_cap_accuracy">Précision ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">Précision inconnue</string>
-    <string name="gps_cap_waiting">Pas encore de position</string>
-    <string name="gps_cap_none">Localisation coupée ; saisissez les coordonnées</string>
     <string name="hemisphere_north">Nord : face au sud, de droite (O) à gauche (E)</string>
     <string name="hemisphere_south">Sud : face au nord, de droite (E) à gauche (O)</string>
     <string name="hemisphere_tropic">Équateur : le soleil change de côté, photographiez les deux</string>
@@ -56,7 +45,7 @@
     <string name="confirm">OK</string>
 
     <!-- Menu appui long -->
-    <string name="menu_rename">Renommer</string>
+    <string name="menu_edit">Modifier</string>
     <string name="menu_delete">Supprimer</string>
     <string name="menu_export">Exporter</string>
     <string name="delete_group_title">Supprimer la série</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">Sept Jours D7 · calcul hors ligne · environ 2–4° d’azimut et 1° de hauteur · indicatif, ne remplace pas une étude d’ensoleillement réglementaire</string>
 
     <!-- Édition des points -->
-    <string name="result_edit_points">Éditer</string>
+    <string name="edit">Éditer</string>
     <string name="point_edit_title">Point %1$d · %2$s</string>
     <string name="point_edit_az">Azimut (0–360)</string>
     <string name="point_edit_el">Hauteur (0–90)</string>

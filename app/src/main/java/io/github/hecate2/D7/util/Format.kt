@@ -34,12 +34,22 @@ object Format {
         return String.format(Locale.US, "%02d:%02d", m / 60, m % 60)
     }
 
-    /** 经纬度写法：31.23°N 121.47°E。 */
-    fun coordinate(lat: Double, lon: Double): String {
-        val ns = if (lat >= 0) "N" else "S"
-        val ew = if (lon >= 0) "E" else "W"
-        return String.format(Locale.US, "%.2f°%s %.2f°%s", abs(lat), ns, abs(lon), ew)
-    }
+    /**
+     * 经纬度写法：**经度在前**，121.47°E  31.23°N。
+     *
+     * 顺序跟着输入走：建组与编辑对话框里都是经度在上、纬度在下（沿用的是「先念经度」的习惯），
+     * 显示反过来会让用户对着两行数字确认自己有没有录错。
+     */
+    fun coordinate(lat: Double, lon: Double): String = String.format(
+        Locale.US, "%.2f%s %.2f%s",
+        abs(lon), longitudeSuffix(lon), abs(lat), latitudeSuffix(lat),
+    )
+
+    /** 纬度的半球后缀：`°N` / `°S`。输入框右侧那一小格用的就是它。 */
+    fun latitudeSuffix(lat: Double): String = if (lat >= 0) "°N" else "°S"
+
+    /** 经度的半球后缀：`°E` / `°W`。 */
+    fun longitudeSuffix(lon: Double): String = if (lon >= 0) "°E" else "°W"
 
     /** 日期短写：10-02。 */
     fun dateShort(millis: Long, zoneId: String): String {

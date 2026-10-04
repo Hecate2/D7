@@ -9,7 +9,7 @@
 <rect x="12" y="68" width="226" height="92" rx="8" fill="#161618" stroke="#2A2A2E" stroke-width="1"/>
 <text x="24" y="92" font-size="14" font-weight="600" fill="#FFFFFF">阳台</text>
 <text x="226" y="92" font-size="13" font-weight="500" fill="#FFFFFF" text-anchor="end">冬至 1h00</text>
-<text x="24" y="110" font-size="10.5" fill="#8E8E93">10-02 采集 · 31.23°N 121.47°E</text>
+<text x="24" y="110" font-size="10.5" fill="#8E8E93">10-02 采集 · 121.47°E 31.23°N</text>
 <rect x="24" y="120" width="130" height="24" rx="12" fill="none" stroke="#3A3A3E" stroke-width="1"/>
 <text x="38" y="136" font-size="10.5" fill="#8E8E93">外部 12 点 · <tspan fill="#FFFFFF">78%</tspan></text>
 <rect x="160" y="120" width="66" height="24" rx="12" fill="none" stroke="#CAC2D1" stroke-width="1"/>
@@ -17,7 +17,7 @@
 <rect x="12" y="168" width="226" height="92" rx="8" fill="#161618" stroke="#2A2A2E" stroke-width="1"/>
 <text x="24" y="192" font-size="14" font-weight="600" fill="#FFFFFF">主卧</text>
 <text x="226" y="192" font-size="13" font-weight="500" fill="#FFFFFF" text-anchor="end">冬至 45分</text>
-<text x="24" y="210" font-size="10.5" fill="#8E8E93">10-02 采集 · 31.23°N 121.47°E</text>
+<text x="24" y="210" font-size="10.5" fill="#8E8E93">10-02 采集 · 121.47°E 31.23°N</text>
 <rect x="24" y="220" width="130" height="24" rx="12" fill="none" stroke="#3A3A3E" stroke-width="1"/>
 <text x="38" y="236" font-size="10.5" fill="#8E8E93">外部 8 点 · <tspan fill="#FFFFFF">52%</tspan></text>
 <rect x="160" y="220" width="66" height="24" rx="12" fill="none" stroke="#8E8E93" stroke-width="1" stroke-dasharray="4 3"/>

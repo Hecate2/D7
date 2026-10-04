@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 时区快捷键之二：按经度推算。一颗地球（外圆 + 一道子午线椭圆），
+     描边式，与手电筒/对焦那批图标同一套线宽与圆头。
+     只画经线不画赤道：赤道会把图形读成「地球」，而这里要的是「经度」。
+     横向 3.0–21.0、纵向 3.0–21.0（含描边外扩），严格以 (12,12) 为中心。
+     运行时用 contentDescription 写上「按下去会填成什么」，读屏据此报出具体的时区值。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="@color/paper"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 外圆：半径 9 -->
+    <path
+        android:pathData="M12,3 a9,9 0 1,0 0,18 a9,9 0 1,0 0,-18 Z"
+        android:strokeColor="@color/paper"
+        android:strokeWidth="1.9" />
+
+    <!-- 子午线：rx 6.2、ry 9 的椭圆，正好与南北两端相交 -->
+    <path
+        android:pathData="M12,3 a6.2,9 0 1,0 0,18 a6.2,9 0 1,0 0,-18 Z"
+        android:strokeColor="@color/paper"
+        android:strokeWidth="1.6" />
+</vector>

@@ -34,8 +34,10 @@ import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.Settings
 import io.github.hecate2.D7.ui.setPillSelected
+import io.github.hecate2.D7.ui.showGroupEditor
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Locales
+import io.github.hecate2.D7.util.Zones
 import io.github.hecate2.D7.util.applyKeepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import io.github.hecate2.D7.util.decodeDownsampled
@@ -52,7 +54,8 @@ import kotlin.math.abs
 
 /**
  * 结果页：日期药丸与计算档 → 主结果卡、当天时间线、国标辅助卡、全年曲线 → 点列编辑（删点、切换连线、单点/批量角度编辑）→ 导出与续拍。
- * 计算在后台协程执行，数据变化（续拍、改点）经仓库 StateFlow 自动触发重算。
+ * 元信息那行的「编辑」改的是组记录的组名、经纬度与时区，与列表页长按菜单进的是同一个对话框
+ * （见 [showGroupEditor]）。计算在后台协程执行，数据变化（续拍、改点、改地点）经仓库 StateFlow 自动触发重算。
  */
 class ResultActivity : ComponentActivity() {
 
@@ -104,6 +107,9 @@ class ResultActivity : ComponentActivity() {
         )
 
         binding.backButton.setOnClickListener { finish() }
+        binding.editGroup.setOnClickListener {
+            group?.let { showGroupEditor(this, it) }
+        }
         binding.pillWinter.setOnClickListener { choosePreset(Preset.WINTER) }
         binding.pillDahan.setOnClickListener { choosePreset(Preset.DAHAN) }
         binding.pillEquinox.setOnClickListener { choosePreset(Preset.EQUINOX) }
@@ -142,7 +148,7 @@ class ResultActivity : ComponentActivity() {
             R.string.result_meta,
             Format.coordinate(g.lat, g.lon),
             Format.dateShort(g.createdAt, g.zoneId),
-            zoneDisplay(g.zoneId),
+            Zones.label(resources, g.zoneId),
         )
         updatePills()
         updateChips(g)
@@ -233,9 +239,6 @@ class ResultActivity : ComponentActivity() {
         Preset.CUSTOM -> Format.monthDay(date)
     }
 
-    private fun zoneDisplay(zoneId: String): String =
-        if (zoneId == "Asia/Shanghai") getString(R.string.result_timezone_beijing) else zoneId
-
     // ---------------- 计算 ----------------
 
     private data class Computed(
@@ -323,8 +326,16 @@ class ResultActivity : ComponentActivity() {
         view.setTextColor(ContextCompat.getColor(this, grade.colorRes()))
     }
 
+    /**
+     * 全年曲线的缓存键。
+     *
+     * **必须含纬度、经度与时区**：它们只影响曲线、不影响界面状态，但恰恰是结果页能改的三样
+     * （元信息旁的「编辑」），漏掉就会出现「改了地点、主结果卡已经是新坐标、曲线还是旧城市」。
+     * 挡在键里的只有与曲线无关的日期档，这样来回点日期药丸不必重算 365 天。
+     */
     private fun curveKey(g: GroupRecord, mode: CalcMode, year: Int): String = buildString {
         append(mode.name).append('|').append(year)
+        append('|').append(g.lat).append(',').append(g.lon).append(',').append(g.zoneId)
         for (p in g.external) append('|').append(p.az).append(',').append(p.el).append(',').append(p.gapAfter)
         append('#')
         for (p in g.ceiling) append('|').append(p.az).append(',').append(p.el)

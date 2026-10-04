@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">Ceiling %1$d</string>
     <string name="group_ceiling_none">No ceiling shots</string>
 
-    <!-- New / rename -->
+    <!-- New / edit -->
     <string name="new_group_title">New photo set</string>
-    <string name="rename_group_title">Rename</string>
-    <string name="group_name_hint">Name, e.g. Living-room balcony</string>
+    <string name="edit_group_title">Edit photo set</string>
+    <string name="group_name_hint">Name</string>
+    <string name="group_name_default">Living-room balcony</string>
     <string name="group_name_required">Name required</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">Use GPS</string>
     <string name="gps_locating">Locating…</string>
     <string name="gps_done">Located %1$s</string>
     <string name="gps_done_accuracy">Located %1$s · ±%2$d m</string>
     <string name="gps_failed">No fix: try somewhere open, or type the coordinates</string>
-    <string name="gps_cap_gps_on">GPS on</string>
-    <string name="gps_cap_gps_off">GPS off</string>
-    <string name="gps_cap_net_on">Network on</string>
-    <string name="gps_cap_net_off">Network off</string>
-    <string name="gps_cap_fused_on">Fused on</string>
-    <string name="gps_cap_accuracy">Accuracy ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">Accuracy unknown</string>
-    <string name="gps_cap_waiting">No fix yet</string>
-    <string name="gps_cap_none">Location is off; type the coordinates</string>
     <string name="hemisphere_north">North: face south, shoot right (W) to left (E)</string>
     <string name="hemisphere_south">South: face north, shoot right (E) to left (W)</string>
     <string name="hemisphere_tropic">Equator: the sun swaps sides, so shoot both</string>
@@ -56,7 +45,7 @@
     <string name="confirm">OK</string>
 
     <!-- Long-press menu -->
-    <string name="menu_rename">Rename</string>
+    <string name="menu_edit">Edit</string>
     <string name="menu_delete">Delete</string>
     <string name="menu_export">Export</string>
     <string name="delete_group_title">Delete photo set</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">Seven Days D7 · offline calculation · about 2–4° azimuth and 1° elevation error · for reference, not an official daylight report</string>
 
     <!-- Point editing -->
-    <string name="result_edit_points">Edit</string>
+    <string name="edit">Edit</string>
     <string name="point_edit_title">Point %1$d · %2$s</string>
     <string name="point_edit_az">Azimuth (0–360)</string>
     <string name="point_edit_el">Elevation (0–90)</string>

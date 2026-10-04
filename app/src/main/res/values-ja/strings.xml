@@ -24,28 +24,17 @@
     <string name="group_ceiling_pill">天井 %1$d</string>
     <string name="group_ceiling_none">天井未撮影</string>
 
-    <!-- 新規 / 名前変更 -->
+    <!-- 新規 / 編集 -->
     <string name="new_group_title">新しい撮影セット</string>
-    <string name="rename_group_title">名前を変更</string>
-    <string name="group_name_hint">名前（例：リビングの窓）</string>
+    <string name="edit_group_title">撮影セットを編集</string>
+    <string name="group_name_hint">名前</string>
+    <string name="group_name_default">リビングの窓</string>
     <string name="group_name_required">名前を入力してください</string>
 
-    <string name="label_latitude_hint">31.23</string>
-    <string name="label_longitude_hint">121.47</string>
-    <string name="use_gps">GPSを使う</string>
     <string name="gps_locating">測位中…</string>
     <string name="gps_done">測位 %1$s</string>
     <string name="gps_done_accuracy">測位 %1$s · ±%2$d m</string>
     <string name="gps_failed">測位できません：屋外で試すか座標を手入力</string>
-    <string name="gps_cap_gps_on">GPS オン</string>
-    <string name="gps_cap_gps_off">GPS オフ</string>
-    <string name="gps_cap_net_on">通信 オン</string>
-    <string name="gps_cap_net_off">通信 オフ</string>
-    <string name="gps_cap_fused_on">融合 オン</string>
-    <string name="gps_cap_accuracy">精度 ±%1$d m</string>
-    <string name="gps_cap_accuracy_unknown">精度不明</string>
-    <string name="gps_cap_waiting">未測位</string>
-    <string name="gps_cap_none">位置情報がオフ · 座標を入力</string>
     <string name="hemisphere_north">北緯：南を向いて、右（西）から左（東）へ</string>
     <string name="hemisphere_south">南緯：北を向いて、右（東）から左（西）へ</string>
     <string name="hemisphere_tropic">赤道付近：太陽が南北、逆になる。両側を撮る</string>
@@ -56,7 +45,7 @@
     <string name="confirm">OK</string>
 
     <!-- 長押しメニュー -->
-    <string name="menu_rename">名前を変更</string>
+    <string name="menu_edit">編集</string>
     <string name="menu_delete">削除</string>
     <string name="menu_export">書き出し</string>
     <string name="delete_group_title">撮影セットを削除</string>
@@ -233,7 +222,7 @@
     <string name="export_png_footer">七日 D7 · 端末内で計算 · 方位 2–4°、仰角 1° 程度の誤差 · 参考用で、正式の日照調査報告の代わりにはなりません</string>
 
     <!-- 点の編集 -->
-    <string name="result_edit_points">編集</string>
+    <string name="edit">編集</string>
     <string name="point_edit_title">%1$d 点目 · %2$s</string>
     <string name="point_edit_az">方位角（0–360）</string>
     <string name="point_edit_el">仰角（0–90）</string>

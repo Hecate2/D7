@@ -6,7 +6,12 @@ import android.content.ContentValues
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
+import android.widget.EditText
 import io.github.hecate2.D7.data.GroupRepository
+import org.hamcrest.Description
+import org.hamcrest.Matcher
+import org.hamcrest.TypeSafeMatcher
 
 /** 仪器测试公共助手：清库、轮询等待、往相册插入/查询测试图片。 */
 object TestSupport {
@@ -61,4 +66,30 @@ object TestSupport {
     fun mediaExists(resolver: ContentResolver, uri: Uri): Boolean =
         resolver.query(uri, arrayOf(MediaStore.Images.Media._ID), null, null, null)
             ?.use { it.count > 0 } ?: false
+
+    /** 断言输入框里的文字全部被选中。建组与编辑两个对话框的用例共用。 */
+    fun selectedAll(): Matcher<View> = object : TypeSafeMatcher<View>() {
+        override fun describeTo(description: Description) {
+            description.appendText("输入框内文字全选")
+        }
+
+        override fun matchesSafely(item: View): Boolean {
+            val edit = item as? EditText ?: return false
+            return edit.text.isNotEmpty() &&
+                edit.selectionStart == 0 &&
+                edit.selectionEnd == edit.text.length
+        }
+    }
+
+    /** 断言输入框里只有光标、没有选区。 */
+    fun noSelection(): Matcher<View> = object : TypeSafeMatcher<View>() {
+        override fun describeTo(description: Description) {
+            description.appendText("输入框内只有光标、没有选中任何文字")
+        }
+
+        override fun matchesSafely(item: View): Boolean {
+            val edit = item as? EditText ?: return false
+            return edit.selectionStart == edit.selectionEnd
+        }
+    }
 }
