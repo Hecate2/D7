@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
-import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -71,6 +70,15 @@ class CaptureActivity : ComponentActivity() {
         /** 自动对焦的重复间隔：取景中每隔几秒重新对一次中心，兼顾耗电与“始终合焦”。 */
         private const val AUTO_FOCUS_INTERVAL_MS = 3000L
 
+        /** 静置漂移的采样间隔（毫秒）：姿态每秒数十次，逐样本存窗没有额外价值。 */
+        private const val DRIFT_SAMPLE_MS = 250L
+
+        /** 静置漂移的采样窗口长度，约 6 秒。 */
+        private const val DRIFT_SAMPLE_COUNT = 24
+
+        /** 漂移样本少于这个数（约 3 秒）不作判定。 */
+        private const val DRIFT_MIN_SAMPLES = 12
+
         /**
          * 「显示线」对话框的条目（文案与线色成对），下标顺序与 [CaptureSettings] 的
          * setLineChecked/lineChecked 一致。线色与 [io.github.hecate2.D7.view.ViewfinderOverlayView]
@@ -132,6 +140,17 @@ class CaptureActivity : ComponentActivity() {
     private val jitterAz = ArrayDeque<Double>()
     private val jitterEl = ArrayDeque<Double>()
     private var jitterLevel = LEVEL_UNKNOWN
+
+    /**
+     * 静置漂移的采样窗与最近一次判定值。
+     *
+     * 见 [CompassCheck]：平台精度在本机上恒为「高」，只能自己测。漂移值刻意保留上一次
+     * 的结果而不随设备一动就清零——否则人在走动时药丸会掉回「高」，那还是一句谎话；
+     * 粘住旧值则至少稳定，站稳三秒后自然被新数据覆盖。
+     */
+    private val driftAz = ArrayDeque<Double>()
+    private var lastDriftSampleAt = 0L
+    private var driftDeg: Double? = null
 
     /** 快门长按与删除长按共用的主线程延时队列。 */
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -205,6 +224,9 @@ class CaptureActivity : ComponentActivity() {
         jitterAz.clear()
         jitterEl.clear()
         jitterLevel = LEVEL_UNKNOWN
+        driftAz.clear()
+        driftDeg = null
+        lastDriftSampleAt = 0L
     }
 
     override fun onDestroy() {
@@ -305,16 +327,18 @@ class CaptureActivity : ComponentActivity() {
         sampleJitter(pose)
         if (pose.accuracy != lastAccuracy) {
             lastAccuracy = pose.accuracy
-            updatePrecisionUi()
+            updateCompassUi()
         }
         val now = SystemClock.uptimeMillis()
         if (now - lastUiAt < POSE_THROTTLE_MS) return
         lastUiAt = now
+        sampleDrift(pose, now)
         val level = computeJitterLevel()
         if (level != jitterLevel) {
             jitterLevel = level
-            updatePrecisionUi()
+            updateJitterUi()
         }
+        updateCompassUi()
         updateReading(pose)
         updateAimWarning(pose)
         binding.overlay.pose = pose
@@ -418,26 +442,35 @@ class CaptureActivity : ComponentActivity() {
         }
     }
 
-    /** 刷新两枚精度药丸：罗盘校准取系统精度回调（未回调前为未知），读数精度取抖动档位。 */
+    /** 刷新两枚精度药丸：罗盘校准取定档结果，读数精度取抖动档位。 */
     private fun updatePrecisionUi() {
-        val calibGrade = when (lastAccuracy) {
-            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> Grade.GOOD
-            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> Grade.MID
-            SensorManager.SENSOR_STATUS_ACCURACY_LOW,
-            SensorManager.SENSOR_STATUS_UNRELIABLE -> Grade.LOW
-            else -> Grade.UNKNOWN
-        }
+        updateCompassUi()
+        updateJitterUi()
+    }
+
+    /**
+     * 罗盘校准药丸：平台精度与静置漂移取较差的一档（见 [CompassCheck]）。
+     *
+     * 真正要紧的是让它能变。本机 HAL 恒定上报「高」时，这一枚药丸过去从头到尾都是绿的，
+     * 用户只能当装饰；漂移这一路补上它才重新有信息量。
+     */
+    private fun updateCompassUi() {
+        val grade = CompassCheck.grade(lastAccuracy, driftDeg)
         paintPill(
             binding.calibPill,
-            when (calibGrade) {
+            R.string.capture_calib_label,
+            when (grade) {
                 Grade.GOOD -> R.string.capture_calib_high
-                Grade.MID -> R.string.capture_calib_medium
+                Grade.MID -> R.string.capture_calib_mid
                 Grade.LOW -> R.string.capture_calib_low
-                Grade.UNKNOWN -> R.string.capture_calib_unreliable
+                Grade.UNKNOWN -> R.string.capture_calib_unknown
             },
-            calibGrade.colorRes(),
+            grade.colorRes(),
         )
+    }
 
+    /** 读数精度药丸：最近窗口内读数的极差定档。 */
+    private fun updateJitterUi() {
         val jitterGrade = when (jitterLevel) {
             LEVEL_HIGH -> Grade.GOOD
             LEVEL_MEDIUM -> Grade.MID
@@ -446,9 +479,10 @@ class CaptureActivity : ComponentActivity() {
         }
         paintPill(
             binding.jitterPill,
+            R.string.capture_jitter_label,
             when (jitterGrade) {
                 Grade.GOOD -> R.string.capture_jitter_high
-                Grade.MID -> R.string.capture_jitter_medium
+                Grade.MID -> R.string.capture_jitter_mid
                 Grade.LOW -> R.string.capture_jitter_low
                 Grade.UNKNOWN -> R.string.capture_jitter_unknown
             },
@@ -456,8 +490,36 @@ class CaptureActivity : ComponentActivity() {
         )
     }
 
-    private fun paintPill(view: TextView, textRes: Int, colorRes: Int) {
-        view.setText(textRes)
+    /**
+     * 静置漂移采样：设备基本不动（读数抖动已达中或更好）时，每 [DRIFT_SAMPLE_MS] 收一个
+     * 方位角，窗口满 [DRIFT_SAMPLE_COUNT] 个后取出相对最新样本的最大偏移。
+     *
+     * 人拿着手机转一圈与罗盘在飘，从方位角上根本分不开，所以「没动」是前提；一动就清空
+     * 窗口，已算出的漂移值则按 [driftDeg] 的说明粘住。
+     */
+    private fun sampleDrift(pose: Pose, now: Long) {
+        if (jitterLevel == LEVEL_LOW) {
+            driftAz.clear()
+            lastDriftSampleAt = 0L
+            return
+        }
+        if (now - lastDriftSampleAt < DRIFT_SAMPLE_MS) return
+        lastDriftSampleAt = now
+        driftAz.addLast(pose.frontAzDeg)
+        while (driftAz.size > DRIFT_SAMPLE_COUNT) driftAz.removeFirst()
+        if (driftAz.size < DRIFT_MIN_SAMPLES) return
+        val newest = driftAz.last()
+        var max = 0.0
+        for (i in driftAz.indices) {
+            val d = abs(Angles.shortArcDelta(newest, driftAz.elementAt(i)))
+            if (d > max) max = d
+        }
+        driftDeg = max
+    }
+
+    /** 药丸文案 = 标签 + 空格 + 档位措辞。拆成两条资源是为了让每种语言各自挑最短的写法。 */
+    private fun paintPill(view: TextView, labelRes: Int, valueRes: Int, colorRes: Int) {
+        view.text = getString(labelRes) + " " + getString(valueRes)
         view.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, colorRes))
     }
 
