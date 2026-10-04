@@ -1,11 +1,7 @@
 package io.github.hecate2.D7.camera
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.media.MediaScannerConnection
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.camera.core.ImageCapture
@@ -13,7 +9,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
 import io.github.hecate2.D7.data.Region
-import io.github.hecate2.D7.util.publishPendingMediaStore
+import io.github.hecate2.D7.util.PublicDestination
+import io.github.hecate2.D7.util.publishToPublicOrPrivate
 import io.github.hecate2.D7.util.sanitizeGroupName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -110,59 +107,24 @@ class PhotoStore(private val context: Context) {
         }
     }
 
+    /** 发布到系统相册；三级兜底见 [publishToPublicOrPrivate]。 */
     private fun publish(temp: File, meta: PhotoMeta): Uri? {
-        val displayName = buildDisplayName(meta)
         val folder = meta.photoFolder
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            publishPendingMediaStore(
-                context = context,
-                collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                displayName = displayName,
-                mime = "image/jpeg",
+        return publishToPublicOrPrivate(
+            context = context,
+            displayName = buildDisplayName(meta),
+            mime = "image/jpeg",
+            public = PublicDestination(
                 relativeDir = "${Environment.DIRECTORY_PICTURES}/D7/$folder",
-            ) { sink -> temp.inputStream().use { it.copyTo(sink) } }
-        } else {
-            publishLegacy(temp, displayName, folder)
-        }
-    }
-
-    /** Android 9 及以下：写公共 Pictures 目录并用媒体扫描登记；无权限或失败回退应用私有目录。 */
-    private fun publishLegacy(temp: File, displayName: String, folder: String): Uri? {
-        val hasPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (hasPermission) {
-            try {
-                val publicDir = File(
+                collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                legacyPublicDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                     "D7/$folder",
-                )
-                if (publicDir.exists() || publicDir.mkdirs()) {
-                    val dest = File(publicDir, displayName)
-                    temp.copyTo(dest, overwrite = true)
-                    // 扫描入媒体库是异步的，只 fire-and-forget 登记；返回 URI 不等回调
-                    MediaScannerConnection.scanFile(
-                        context,
-                        arrayOf(dest.absolutePath),
-                        arrayOf("image/jpeg"),
-                        null,
-                    )
-                    return Uri.fromFile(dest)
-                }
-            } catch (_: Exception) {
-                // 落入私有目录回退
-            }
-        }
-        return try {
-            val privateDir = File(context.filesDir, "captures/$folder")
-            if (!privateDir.exists() && !privateDir.mkdirs()) return null
-            val dest = File(privateDir, displayName)
-            temp.copyTo(dest, overwrite = true)
-            Uri.fromFile(dest)
-        } catch (_: Exception) {
-            null
-        }
+                ),
+            ),
+            privateDir = File(context.filesDir, "captures/$folder"),
+            scan = true,
+        ) { sink -> temp.inputStream().use { it.copyTo(sink) } }?.uri
     }
 
     private fun buildDisplayName(meta: PhotoMeta): String {

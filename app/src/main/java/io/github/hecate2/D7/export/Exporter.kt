@@ -1,19 +1,15 @@
 package io.github.hecate2.D7.export
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
-import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.core.content.ContextCompat
 import io.github.hecate2.D7.R
 import io.github.hecate2.D7.core.Angles
 import io.github.hecate2.D7.core.DailySunlight
@@ -22,7 +18,9 @@ import io.github.hecate2.D7.core.Solar
 import io.github.hecate2.D7.data.GroupRecord
 import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.util.Format
-import io.github.hecate2.D7.util.publishPendingMediaStore
+import io.github.hecate2.D7.util.PublicDestination
+import io.github.hecate2.D7.util.PublishWhere
+import io.github.hecate2.D7.util.publishToPublicOrPrivate
 import io.github.hecate2.D7.util.sanitizeGroupName
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -441,6 +439,10 @@ object Exporter {
 
     // ---------------- 落盘 ----------------
 
+    /**
+     * 落盘。三级兜底（MediaStore / 公共目录 / 应用私有目录）见
+     * [publishToPublicOrPrivate]；这里只把落点翻译成给用户看的位置说明。
+     */
     private fun publish(
         context: Context,
         bytes: ByteArray,
@@ -452,39 +454,23 @@ object Exporter {
         locationLabel: String,
         scan: Boolean,
     ): Outcome {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            publishPendingMediaStore(
-                context, mediaCollection, displayName, mime, mediaRelativeDir,
-            ) { it.write(bytes) }?.let { return Outcome("$locationLabel/$displayName", null) }
-        } else if (hasWritePermission(context)) {
-            try {
-                if (legacySubDir.exists() || legacySubDir.mkdirs()) {
-                    val dest = File(legacySubDir, displayName)
-                    dest.writeBytes(bytes)
-                    if (scan) {
-                        MediaScannerConnection.scanFile(context, arrayOf(dest.absolutePath), arrayOf(mime), null)
-                    }
-                    return Outcome("$locationLabel/$displayName", null)
-                }
-            } catch (_: Exception) {
-                // 落入应用私有目录回退
-            }
+        val result = publishToPublicOrPrivate(
+            context = context,
+            displayName = displayName,
+            mime = mime,
+            public = PublicDestination(mediaRelativeDir, mediaCollection, legacySubDir),
+            privateDir = appPrivateDir(context),
+            scan = scan,
+        ) { it.write(bytes) } ?: return Outcome(null, "save failed")
+        return if (result.where == PublishWhere.PUBLIC) {
+            Outcome("$locationLabel/$displayName", null)
+        } else {
+            Outcome("Android/data/${context.packageName}/files/D7/$displayName", null)
         }
-        return fallbackToAppDir(context, bytes, displayName)
     }
 
-    private fun fallbackToAppDir(context: Context, bytes: ByteArray, displayName: String): Outcome = try {
-        val dir = File(context.getExternalFilesDir(null), "D7")
-        if (!dir.exists() && !dir.mkdirs()) throw IllegalStateException("mkdir failed")
-        File(dir, displayName).writeBytes(bytes)
-        Outcome("Android/data/${context.packageName}/files/D7/$displayName", null)
-    } catch (_: Exception) {
-        Outcome(null, "save failed")
-    }
-
-    private fun hasWritePermission(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-            PackageManager.PERMISSION_GRANTED
+    /** 兜底目录：应用外部私有目录下的 D7。 */
+    private fun appPrivateDir(context: Context): File = File(context.getExternalFilesDir(null), "D7")
 
     private fun fileName(context: Context, groupName: String, ext: String): String {
         val stamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date())

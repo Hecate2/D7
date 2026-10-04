@@ -1,11 +1,16 @@
 package io.github.hecate2.D7.util
 
+import android.Manifest
 import android.content.ContentValues
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -106,3 +111,84 @@ fun publishPendingMediaStore(
         null
     }
 }
+
+/** 落盘去向：公共目录（相册、下载）还是应用私有目录。 */
+enum class PublishWhere { PUBLIC, APP_PRIVATE }
+
+/** 落盘结果。[where] 说明去了哪，[uri] 是它的地址。 */
+class PublishResult(val where: PublishWhere, val uri: Uri)
+
+/**
+ * 公共目录的落点。同一处地方要用两种说法描述：MediaStore 要 [relativeDir] 与 [collection]，
+ * Android 9 及以下要 [legacyPublicDir]。三者必须指向同一个目录，否则同一个文件在不同系统版本
+ * 上会分头落进两个地方；合成一个类型就是为了让这个约束只有一处可写错。
+ */
+class PublicDestination(
+    /** MediaStore 的 `RELATIVE_PATH`，例如 `Pictures/D7/阳台`。 */
+    val relativeDir: String,
+    /** MediaStore 的集合，图片用 Images、CSV 用 Downloads。 */
+    val collection: Uri,
+    /** Android 9 及以下直接写的公共目录，与 [relativeDir] 指向同一处。 */
+    val legacyPublicDir: File,
+)
+
+/**
+ * 把一份内容落进公共目录，三级兜底：Android 10 及以上走 MediaStore 待发布条目；
+ * 10 以下有写权限就写公共目录、需要时用媒体扫描登记；两条都不成则退到应用私有目录。
+ *
+ * [write] 只负责把字节写进给定的流，三级落盘都走它。拍照（`PhotoStore`）与导出
+ * （`Exporter`）原本各写了一遍这套兜底，差别只有目录、文件名与调用方怎么包装返回值，
+ * 于是「哪一级该扫媒体库」「失败退到哪」这类事有两份可以各自走偏的说法。
+ *
+ * 私有目录那一级不再登记媒体库：它本来就不在媒体库的扫描范围里。
+ *
+ * @param scan 写进公共目录后是否登记媒体库。CSV 这类非媒体文件不需要，登记了反而在
+ *   相册里多出看不懂的条目。
+ * @return 落盘结果；连私有目录都没写成时返回 null。
+ */
+fun publishToPublicOrPrivate(
+    context: Context,
+    displayName: String,
+    mime: String,
+    public: PublicDestination,
+    privateDir: File,
+    scan: Boolean,
+    write: (OutputStream) -> Unit,
+): PublishResult? {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        publishPendingMediaStore(
+            context, public.collection, displayName, mime, public.relativeDir, write,
+        )?.let { return PublishResult(PublishWhere.PUBLIC, it) }
+    } else if (hasWritePermission(context)) {
+        try {
+            if (public.legacyPublicDir.exists() || public.legacyPublicDir.mkdirs()) {
+                val dest = File(public.legacyPublicDir, displayName)
+                dest.outputStream().use(write)
+                if (scan) {
+                    MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(dest.absolutePath),
+                        arrayOf(mime),
+                        null,
+                    )
+                }
+                return PublishResult(PublishWhere.PUBLIC, Uri.fromFile(dest))
+            }
+        } catch (_: Exception) {
+            // 落入应用私有目录回退
+        }
+    }
+    return try {
+        if (!privateDir.exists() && !privateDir.mkdirs()) return null
+        val dest = File(privateDir, displayName)
+        dest.outputStream().use(write)
+        PublishResult(PublishWhere.APP_PRIVATE, Uri.fromFile(dest))
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/** 写公共目录需要的外部存储权限；Android 10 及以上走 MediaStore，不查这个。 */
+private fun hasWritePermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+        PackageManager.PERMISSION_GRANTED
