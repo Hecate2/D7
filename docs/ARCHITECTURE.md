@@ -147,7 +147,7 @@
 
 | 项 | 字节 | 说明 |
 | --- | --- | --- |
-| `classes.dex` | 875,404 | 压缩后约占 52%，APK 的大头 |
+| `classes.dex` | 875,280 | 压缩后约占 52%，APK 的大头 |
 | `resources.arsc` | 109,556 | 存根不压缩；八种语言的字符串池占大头 |
 | `res/` | 61,636 | 11 个布局 36.6 KB + 19 个 drawable 12.9 KB + 启动器图标 11.2 KB + `xml/locales_config.xml` 1.0 KB |
 | `AndroidManifest.xml` | 7,388 | |
@@ -166,9 +166,9 @@
 - **把启动器图标 `mipmap/ic_launcher_foreground.webp`（10,268 字节）改成矢量**。它是带径向光晕与玻璃渐变的照片级位图（VP8 有损，432×432），矢量化必然掉画质，换 8 KB 不值。
 - **用 `org.json` 替掉 kotlinx.serialization**。序列化相关类在混淆包里约 62 个，估算值不了多少字节，而手写 JSON 会实打实地牺牲可维护性。
 
-对照参考：**关掉 R8 的 release 包是 2,903,779 字节**，dex 从 875,404 涨到 7,796,400——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
+对照参考：**关掉 R8 的 release 包是 2,903,779 字节**，dex 从 875,280 涨到 7,796,116——R8 砍掉了 88.8% 的 dex。需要排查「R8 藏起来的东西」时，可临时把 `isMinifyEnabled`/`isShrinkResources` 置 false 打一份对照包，但交付产物必须始终是 R8 包。
 
-0.1.3 的那批结构重构（合并三处按键手势、折线采样收成 `AzElTrack`、落盘三级兜底收进 util 等）对产物体积的影响是零：重构前后打 release 包都是 602,318 字节，dex 条目只在 236 字节的量级上浮动，被 zipalign 的填充吃掉。
+0.1.3 的那批结构重构（合并三处按键手势、折线采样收成 `AzElTrack`、落盘三级兜底收进 util、导出结果删掉冗余字段等）对产物体积的影响是零：重构前后打 release 包都是 602,318 字节。dex 条目从 875,640 一路降到 875,280（连同删字段那一步共减 360 字节），这点零头被 zipalign 的填充吃掉，总量一位都没动。**看这类改动值不值，看 dex 而不是看 APK 总量，后者在这些量级上量不出来。**
 
 本机缺什么装什么：JDK 与 Gradle 用 Homebrew 安装，Android SDK 用命令行工具（cmdline-tools）安装 platform-tools、platforms;android-35、build-tools;35.0.0 并接受许可。工程内 `gradle.properties` 指定 JDK 17 路径，保证命令行与 IDE 行为一致。
 
