@@ -82,6 +82,11 @@ android {
             "**/DebugProbesKt.bin",
             "**/kotlin-tooling-metadata.json",
         )
+        // camera-core 的 AAR 自带 libimage_processing_util_jni.so（arm64+v7a 共 49 KB，占 APK 8.7%）。
+        // 它只服务 YUV/bitmap 互转与 OpenGL 渲染，D7 只有 Preview + ImageCapture 两条用例，
+        // 走不到这些 native 方法；ImageProcessingUtil 类本身仍保留（R8 按 native 方法名 keep），
+        // 缺的只是库文件。真机 arm64 实拍已验证：照片正常落盘、EXIF 完整、无 UnsatisfiedLinkError。
+        jniLibs.excludes += setOf("**/libimage_processing_util_jni.so")
     }
 
     lint {

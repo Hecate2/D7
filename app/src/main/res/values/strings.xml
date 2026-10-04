@@ -22,8 +22,7 @@
     <string name="rename_group_title">改名</string>
     <string name="group_name_hint">组名，例如：客厅阳台</string>
     <string name="group_name_required">组名不能为空</string>
-    <string name="label_latitude">纬度</string>
-    <string name="label_longitude">经度</string>
+
     <string name="label_latitude_hint">31.23</string>
     <string name="label_longitude_hint">121.47</string>
     <string name="use_gps">用 GPS 定位</string>
