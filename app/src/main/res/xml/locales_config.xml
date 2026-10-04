@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  系统级「按应用设置语言」的语言清单（Android 13+）。
-  当前只发布中文：values/ 即中文默认资源，故此处只声明 zh-Hans。
-  将来真正补齐 values-en/ 时，再把 en 加回本清单——在那之前不声明，
-  免得用户在系统里选了 English 却拿到中文界面。
+  系统级「按应用设置语言」清单（Android 13+）。
+  此前只声明 zh-Hans，因为当时只发布中文：界面里选英语却拿到中文界面
+  比没有这个入口更糟。八种语言现已补齐，清单随之加满。
+  应用内那枚「文A」药丸仍是自己那条路，见 util/Locales.kt。
 -->
 <locale-config xmlns:android="http://schemas.android.com/apk/res/android">
     <locale android:name="zh-Hans" />
+    <locale android:name="en" />
+    <locale android:name="ja" />
+    <locale android:name="ko" />
+    <locale android:name="de" />
+    <locale android:name="fr" />
+    <locale android:name="es" />
+    <locale android:name="ru" />
 </locale-config>

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">D7</string>
+
+    <!-- 촬영 세트 -->
+    <string name="groups_title">촬영 세트</string>
+    <string name="groups_new">+ 새로</string>
+    <string name="groups_subtitle">창문마다 한 세트 · 이 기기에만 저장</string>
+    <string name="groups_empty">아직 세트가 없습니다\n“+ 새로”로 이름을 붙이고\n측정할 창문 앞에 서세요</string>
+
+    <!-- 언어 -->
+    <string name="language">표시 언어</string>
+    <string name="language_system">시스템 언어</string>
+
+    <string name="group_untested">미측정</string>
+    <string name="group_winter">동지 %1$s</string>
+    <string name="group_meta_captured">%1$s 촬영 · %2$s</string>
+    <string name="group_meta_unshot">%1$s 생성 · 미촬영</string>
+    <string name="group_external_prefix">외부 %1$d · </string>
+    <string name="group_external_percent">%1$d%%</string>
+    <string name="group_external_none">외부 미촬영</string>
+    <string name="group_ceiling_pill">천장 %1$d</string>
+    <string name="group_ceiling_none">천장 미촬영</string>
+
+    <!-- 새로 만들기 / 이름 변경 -->
+    <string name="new_group_title">새 촬영 세트</string>
+    <string name="rename_group_title">이름 변경</string>
+    <string name="group_name_hint">이름 (예: 거실 창가)</string>
+    <string name="group_name_required">이름을 입력하세요</string>
+
+    <string name="label_latitude_hint">31.23</string>
+    <string name="label_longitude_hint">121.47</string>
+    <string name="use_gps">GPS 사용</string>
+    <string name="gps_locating">위치 확인 중…</string>
+    <string name="gps_done">위치 %1$s</string>
+    <string name="gps_done_accuracy">위치 %1$s · ±%2$d m</string>
+    <string name="gps_failed">위치를 못 잡았습니다: 실외에서 다시 시도하거나 좌표를 직접 입력</string>
+    <string name="gps_cap_gps_on">GPS 켬</string>
+    <string name="gps_cap_gps_off">GPS 끔</string>
+    <string name="gps_cap_net_on">통신 켬</string>
+    <string name="gps_cap_net_off">통신 끔</string>
+    <string name="gps_cap_fused_on">융합 켬</string>
+    <string name="gps_cap_accuracy">정확도 ±%1$d m</string>
+    <string name="gps_cap_accuracy_unknown">정확도 알 수 없음</string>
+    <string name="gps_cap_waiting">아직 위치 없음</string>
+    <string name="gps_cap_none">위치 꺼짐 · 좌표를 직접 입력</string>
+    <string name="hemisphere_north">북반구: 남을 보고 오른쪽(서)에서 왼쪽(동)으로</string>
+    <string name="hemisphere_south">남반구: 북을 보고 오른쪽(동)에서 왼쪽(서)으로</string>
+    <string name="hemisphere_tropic">적도 부근: 태양이 양쪽으로 옮겨 가므로 둘 다 찍으세요</string>
+    <string name="hemisphere_unknown">위도를 넣으면 촬영 팁이 나옵니다</string>
+    <string name="invalid_latlon">위도(−90..90)와 경도(−180..180)를 확인하세요</string>
+    <string name="start_capture">촬영 시작</string>
+    <string name="cancel">취소</string>
+    <string name="confirm">확인</string>
+
+    <!-- 길게 누르기 메뉴 -->
+    <string name="menu_rename">이름 변경</string>
+    <string name="menu_delete">삭제</string>
+    <string name="menu_export">내보내기</string>
+    <string name="delete_group_title">촬영 세트 삭제</string>
+    <string name="delete_group_message">“%1$s”의 각도와 데이터를 삭제합니다.</string>
+    <string name="delete_group_with_photos">사진 %1$d장도 삭제(되돌릴 수 없음)</string>
+    <string name="delete_group_photos_failed">사진 %1$d장을 삭제하지 못했습니다</string>
+
+    <!-- 촬영 -->
+    <string name="capture_title">촬영</string>
+    <string name="capture_meta">%1$s · 진북 보정됨</string>
+    <string name="capture_reading">고도 %1$s · 방위 %2$s</string>
+    <string name="capture_plus180">+180°</string>
+    <string name="capture_no_photo">사진 없음</string>
+    <string name="capture_no_photo_on">각도만 기록, 사진은 저장 안 함</string>
+    <string name="capture_no_photo_off">사진 저장을 되돌립니다</string>
+    <string name="capture_chip_external">건물</string>
+    <string name="capture_chip_ceiling">천장</string>
+    <string name="capture_hint_north">남을 보고 오른쪽(서)에서 왼쪽(동)으로</string>
+    <string name="capture_hint_south">북을 보고 오른쪽(동)에서 왼쪽(서)으로</string>
+    <string name="capture_hint_tropic">적도 부근: 관심 있는 쪽을 찍으세요</string>
+    <string name="capture_hint_seg">탭: 점 연결 · 길게: 지평선 빈 구간</string>
+    <string name="capture_dir_first_west">서 · 먼저</string>
+    <string name="capture_dir_first_east">동 · 먼저</string>
+    <string name="capture_dir_last_east">동 · 나중</string>
+    <string name="capture_dir_last_west">서 · 나중</string>
+    <string name="capture_coverage">방위 %1$s°</string>
+    <string name="capture_coverage_north">90–270</string>
+    <string name="capture_coverage_south">270–90</string>
+    <string name="capture_show_lines">선</string>
+    <string name="capture_done">완료</string>
+    <string name="capture_delete">삭제</string>
+    <string name="capture_press_hint">길게: 지평선을 거쳐 직전 점에 연결</string>
+    <string name="capture_delete_hint">길게 눌러 오른쪽의 가장 가까운 점 삭제</string>
+    <string name="capture_torch">손전등</string>
+    <string name="capture_focus">초점</string>
+    <string name="capture_camera_needed">촬영에는 카메라 권한이 필요합니다\n눌러서 허용</string>
+    <string name="capture_camera_failed">카메라를 열지 못했습니다. 각도는 기록됩니다</string>
+    <string name="capture_sensor_missing">자세 센서가 없어 고도와 방위를 얻을 수 없습니다</string>
+    <string name="capture_no_pose">센서 값을 기다리는 중</string>
+    <string name="capture_ceiling_longpress">천장은 탭만 됩니다</string>
+    <string name="capture_photo_failed">사진 저장은 실패했지만 각도는 남겼습니다</string>
+    <string name="capture_deleted">%1$d번 점 삭제(사진은 그대로)</string>
+    <string name="capture_delete_no_candidate">오른쪽에 지울 점이 없습니다</string>
+    <string name="capture_calib_label">나침반</string>
+    <string name="capture_calib_unknown">?</string>
+    <string name="capture_calib_high">양호</string>
+    <string name="capture_calib_mid">보통</string>
+    <string name="capture_calib_low">나쁨 · 8자</string>
+    <string name="capture_below_horizon">고도가 0도 아래입니다\n렌즈를 지평선 위로 올리세요</string>
+    <string name="capture_jitter_label">측정</string>
+    <string name="capture_jitter_unknown">?</string>
+    <string name="capture_jitter_high">양호</string>
+    <string name="capture_jitter_mid">보통</string>
+    <string name="capture_jitter_low">나쁨 · 흔들지 마세요</string>
+    <string name="capture_roll">롤 %1$s</string>
+    <string name="lines_title">선</string>
+    <string name="line_summer">하지 궤적</string>
+    <string name="line_equinox">춘분·추분 궤적</string>
+    <string name="line_winter">동지 궤적</string>
+    <string name="line_today">오늘 궤적</string>
+    <string name="line_segments">점 연결선</string>
+    <string name="line_horizon">지평선</string>
+    <string name="line_vertical">수직선</string>
+    <string name="line_fill">차폐 영역</string>
+    <string name="line_ground">지면</string>
+
+    <!-- 결과 -->
+    <string name="result_title">결과 · %1$s</string>
+    <string name="result_meta">%1$s · %2$s 촬영 · %3$s</string>
+    <string name="result_pill_winter">동지</string>
+    <string name="result_pill_dahan">대한</string>
+    <string name="result_pill_equinox">춘분</string>
+    <string name="result_pill_summer">하지</string>
+    <string name="result_pill_custom">직접 지정</string>
+    <string name="result_mode_external">외부만</string>
+    <string name="result_mode_both">외부 + 천장</string>
+    <string name="result_mode_ceiling">천장만</string>
+    <string name="result_mode_ceiling_locked">천장을 찍으면 이 두 모드가 열립니다</string>
+    <string name="result_mode_ceiling_empty">천장이 비어 “외부만”으로 되돌렸습니다</string>
+    <string name="result_main_label">%1$s 직사광 · %2$s</string>
+    <string name="result_computing">계산 중…</string>
+    <string name="result_gap_note">전부 빈 구간에서</string>
+    <string name="result_sunrise_sunset">일출 %1$s · 일몰 %2$s</string>
+    <string name="result_polar_day">백야</string>
+    <string name="result_polar_night">극야</string>
+    <string name="result_timeline">하루 변화</string>
+    <string name="result_timeline_legend">흰색=직사광 진회색=차폐</string>
+    <string name="result_gb_label">대한 8:00–16:00 유효 직사광</string>
+    <string name="result_gb_hint">GB 50180 기준 · Ⅰ Ⅱ Ⅲ Ⅶ구역: 대한 8–16에 2시간 이상(소도시 3시간) · Ⅳ구역: 9–15에 1시간 이상 · Ⅴ Ⅵ구역: 동지 9–15에 1시간 이상 · 실제 기준은 지역의 규정에 따름</string>
+    <string name="result_year_label">연중 직사광 시간(시간/일)</string>
+    <string name="result_points">촬영점</string>
+    <string name="result_points_count">외부 %1$d점 · 천장 %2$d점</string>
+    <string name="result_point_title">%1$s%2$d · %3$s · %4$s</string>
+    <string name="result_region_external">외</string>
+    <string name="result_region_ceiling">천</string>
+    <string name="result_seg_direct">직선</string>
+    <string name="result_seg_horizon">지평선</string>
+    <string name="result_delete">삭</string>
+    <string name="result_export_csv">CSV 내보내기</string>
+    <string name="result_export_image">이미지 내보내기</string>
+    <string name="result_go_capture">촬영으로</string>
+    <string name="result_export_done">%1$s 에 저장했습니다</string>
+    <string name="result_export_failed">내보내기 실패: 용량과 권한을 확인하세요</string>
+    <string name="result_export_busy">내보내는 중입니다. 잠시만 기다리세요</string>
+    <string name="result_no_data">먼저 촬영하세요</string>
+    <string name="result_coverage_toofew">점이 적음 · 결과가 다들 낙관적입니다</string>
+    <string name="result_coverage_low">반원 %1$d%%만 · 빠졌을 수 있습니다</string>
+    <string name="result_coverage_mid">반원 %1$d%% · 양 끝을 보충하세요</string>
+    <string name="result_coverage_ok">반원 %1$d%%</string>
+    <string name="result_coverage_ceiling_toofew">천장 점이 적음 · 결과가 다들 보수적입니다</string>
+    <string name="result_coverage_ceiling_low">천장 %1$d%%만 · 빠졌을 수 있습니다</string>
+    <string name="result_coverage_ceiling_mid">천장 %1$d%% · 양 끝을 보충하세요</string>
+
+    <!-- 결과: 날짜 이름 / 시간대 / 연간 곡선 -->
+    <string name="result_date_winter">동지 날</string>
+    <string name="result_date_dahan">대한 날</string>
+    <string name="result_date_equinox">춘분</string>
+    <string name="result_date_summer">하지 날</string>
+    <string name="result_timezone_beijing">베이징 시간</string>
+    <string name="result_year_tip">가장 낮게 꺼지는 지점을 보세요</string>
+    <string name="result_year_month">%1$d월</string>
+
+    <!-- 형식 -->
+    <string name="duration_minutes_short">%1$d분</string>
+    <string name="duration_hours_short">%1$dh%2$02d</string>
+    <string name="duration_minutes_long">%1$d분</string>
+    <string name="duration_hours_minutes_long">%1$dh %2$d분</string>
+    <string name="compass_north">북</string>
+    <string name="compass_south">남</string>
+    <string name="compass_west">서</string>
+    <string name="compass_east">동</string>
+
+    <!-- 내보내기 -->
+    <string name="export_location_downloads">다운로드/D7</string>
+    <string name="export_location_pictures">사진/D7</string>
+    <string name="export_file_name">%1$s-일조-%2$s.%3$s</string>
+    <string name="export_csv_title">D7 일조 데이터</string>
+    <string name="export_csv_row_group_name">세트명</string>
+    <string name="export_csv_row_latitude">위도</string>
+    <string name="export_csv_row_longitude">경도</string>
+    <string name="export_csv_row_timezone">시간대</string>
+    <string name="export_csv_row_mode">계산 모드</string>
+    <string name="export_csv_row_date">날짜</string>
+    <string name="export_csv_row_direct_duration">직사광 시간</string>
+    <string name="export_csv_row_direct_minutes">직사광 분</string>
+    <string name="export_csv_row_sunrise">일출</string>
+    <string name="export_csv_row_sunset">일몰</string>
+    <string name="export_csv_row_all_from_gap">전부 빈 구간에서</string>
+    <string name="export_polar_day_short">백야</string>
+    <string name="export_yes">예</string>
+    <string name="export_no">아니오</string>
+    <string name="export_csv_section_points">촬영점</string>
+    <string name="export_csv_points_header">구분,번호,방위각,고도,오른쪽 이웃 연결,촬영 시각</string>
+    <string name="export_region_external">외부</string>
+    <string name="export_region_ceiling">천장</string>
+    <string name="export_seg_via_horizon">지평선 경유</string>
+    <string name="export_seg_direct">직선 연결</string>
+    <string name="export_csv_section_visibility">분 단위 가시성(1 = 직사광)</string>
+    <string name="export_csv_visibility_header">분,시각,가시</string>
+
+    <!-- 이미지 내보내기 (PNG) -->
+    <string name="export_png_title">%1$s · 일조 참고도</string>
+    <string name="export_png_direct">%1$s 직사광 %2$s</string>
+    <string name="export_png_gap_note">(전부 빈 구간에서)</string>
+    <string name="export_png_winter">동지(가장 낮은 해) 직사광 %1$s</string>
+    <string name="export_png_gb">대한 8–16 유효 직사광 %1$s</string>
+    <string name="export_png_footer">칠일 D7 · 기기 안에서 계산 · 방위 2–4°, 고도 약 1° 오차 · 참고용이며 공식 일조 조사 보고서를 대신하지 않습니다</string>
+
+    <!-- 점 편집 -->
+    <string name="result_edit_points">편집</string>
+    <string name="point_edit_title">%1$d번 점 · %2$s</string>
+    <string name="point_edit_az">방위각(0–360)</string>
+    <string name="point_edit_el">고도(0–90)</string>
+    <string name="point_edit_invalid">각도를 제대로 입력하세요: 방위각은 숫자, 고도는 0–90</string>
+    <string name="bulk_edit_title">점 목록 편집</string>
+    <string name="bulk_edit_az_offset">방위각 이동</string>
+    <string name="bulk_edit_el_offset">고도 이동</string>
+    <string name="bulk_edit_apply_offset">이동 적용</string>
+    <string name="bulk_edit_offset_invalid">이동값은 숫자여야 합니다(예: -2, 1.5)</string>
+    <string name="bulk_edit_hint">한 줄에 한 점: “방위각 고도”, horizon(또는 h, 0)은 그 줄을 바로 앞 줄과 지평선으로 잇는다는 뜻이며 첫 줄에는 쓸 수 없습니다. 사진은 각도가 같은 것으로 먼저 이어지고, 안 되면 순서대로 잇습니다. 새로 넣은 줄에는 사진이 없습니다. 텍스트를 지우면 그 구역의 점이 모두 사라집니다.</string>
+    <string name="bulk_edit_first_horizon">첫 줄에는 앞 줄이 없어 horizon을 쓸 수 없습니다</string>
+    <string name="bulk_edit_clear_title">구역 비우기</string>
+    <string name="bulk_edit_clear_message">%1$d개 구역의 점을 모두 지울까요?\n사진은 갤러리에 남지만 이 각도는 복구할 수 없습니다.</string>
+    <string name="bulk_edit_parse_error">%1$d째 줄을 읽을 수 없습니다: “236.2 18.4” 또는 “236.2 18.4 horizon”</string>
+</resources>

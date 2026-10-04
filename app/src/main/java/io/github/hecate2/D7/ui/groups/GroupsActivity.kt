@@ -3,6 +3,7 @@ package io.github.hecate2.D7.ui.groups
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.SpannableStringBuilder
@@ -38,6 +39,7 @@ import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.util.CardSummary
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.keepScreenOn
 import io.github.hecate2.D7.util.Summaries
 import kotlinx.coroutines.Dispatchers
@@ -86,6 +88,11 @@ class GroupsActivity : ComponentActivity() {
             }
         }
 
+    /** 界面语言按用户选择覆写（见 [Locales]）：不引 AppCompat 的做法，minSdk 26 起行为一致。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(Locales.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityGroupsBinding.inflate(layoutInflater)
@@ -94,6 +101,7 @@ class GroupsActivity : ComponentActivity() {
 
         repository = GroupRepository.get(this)
         binding.newButton.setOnClickListener { showNewGroupDialog() }
+        binding.langButton.setOnClickListener { showLanguageDialog() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -369,6 +377,30 @@ class GroupsActivity : ComponentActivity() {
                 exportInFlight = false
             }
         }
+    }
+
+    /**
+     * 语言选择对话框。语言名一律用各自的写法（Deutsch、Русский…）而不翻译，
+     * 否则在中文界面里「德语 / 俄语」对想切语言的人毫无用处。
+     *
+     * 选完直接 [recreate]：配置是在 `attachBaseContext` 里改的，重建一次就把整棵视图树
+     * 换成新语言，不需要逐个控件 setText。
+     */
+    private fun showLanguageDialog() {
+        val tags = Locales.choices()
+        val labels = tags.map { getString(Locales.labelRes(it)) }.toTypedArray()
+        val checked = tags.indexOf(Locales.currentTag(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.language)
+            .setSingleChoiceItems(labels, checked) { dialog, which ->
+                dialog.dismiss()
+                if (tags[which] != Locales.currentTag(this)) {
+                    Locales.setTag(this, tags[which])
+                    recreate()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun showNewGroupDialog() {

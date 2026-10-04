@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">D7</string>
+
+    <!-- Series de fotos -->
+    <string name="groups_title">Series</string>
+    <string name="groups_new">+ Nueva</string>
+    <string name="groups_subtitle">Una serie por ventana · se queda en el móvil</string>
+    <string name="groups_empty">Aún no hay series\nToca «+ Nueva» y ponle nombre\nColócate en la ventana a medir</string>
+
+    <!-- Idioma -->
+    <string name="language">Idioma</string>
+    <string name="language_system">Del sistema</string>
+
+    <string name="group_untested">sin medir</string>
+    <string name="group_winter">Solsticio %1$s</string>
+    <string name="group_meta_captured">Medido %1$s · %2$s</string>
+    <string name="group_meta_unshot">Creado %1$s · sin fotos</string>
+    <string name="group_external_prefix">Exterior %1$d · </string>
+    <string name="group_external_percent">%1$d%%</string>
+    <string name="group_external_none">Sin fotos exteriores</string>
+    <string name="group_ceiling_pill">Techo %1$d</string>
+    <string name="group_ceiling_none">Sin fotos de techo</string>
+
+    <!-- Nuevo / renombrar -->
+    <string name="new_group_title">Nueva serie</string>
+    <string name="rename_group_title">Renombrar</string>
+    <string name="group_name_hint">Nombre, p. ej. balcón del salón</string>
+    <string name="group_name_required">Falta el nombre</string>
+
+    <string name="label_latitude_hint">31.23</string>
+    <string name="label_longitude_hint">121.47</string>
+    <string name="use_gps">Usar GPS</string>
+    <string name="gps_locating">Localizando…</string>
+    <string name="gps_done">Posición %1$s</string>
+    <string name="gps_done_accuracy">Posición %1$s · ±%2$d m</string>
+    <string name="gps_failed">Sin posición: prueba al aire libre o escribe las coordenadas</string>
+    <string name="gps_cap_gps_on">GPS activo</string>
+    <string name="gps_cap_gps_off">GPS apagado</string>
+    <string name="gps_cap_net_on">Red activa</string>
+    <string name="gps_cap_net_off">Red apagada</string>
+    <string name="gps_cap_fused_on">Fusión activa</string>
+    <string name="gps_cap_accuracy">Precisión ±%1$d m</string>
+    <string name="gps_cap_accuracy_unknown">Precisión desconocida</string>
+    <string name="gps_cap_waiting">Aún sin posición</string>
+    <string name="gps_cap_none">Ubicación apagada; escribe las coordenadas</string>
+    <string name="hemisphere_north">Norte: mira al sur, de derecha (O) a izquierda (E)</string>
+    <string name="hemisphere_south">Sur: mira al norte, de derecha (E) a izquierda (O)</string>
+    <string name="hemisphere_tropic">Ecuador: el sol cambia de lado, mide ambos</string>
+    <string name="hemisphere_unknown">Escribe la latitud para ver consejos</string>
+    <string name="invalid_latlon">Latitud (−90..90) y longitud (−180..180) no válidas</string>
+    <string name="start_capture">Empezar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Aceptar</string>
+
+    <!-- Menú de pulsación larga -->
+    <string name="menu_rename">Renombrar</string>
+    <string name="menu_delete">Eliminar</string>
+    <string name="menu_export">Exportar</string>
+    <string name="delete_group_title">Eliminar serie</string>
+    <string name="delete_group_message">Eliminar los ángulos y los datos de «%1$s».</string>
+    <string name="delete_group_with_photos">Eliminar también %1$d fotos (no se puede deshacer)</string>
+    <string name="delete_group_photos_failed">No se pudieron eliminar %1$d fotos</string>
+
+    <!-- Captura -->
+    <string name="capture_title">Captura</string>
+    <string name="capture_meta">%1$s · norte verdadero</string>
+    <string name="capture_reading">Alt %1$s · Az %2$s</string>
+    <string name="capture_plus180">+180°</string>
+    <string name="capture_no_photo">Sin foto</string>
+    <string name="capture_no_photo_on">Solo ángulos, sin fotos</string>
+    <string name="capture_no_photo_off">Fotos de nuevo</string>
+    <string name="capture_chip_external">Edificios</string>
+    <string name="capture_chip_ceiling">Techo</string>
+    <string name="capture_hint_north">Mira al sur, de derecha (O) a izquierda (E)</string>
+    <string name="capture_hint_south">Mira al norte, de derecha (E) a izquierda (O)</string>
+    <string name="capture_hint_tropic">Cerca del ecuador: mide el lado que te importa</string>
+    <string name="capture_hint_seg">Toca: une · Mantén: hueco por el horizonte</string>
+    <string name="capture_dir_first_west">O · primero</string>
+    <string name="capture_dir_first_east">E · primero</string>
+    <string name="capture_dir_last_east">E · último</string>
+    <string name="capture_dir_last_west">O · último</string>
+    <string name="capture_coverage">Azimut %1$s°</string>
+    <string name="capture_coverage_north">90–270</string>
+    <string name="capture_coverage_south">270–90</string>
+    <string name="capture_show_lines">Líneas</string>
+    <string name="capture_done">Listo</string>
+    <string name="capture_delete">Borrar</string>
+    <string name="capture_press_hint">Mantén: une con el punto anterior por el horizonte</string>
+    <string name="capture_delete_hint">Mantén para borrar el punto más cercano a la derecha</string>
+    <string name="capture_torch">Linterna</string>
+    <string name="capture_focus">Enfoque</string>
+    <string name="capture_camera_needed">Falta permiso de cámara\nToca para concederlo</string>
+    <string name="capture_camera_failed">Cámara no disponible; los ángulos sí se guardan</string>
+    <string name="capture_sensor_missing">Sin sensor de orientación; altura y azimut no disponibles</string>
+    <string name="capture_no_pose">Esperando una lectura</string>
+    <string name="capture_ceiling_longpress">En techo, solo toca</string>
+    <string name="capture_photo_failed">No se guardó la foto; el ángulo se conserva</string>
+    <string name="capture_deleted">Punto %1$d borrado (se conserva la foto)</string>
+    <string name="capture_delete_no_candidate">No hay nada que borrar a la derecha</string>
+    <string name="capture_calib_label">Brújula</string>
+    <string name="capture_calib_unknown">?</string>
+    <string name="capture_calib_high">alta</string>
+    <string name="capture_calib_mid">media</string>
+    <string name="capture_calib_low">baja · 8</string>
+    <string name="capture_below_horizon">Altura bajo 0°\nSube el objetivo por encima del horizonte</string>
+    <string name="capture_jitter_label">Lectura</string>
+    <string name="capture_jitter_unknown">?</string>
+    <string name="capture_jitter_high">alta</string>
+    <string name="capture_jitter_mid">media</string>
+    <string name="capture_jitter_low">baja · no te muevas</string>
+    <string name="capture_roll">Alabeo %1$s</string>
+    <string name="lines_title">Líneas</string>
+    <string name="line_summer">Solsticio de verano</string>
+    <string name="line_equinox">Equinoccio</string>
+    <string name="line_winter">Solsticio de invierno</string>
+    <string name="line_today">Hoy</string>
+    <string name="line_segments">Uniones</string>
+    <string name="line_horizon">Horizonte</string>
+    <string name="line_vertical">Vertical</string>
+    <string name="line_fill">Zona en sombra</string>
+    <string name="line_ground">Suelo</string>
+
+    <!-- Resultado -->
+    <string name="result_title">Resultado · %1$s</string>
+    <string name="result_meta">%1$s · medido %2$s · %3$s</string>
+    <string name="result_pill_winter">Solsticio</string>
+    <string name="result_pill_dahan">Gran frío</string>
+    <string name="result_pill_equinox">Equinoccio</string>
+    <string name="result_pill_summer">Verano</string>
+    <string name="result_pill_custom">Libre</string>
+    <string name="result_mode_external">Solo exterior</string>
+    <string name="result_mode_both">Exterior + techo</string>
+    <string name="result_mode_ceiling">Solo techo</string>
+    <string name="result_mode_ceiling_locked">Mide el techo para desbloquearlas</string>
+    <string name="result_mode_ceiling_empty">Techo vaciado; vuelve a «Solo exterior»</string>
+    <string name="result_main_label">%1$s sol directo · %2$s</string>
+    <string name="result_computing">Calculando…</string>
+    <string name="result_gap_note">Todo de huecos</string>
+    <string name="result_sunrise_sunset">Amanecer %1$s · ocaso %2$s</string>
+    <string name="result_polar_day">Sol de medianoche</string>
+    <string name="result_polar_night">Noche polar</string>
+    <string name="result_timeline">Día</string>
+    <string name="result_timeline_legend">Blanco = sol · oscuro = tapado</string>
+    <string name="result_gb_label">Gran frío 8:00–16:00 sol efectivo</string>
+    <string name="result_gb_hint">Pautas GB 50180 · zonas Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 h en gran frío 8–16 (3 h en pueblo pequeño); Ⅳ: ≥1 h 9–15; Ⅴ Ⅵ: ≥1 h en solsticio 9–15 · manda la planificación local</string>
+    <string name="result_year_label">Sol directo todo el año (h/día)</string>
+    <string name="result_points">Puntos</string>
+    <string name="result_points_count">Ext %1$d · Techo %2$d</string>
+    <string name="result_point_title">%1$s%2$d · %3$s · %4$s</string>
+    <string name="result_region_external">Ex</string>
+    <string name="result_region_ceiling">Te</string>
+    <string name="result_seg_direct">Directo</string>
+    <string name="result_seg_horizon">Horizonte</string>
+    <string name="result_delete">B</string>
+    <string name="result_export_csv">CSV</string>
+    <string name="result_export_image">Imagen</string>
+    <string name="result_go_capture">Seguir midiendo</string>
+    <string name="result_export_done">Guardado en %1$s</string>
+    <string name="result_export_failed">Error al exportar: revisa espacio o permisos</string>
+    <string name="result_export_busy">Exportando; espera</string>
+    <string name="result_no_data">Primero mide algo</string>
+    <string name="result_coverage_toofew">Muy pocos puntos; el resultado será demasiado optimista</string>
+    <string name="result_coverage_low">Solo %1$d%% del semicírculo; puede faltar</string>
+    <string name="result_coverage_mid">%1$d%% del semicírculo; añade los dos extremos</string>
+    <string name="result_coverage_ok">%1$d%% del semicírculo</string>
+    <string name="result_coverage_ceiling_toofew">Muy pocos puntos de techo; el resultado será demasiado pesimista</string>
+    <string name="result_coverage_ceiling_low">Techo solo %1$d%%; puede faltar</string>
+    <string name="result_coverage_ceiling_mid">Techo %1$d%%; añade los dos extremos</string>
+
+    <!-- Resultado: fechas / huso / curva anual -->
+    <string name="result_date_winter">Día del solsticio</string>
+    <string name="result_date_dahan">Día del gran frío</string>
+    <string name="result_date_equinox">Equinoccio de primavera</string>
+    <string name="result_date_summer">Día del solsticio de verano</string>
+    <string name="result_timezone_beijing">Hora de Pekín</string>
+    <string name="result_year_tip">Mira el valle</string>
+    <string name="result_year_month">%1$d</string>
+
+    <!-- Formatos -->
+    <string name="duration_minutes_short">%1$d min</string>
+    <string name="duration_hours_short">%1$dh%2$02d</string>
+    <string name="duration_minutes_long">%1$d min</string>
+    <string name="duration_hours_minutes_long">%1$dh %2$02d min</string>
+    <string name="compass_north">N</string>
+    <string name="compass_south">S</string>
+    <string name="compass_west">O</string>
+    <string name="compass_east">E</string>
+
+    <!-- Exportación -->
+    <string name="export_location_downloads">Descargas/D7</string>
+    <string name="export_location_pictures">Fotos/D7</string>
+    <string name="export_file_name">%1$s-sol-%2$s.%3$s</string>
+    <string name="export_csv_title">D7 datos de sol</string>
+    <string name="export_csv_row_group_name">Serie</string>
+    <string name="export_csv_row_latitude">Latitud</string>
+    <string name="export_csv_row_longitude">Longitud</string>
+    <string name="export_csv_row_timezone">Huso</string>
+    <string name="export_csv_row_mode">Modo</string>
+    <string name="export_csv_row_date">Fecha</string>
+    <string name="export_csv_row_direct_duration">Sol directo</string>
+    <string name="export_csv_row_direct_minutes">Minutos directos</string>
+    <string name="export_csv_row_sunrise">Amanecer</string>
+    <string name="export_csv_row_sunset">Ocaso</string>
+    <string name="export_csv_row_all_from_gap">Todo de huecos</string>
+    <string name="export_polar_day_short">Sol de medianoche</string>
+    <string name="export_yes">Sí</string>
+    <string name="export_no">No</string>
+    <string name="export_csv_section_points">Puntos</string>
+    <string name="export_csv_points_header">Zona,Índice,Azimut,Altura,Unión al siguiente,Hora</string>
+    <string name="export_region_external">Exterior</string>
+    <string name="export_region_ceiling">Techo</string>
+    <string name="export_seg_via_horizon">Por el horizonte</string>
+    <string name="export_seg_direct">Directo</string>
+    <string name="export_csv_section_visibility">Visibilidad minuto a minuto (1 = sol)</string>
+    <string name="export_csv_visibility_header">Minuto,Hora,Visible</string>
+
+    <!-- Exportar imagen (PNG) -->
+    <string name="export_png_title">%1$s · referencia solar</string>
+    <string name="export_png_direct">%1$s directo %2$s</string>
+    <string name="export_png_gap_note">(todo de huecos)</string>
+    <string name="export_png_winter">Solsticio (sol más bajo) directo %1$s</string>
+    <string name="export_png_gb">Gran frío 8–16 efectivo directo %1$s</string>
+    <string name="export_png_footer">Siete días D7 · cálculo sin red · unos 2–4° de acimut y 1° de altura · orientativo, no sustituye a un informe oficial de soleamiento</string>
+
+    <!-- Edición de puntos -->
+    <string name="result_edit_points">Editar</string>
+    <string name="point_edit_title">Punto %1$d · %2$s</string>
+    <string name="point_edit_az">Azimut (0–360)</string>
+    <string name="point_edit_el">Altura (0–90)</string>
+    <string name="point_edit_invalid">Ángulos válidos: acimut numérico, altura 0–90</string>
+    <string name="bulk_edit_title">Editar puntos</string>
+    <string name="bulk_edit_az_offset">Desplazamiento de acimut</string>
+    <string name="bulk_edit_el_offset">Desplazamiento de altura</string>
+    <string name="bulk_edit_apply_offset">Aplicar</string>
+    <string name="bulk_edit_offset_invalid">Desplazamiento numérico, p. ej. -2 o 1.5</string>
+    <string name="bulk_edit_hint">Un punto por línea: «acimut altura»; horizon (o h, 0) une la línea con la anterior por el horizonte, no en la primera. Las fotos se heredan por ángulo y, si no, por orden; las líneas nuevas no tienen foto. Vaciar el texto borra todos los puntos de esa zona.</string>
+    <string name="bulk_edit_first_horizon">La línea 1 no tiene anterior, no puede ir por el horizonte</string>
+    <string name="bulk_edit_clear_title">Vaciar la zona</string>
+    <string name="bulk_edit_clear_message">¿Borrar todos los puntos de %1$d zonas?\nLas fotos siguen en la galería, pero estos ángulos se pierden.</string>
+    <string name="bulk_edit_parse_error">La línea %1$d no se lee; escribe «236.2 18.4» o «236.2 18.4 horizon»</string>
+</resources>

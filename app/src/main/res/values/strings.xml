@@ -7,6 +7,19 @@
     <string name="groups_new">+ 新建</string>
     <string name="groups_subtitle">一窗一组 · 全部保存在本机</string>
     <string name="groups_empty">还没有照片组\n点右上角「+ 新建」起个名字\n站在要看的那扇窗前开拍</string>
+
+    <!-- 界面语言：跟随系统 + 8 种。语言名用各自的写法，不翻译。 -->
+    <string name="language">界面语言</string>
+    <string name="language_system">跟随系统</string>
+    <string name="lang_icon" translatable="false">文A</string>
+    <string name="lang_zh" translatable="false">简体中文</string>
+    <string name="lang_en" translatable="false">English</string>
+    <string name="lang_ja" translatable="false">日本語</string>
+    <string name="lang_ko" translatable="false">한국어</string>
+    <string name="lang_de" translatable="false">Deutsch</string>
+    <string name="lang_fr" translatable="false">Français</string>
+    <string name="lang_es" translatable="false">Español</string>
+    <string name="lang_ru" translatable="false">Русский</string>
     <string name="group_untested">未测</string>
     <string name="group_winter">冬至 %1$s</string>
     <string name="group_meta_captured">%1$s 采集 · %2$s</string>

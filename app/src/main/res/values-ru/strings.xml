@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">D7</string>
+
+    <!-- Серии съёмок -->
+    <string name="groups_title">Серии</string>
+    <string name="groups_new">+ Новая</string>
+    <string name="groups_subtitle">Одна серия на окно · хранится на телефоне</string>
+    <string name="groups_empty">Серий пока нет\nНажмите «+ Новая» и дайте имя\nВстаньте у нужного окна</string>
+
+    <!-- Язык -->
+    <string name="language">Язык</string>
+    <string name="language_system">Как в системе</string>
+
+    <string name="group_untested">не измерено</string>
+    <string name="group_winter">Солнцестояние %1$s</string>
+    <string name="group_meta_captured">Снято %1$s · %2$s</string>
+    <string name="group_meta_unshot">Создано %1$s · без съёмки</string>
+    <string name="group_external_prefix">Снаружи %1$d · </string>
+    <string name="group_external_percent">%1$d%%</string>
+    <string name="group_external_none">Нет снимков снаружи</string>
+    <string name="group_ceiling_pill">Потолок %1$d</string>
+    <string name="group_ceiling_none">Нет снимков потолка</string>
+
+    <!-- Создание / переименование -->
+    <string name="new_group_title">Новая серия</string>
+    <string name="rename_group_title">Переименовать</string>
+    <string name="group_name_hint">Имя, напр. балкон в гостиной</string>
+    <string name="group_name_required">Введите имя</string>
+
+    <string name="label_latitude_hint">31.23</string>
+    <string name="label_longitude_hint">121.47</string>
+    <string name="use_gps">По GPS</string>
+    <string name="gps_locating">Определение…</string>
+    <string name="gps_done">Координаты %1$s</string>
+    <string name="gps_done_accuracy">Координаты %1$s · ±%2$d м</string>
+    <string name="gps_failed">Сигнала нет: выйдите на улицу или введите координаты вручную</string>
+    <string name="gps_cap_gps_on">GPS вкл.</string>
+    <string name="gps_cap_gps_off">GPS выкл.</string>
+    <string name="gps_cap_net_on">Сеть вкл.</string>
+    <string name="gps_cap_net_off">Сеть выкл.</string>
+    <string name="gps_cap_fused_on">Слияние вкл.</string>
+    <string name="gps_cap_accuracy">Точность ±%1$d м</string>
+    <string name="gps_cap_accuracy_unknown">Точность неизвестна</string>
+    <string name="gps_cap_waiting">Сигнала ещё нет</string>
+    <string name="gps_cap_none">Геолокация выключена; введите координаты</string>
+    <string name="hemisphere_north">Север: смотрите на юг, справа (З) налево (В)</string>
+    <string name="hemisphere_south">Юг: смотрите на север, справа (В) налево (З)</string>
+    <string name="hemisphere_tropic">Экватор: солнце меняет сторону — снимите обе</string>
+    <string name="hemisphere_unknown">Введите широту для подсказок</string>
+    <string name="invalid_latlon">Проверьте широту (−90..90) и долготу (−180..180)</string>
+    <string name="start_capture">Начать съёмку</string>
+    <string name="cancel">Отмена</string>
+    <string name="confirm">ОК</string>
+
+    <!-- Меню долгого нажатия -->
+    <string name="menu_rename">Переименовать</string>
+    <string name="menu_delete">Удалить</string>
+    <string name="menu_export">Экспорт</string>
+    <string name="delete_group_title">Удалить серию</string>
+    <string name="delete_group_message">Удалить углы и данные серии «%1$s».</string>
+    <string name="delete_group_with_photos">Также удалить %1$d фото (необратимо)</string>
+    <string name="delete_group_photos_failed">Не удалось удалить %1$d фото</string>
+
+    <!-- Съёмка -->
+    <string name="capture_title">Съёмка</string>
+    <string name="capture_meta">%1$s · истинный север</string>
+    <string name="capture_reading">Выс %1$s · Аз %2$s</string>
+    <string name="capture_plus180">+180°</string>
+    <string name="capture_no_photo">Без фото</string>
+    <string name="capture_no_photo_on">Только углы, без фото</string>
+    <string name="capture_no_photo_off">Фото снова включены</string>
+    <string name="capture_chip_external">Здания</string>
+    <string name="capture_chip_ceiling">Потолок</string>
+    <string name="capture_hint_north">Смотрите на юг, справа (З) налево (В)</string>
+    <string name="capture_hint_south">Смотрите на север, справа (В) налево (З)</string>
+    <string name="capture_hint_tropic">Близко к экватору: снимите нужную сторону</string>
+    <string name="capture_hint_seg">Нажатие: соединить · Удержание: разрыв по горизонту</string>
+    <string name="capture_dir_first_west">З · сначала</string>
+    <string name="capture_dir_first_east">В · сначала</string>
+    <string name="capture_dir_last_east">В · потом</string>
+    <string name="capture_dir_last_west">З · потом</string>
+    <string name="capture_coverage">Азимут %1$s°</string>
+    <string name="capture_coverage_north">90–270</string>
+    <string name="capture_coverage_south">270–90</string>
+    <string name="capture_show_lines">Линии</string>
+    <string name="capture_done">Готово</string>
+    <string name="capture_delete">Удалить</string>
+    <string name="capture_press_hint">Удержание: соединить с прошлой точкой по горизонту</string>
+    <string name="capture_delete_hint">Удержание — удалить ближайшую точку справа</string>
+    <string name="capture_torch">Фонарь</string>
+    <string name="capture_focus">Фокус</string>
+    <string name="capture_camera_needed">Нужен доступ к камере\nНажмите, чтобы дать</string>
+    <string name="capture_camera_failed">Камера не запустилась; углы записываются</string>
+    <string name="capture_sensor_missing">Нет датчика ориентации; высота и азимут недоступны</string>
+    <string name="capture_no_pose">Ждём показания датчика</string>
+    <string name="capture_ceiling_longpress">У потолка — только нажатие</string>
+    <string name="capture_photo_failed">Фото не сохранено; угол сохранён</string>
+    <string name="capture_deleted">Точка %1$d удалена (фото осталось)</string>
+    <string name="capture_delete_no_candidate">Справа нечего удалять</string>
+    <string name="capture_calib_label">Компас</string>
+    <string name="capture_calib_unknown">?</string>
+    <string name="capture_calib_high">точно</string>
+    <string name="capture_calib_mid">средне</string>
+    <string name="capture_calib_low">неточно · 8</string>
+    <string name="capture_below_horizon">Высота ниже 0°\nПоднимите объектив над горизонт</string>
+    <string name="capture_jitter_label">Точность</string>
+    <string name="capture_jitter_unknown">?</string>
+    <string name="capture_jitter_high">высокая</string>
+    <string name="capture_jitter_mid">средняя</string>
+    <string name="capture_jitter_low">низкая · держите ровно</string>
+    <string name="capture_roll">Крен %1$s</string>
+    <string name="lines_title">Линии</string>
+    <string name="line_summer">Летнее солнцестояние</string>
+    <string name="line_equinox">Равноденствие</string>
+    <string name="line_winter">Зимнее солнцестояние</string>
+    <string name="line_today">Сегодня</string>
+    <string name="line_segments">Соединения</string>
+    <string name="line_horizon">Горизонт</string>
+    <string name="line_vertical">Вертикаль</string>
+    <string name="line_fill">Зона тени</string>
+    <string name="line_ground">Земля</string>
+
+    <!-- Результат -->
+    <string name="result_title">Результат · %1$s</string>
+    <string name="result_meta">%1$s · снято %2$s · %3$s</string>
+    <string name="result_pill_winter">Солнцестояние</string>
+    <string name="result_pill_dahan">Большой холод</string>
+    <string name="result_pill_equinox">Равноденствие</string>
+    <string name="result_pill_summer">Лето</string>
+    <string name="result_pill_custom">Своя дата</string>
+    <string name="result_mode_external">Только снаружи</string>
+    <string name="result_mode_both">Снаружи + потолок</string>
+    <string name="result_mode_ceiling">Только потолок</string>
+    <string name="result_mode_ceiling_locked">Снимите потолок, чтобы открыть эти два</string>
+    <string name="result_mode_ceiling_empty">Потолок очищен; вернулись к «только снаружи»</string>
+    <string name="result_main_label">%1$s прямой свет · %2$s</string>
+    <string name="result_computing">Считаем…</string>
+    <string name="result_gap_note">Всё из разрывов</string>
+    <string name="result_sunrise_sunset">Восход %1$s · заход %2$s</string>
+    <string name="result_polar_day">Полярный день</string>
+    <string name="result_polar_night">Полярная ночь</string>
+    <string name="result_timeline">День</string>
+    <string name="result_timeline_legend">Белое = свет · тёмное = закрыто</string>
+    <string name="result_gb_label">Большой холод 8:00–16:00 засвет</string>
+    <string name="result_gb_hint">Нормативы GB 50180 · зоны Ⅰ Ⅱ Ⅲ Ⅶ: ≥2 ч в большой холод 8–16 (3 ч в малых городах); Ⅳ: ≥1 ч 9–15; Ⅴ Ⅵ: ≥1 ч в солнцестояние 9–15 · решают местные нормы</string>
+    <string name="result_year_label">Прямой свет весь год (ч/день)</string>
+    <string name="result_points">Точки</string>
+    <string name="result_points_count">Снаружи %1$d · Потолок %2$d</string>
+    <string name="result_point_title">%1$s%2$d · %3$s · %4$s</string>
+    <string name="result_region_external">Сн</string>
+    <string name="result_region_ceiling">Пт</string>
+    <string name="result_seg_direct">Прямая</string>
+    <string name="result_seg_horizon">Горизонт</string>
+    <string name="result_delete">Уд</string>
+    <string name="result_export_csv">CSV</string>
+    <string name="result_export_image">Картинка</string>
+    <string name="result_go_capture">Продолжить съёмку</string>
+    <string name="result_export_done">Сохранено в %1$s</string>
+    <string name="result_export_failed">Ошибка экспорта: проверьте место и права</string>
+    <string name="result_export_busy">Идёт экспорт, подождите</string>
+    <string name="result_no_data">Сначала что-нибудь снимите</string>
+    <string name="result_coverage_toofew">Слишком мало точек; оценка, скорее всего, слишком оптимистична</string>
+    <string name="result_coverage_low">Только %1$d%% полуокружности; может быть не всё</string>
+    <string name="result_coverage_mid">%1$d%% полуокружности; доберите края</string>
+    <string name="result_coverage_ok">%1$d%% полуокружности</string>
+    <string name="result_coverage_ceiling_toofew">Слишком мало точек потолка; оценка, скорее, слишком осторожна</string>
+    <string name="result_coverage_ceiling_low">Потолок только %1$d%%; может быть не всё</string>
+    <string name="result_coverage_ceiling_mid">Потолок %1$d%%; доберите края</string>
+
+    <!-- Результат: даты / часовой пояс / годовая кривая -->
+    <string name="result_date_winter">День солнцестояния</string>
+    <string name="result_date_dahan">День большого холода</string>
+    <string name="result_date_equinox">Весеннее равноденствие</string>
+    <string name="result_date_summer">День летнего солнцестояния</string>
+    <string name="result_timezone_beijing">Пекинское время</string>
+    <string name="result_year_tip">Смотрите на минимум</string>
+    <string name="result_year_month">%1$d</string>
+
+    <!-- Форматы -->
+    <string name="duration_minutes_short">%1$d мин</string>
+    <string name="duration_hours_short">%1$dh%2$02dм</string>
+    <string name="duration_minutes_long">%1$d мин</string>
+    <string name="duration_hours_minutes_long">%1$dh %2$02dм</string>
+    <string name="compass_north">С</string>
+    <string name="compass_south">Ю</string>
+    <string name="compass_west">З</string>
+    <string name="compass_east">В</string>
+
+    <!-- Экспорт -->
+    <string name="export_location_downloads">Загрузки/D7</string>
+    <string name="export_location_pictures">Фото/D7</string>
+    <string name="export_file_name">%1$s-солнце-%2$s.%3$s</string>
+    <string name="export_csv_title">D7 данные о солнце</string>
+    <string name="export_csv_row_group_name">Серия</string>
+    <string name="export_csv_row_latitude">Широта</string>
+    <string name="export_csv_row_longitude">Долгота</string>
+    <string name="export_csv_row_timezone">Часовой пояс</string>
+    <string name="export_csv_row_mode">Режим</string>
+    <string name="export_csv_row_date">Дата</string>
+    <string name="export_csv_row_direct_duration">Прямой свет</string>
+    <string name="export_csv_row_direct_minutes">Минуты света</string>
+    <string name="export_csv_row_sunrise">Восход</string>
+    <string name="export_csv_row_sunset">Заход</string>
+    <string name="export_csv_row_all_from_gap">Всё из разрывов</string>
+    <string name="export_polar_day_short">Полярный день</string>
+    <string name="export_yes">Да</string>
+    <string name="export_no">Нет</string>
+    <string name="export_csv_section_points">Точки</string>
+    <string name="export_csv_points_header">Зона,№,Азимут,Высота,Соединение,Время</string>
+    <string name="export_region_external">Снаружи</string>
+    <string name="export_region_ceiling">Потолок</string>
+    <string name="export_seg_via_horizon">По горизонту</string>
+    <string name="export_seg_direct">Прямая</string>
+    <string name="export_csv_section_visibility">Видимость по минутам (1 = свет)</string>
+    <string name="export_csv_visibility_header">Минута,Время,Видно</string>
+
+    <!-- Экспорт картинки (PNG) -->
+    <string name="export_png_title">%1$s · солнечная схема</string>
+    <string name="export_png_direct">%1$s прямой %2$s</string>
+    <string name="export_png_gap_note">(всё из разрывов)</string>
+    <string name="export_png_winter">Солнцестояние (самое низкое солнце) прямой %1$s</string>
+    <string name="export_png_gb">Большой холод 8–16 засвет прямой %1$s</string>
+    <string name="export_png_footer">Семь дней D7 · расчёт офлайн · погрешность азимута 2–4°, высоты 1° · для ориентира, не заменяет официальный расчёт инсоляции</string>
+
+    <!-- Правка точек -->
+    <string name="result_edit_points">Правка</string>
+    <string name="point_edit_title">Точка %1$d · %2$s</string>
+    <string name="point_edit_az">Азимут (0–360)</string>
+    <string name="point_edit_el">Высота (0–90)</string>
+    <string name="point_edit_invalid">Нужны числа: азимут любой, высота 0–90</string>
+    <string name="bulk_edit_title">Правка точек</string>
+    <string name="bulk_edit_az_offset">Сдвиг азимута</string>
+    <string name="bulk_edit_el_offset">Сдвиг высоты</string>
+    <string name="bulk_edit_apply_offset">Применить</string>
+    <string name="bulk_edit_offset_invalid">Сдвиг — число, напр. -2 или 1.5</string>
+    <string name="bulk_edit_hint">По точке в строке: «азимут высота»; horizon (или h, 0) соединяет строку с предыдущей по горизонту, первой это нельзя. Фото наследуются по углам, иначе по порядку; новые строки без фото. Очистка текста удаляет все точки этой зоны.</string>
+    <string name="bulk_edit_first_horizon">У первой строки нет предыдущей, горизонт нельзя</string>
+    <string name="bulk_edit_clear_title">Очистить зону</string>
+    <string name="bulk_edit_clear_message">Удалить все точки в %1$d зонах?\nФото останутся в галерее, но эти углы восстановить нельзя.</string>
+    <string name="bulk_edit_parse_error">Строку %1$d не разобрать; напишите «236.2 18.4» или «236.2 18.4 horizon»</string>
+</resources>

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.os.Build
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -47,6 +48,7 @@ import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.keepScreenOn
 import kotlin.math.abs
 import kotlinx.coroutines.delay
@@ -159,6 +161,11 @@ class CaptureActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { result ->
         if (result[Manifest.permission.CAMERA] == true) startCamera() else showCameraNotice()
+    }
+
+    /** 界面语言按用户选择覆写（见 [Locales]）：不引 AppCompat 的做法，minSdk 26 起行为一致。 */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(Locales.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

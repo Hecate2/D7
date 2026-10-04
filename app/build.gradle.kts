@@ -36,7 +36,9 @@ android {
         }
 
         // 只保留中文资源，剔除各家库自带的几十种语言翻译，显著缩减 resources.arsc
-        resourceConfigurations += setOf("zh")
+        // 只保留界面用得到的八种语言；不写这一行会把 AndroidX 自带的一百多种
+        // 翻译一并打进包（实测每个几 KB），而那些永远不会被用户看到。
+        resourceConfigurations += setOf("zh", "en", "ja", "ko", "de", "fr", "es", "ru")
     }
 
     signingConfigs {

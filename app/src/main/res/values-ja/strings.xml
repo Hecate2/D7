@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">D7</string>
+
+    <!-- 撮影セット -->
+    <string name="groups_title">撮影セット</string>
+    <string name="groups_new">+ 新規</string>
+    <string name="groups_subtitle">窓ごとに1セット · この端末に保存</string>
+    <string name="groups_empty">まだセットがありません\n「+ 新規」で名前を付け\n測りたい窓の前に立ってください</string>
+
+    <!-- 言語 -->
+    <string name="language">表示言語</string>
+    <string name="language_system">システムの言語</string>
+
+    <string name="group_untested">未計測</string>
+    <string name="group_winter">冬至 %1$s</string>
+    <string name="group_meta_captured">%1$s 撮影 · %2$s</string>
+    <string name="group_meta_unshot">%1$s 作成 · 未撮影</string>
+    <string name="group_external_prefix">外部 %1$d · </string>
+    <string name="group_external_percent">%1$d%%</string>
+    <string name="group_external_none">外部未撮影</string>
+    <string name="group_ceiling_pill">天井 %1$d</string>
+    <string name="group_ceiling_none">天井未撮影</string>
+
+    <!-- 新規 / 名前変更 -->
+    <string name="new_group_title">新しい撮影セット</string>
+    <string name="rename_group_title">名前を変更</string>
+    <string name="group_name_hint">名前（例：リビングの窓）</string>
+    <string name="group_name_required">名前を入力してください</string>
+
+    <string name="label_latitude_hint">31.23</string>
+    <string name="label_longitude_hint">121.47</string>
+    <string name="use_gps">GPSを使う</string>
+    <string name="gps_locating">測位中…</string>
+    <string name="gps_done">測位 %1$s</string>
+    <string name="gps_done_accuracy">測位 %1$s · ±%2$d m</string>
+    <string name="gps_failed">測位できません：屋外で試すか座標を手入力</string>
+    <string name="gps_cap_gps_on">GPS オン</string>
+    <string name="gps_cap_gps_off">GPS オフ</string>
+    <string name="gps_cap_net_on">通信 オン</string>
+    <string name="gps_cap_net_off">通信 オフ</string>
+    <string name="gps_cap_fused_on">融合 オン</string>
+    <string name="gps_cap_accuracy">精度 ±%1$d m</string>
+    <string name="gps_cap_accuracy_unknown">精度不明</string>
+    <string name="gps_cap_waiting">未測位</string>
+    <string name="gps_cap_none">位置情報がオフ · 座標を入力</string>
+    <string name="hemisphere_north">北緯：南を向いて、右（西）から左（東）へ</string>
+    <string name="hemisphere_south">南緯：北を向いて、右（東）から左（西）へ</string>
+    <string name="hemisphere_tropic">赤道付近：太陽が南北、逆になる。両側を撮る</string>
+    <string name="hemisphere_unknown">緯度を入力すると撮り方の目安が出ます</string>
+    <string name="invalid_latlon">緯度（−90..90）と経度（−180..180）を正しく入力</string>
+    <string name="start_capture">撮影を始める</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">OK</string>
+
+    <!-- 長押しメニュー -->
+    <string name="menu_rename">名前を変更</string>
+    <string name="menu_delete">削除</string>
+    <string name="menu_export">書き出し</string>
+    <string name="delete_group_title">撮影セットを削除</string>
+    <string name="delete_group_message">「%1$s」の角度とデータを削除します。</string>
+    <string name="delete_group_with_photos">写真 %1$d 枚も削除（取り消せません）</string>
+    <string name="delete_group_photos_failed">写真 %1$d 枚を削除できませんでした</string>
+
+    <!-- 撮影 -->
+    <string name="capture_title">撮影</string>
+    <string name="capture_meta">%1$s · 真北補正済み</string>
+    <string name="capture_reading">仰角 %1$s · 方位 %2$s</string>
+    <string name="capture_plus180">+180°</string>
+    <string name="capture_no_photo">写真なし</string>
+    <string name="capture_no_photo_on">角度のみ記録・写真は残さない</string>
+    <string name="capture_no_photo_off">写真を戻します</string>
+    <string name="capture_chip_external">建物</string>
+    <string name="capture_chip_ceiling">天井</string>
+    <string name="capture_hint_north">南を向いて、右（西）から左（東）へ</string>
+    <string name="capture_hint_south">北を向いて、右（東）から左（西）へ</string>
+    <string name="capture_hint_tropic">赤道付近：気になる側を撮ってください</string>
+    <string name="capture_hint_seg">タップで結線 · 長押しで地平線の空白点</string>
+    <string name="capture_dir_first_west">西 · 最初</string>
+    <string name="capture_dir_first_east">東 · 最初</string>
+    <string name="capture_dir_last_east">東 · 最後</string>
+    <string name="capture_dir_last_west">西 · 最後</string>
+    <string name="capture_coverage">方位 %1$s°</string>
+    <string name="capture_coverage_north">90–270</string>
+    <string name="capture_coverage_south">270–90</string>
+    <string name="capture_show_lines">線</string>
+    <string name="capture_done">完了</string>
+    <string name="capture_delete">削除</string>
+    <string name="capture_press_hint">長押し：地平線経由で前の点につなぐ</string>
+    <string name="capture_delete_hint">長押しで右の最も近い点を削除</string>
+    <string name="capture_torch">ライト</string>
+    <string name="capture_focus">フォーカス</string>
+    <string name="capture_camera_needed">撮影にはカメラの許可が必要です\nタップして許可</string>
+    <string name="capture_camera_failed">カメラを起動できません。角度の記録はできます</string>
+    <string name="capture_sensor_missing">姿勢センサーがありません。仰角・方位が取れません</string>
+    <string name="capture_no_pose">センサーの値を待っています</string>
+    <string name="capture_ceiling_longpress">天井はタップのみ</string>
+    <string name="capture_photo_failed">写真は保存できませんでしたが、角度は記録しました</string>
+    <string name="capture_deleted">%1$d 点目を削除（写真はそのままで残ります）</string>
+    <string name="capture_delete_no_candidate">右に削除できる点がありません</string>
+    <string name="capture_calib_label">磁針</string>
+    <string name="capture_calib_unknown">?</string>
+    <string name="capture_calib_high">良</string>
+    <string name="capture_calib_mid">中</string>
+    <string name="capture_calib_low">不良 · 8の字</string>
+    <string name="capture_below_horizon">仰角が0度を下回っています\n地平線までレンズを上げてください</string>
+    <string name="capture_jitter_label">測定</string>
+    <string name="capture_jitter_unknown">?</string>
+    <string name="capture_jitter_high">良</string>
+    <string name="capture_jitter_mid">中</string>
+    <string name="capture_jitter_low">不良 · 動かないで</string>
+    <string name="capture_roll">ロール %1$s</string>
+    <string name="lines_title">線</string>
+    <string name="line_summer">夏至の軌道</string>
+    <string name="line_equinox">春分・秋分の軌道</string>
+    <string name="line_winter">冬至の軌道</string>
+    <string name="line_today">今日の軌道</string>
+    <string name="line_segments">点の結線</string>
+    <string name="line_horizon">地平線</string>
+    <string name="line_vertical">鉛直線</string>
+    <string name="line_fill">遮蔽エリア</string>
+    <string name="line_ground">地面</string>
+
+    <!-- 結果 -->
+    <string name="result_title">結果 · %1$s</string>
+    <string name="result_meta">%1$s · %2$s 撮影 · %3$s</string>
+    <string name="result_pill_winter">冬至</string>
+    <string name="result_pill_dahan">大寒</string>
+    <string name="result_pill_equinox">春分</string>
+    <string name="result_pill_summer">夏至</string>
+    <string name="result_pill_custom">指定日</string>
+    <string name="result_mode_external">外部のみ</string>
+    <string name="result_mode_both">外部＋天井</string>
+    <string name="result_mode_ceiling">天井のみ</string>
+    <string name="result_mode_ceiling_locked">天井を撮るとこの2つが使えます</string>
+    <string name="result_mode_ceiling_empty">天井が空なので「外部のみ」に戻しました</string>
+    <string name="result_main_label">%1$s 直射日光 · %2$s</string>
+    <string name="result_computing">計算中…</string>
+    <string name="result_gap_note">すべて空白点から</string>
+    <string name="result_sunrise_sunset">日の出 %1$s · 日の入り %2$s</string>
+    <string name="result_polar_day">白夜</string>
+    <string name="result_polar_night">極夜</string>
+    <string name="result_timeline">その日の推移</string>
+    <string name="result_timeline_legend">白=直射 濃灰=遮蔽</string>
+    <string name="result_gb_label">大寒日 8:00–16:00 の有効直射</string>
+    <string name="result_gb_hint">GB 50180 基準 · Ⅰ Ⅱ Ⅲ Ⅶ区：大寒 8–16 で2時間以上（小都市は3時間）· Ⅳ区：9–15 で1時間以上 · Ⅴ Ⅵ区：冬至 9–15 で1時間以上 · 実際の基準は地域の規定による</string>
+    <string name="result_year_label">通年の直射時間（時間/日）</string>
+    <string name="result_points">撮影点</string>
+    <string name="result_points_count">外 %1$d 点 · 天 %2$d 点</string>
+    <string name="result_point_title">%1$s%2$d · %3$s · %4$s</string>
+    <string name="result_region_external">外</string>
+    <string name="result_region_ceiling">天</string>
+    <string name="result_seg_direct">直接</string>
+    <string name="result_seg_horizon">地平線</string>
+    <string name="result_delete">削</string>
+    <string name="result_export_csv">CSV書き出し</string>
+    <string name="result_export_image">画像書き出し</string>
+    <string name="result_go_capture">撮影に戻る</string>
+    <string name="result_export_done">%1$s に保存しました</string>
+    <string name="result_export_failed">書き出し失敗：空き容量や権限を確認</string>
+    <string name="result_export_busy">書き出し中です。少々お待ち</string>
+    <string name="result_no_data">まず撮影してください</string>
+    <string name="result_coverage_toofew">点が少なめ · 結果はやや楽観的です</string>
+    <string name="result_coverage_low">半球の %1$d%% のみ · 抜けている可能性があります</string>
+    <string name="result_coverage_mid">半球の %1$d%% · 両端を足してください</string>
+    <string name="result_coverage_ok">半球の %1$d%%</string>
+    <string name="result_coverage_ceiling_toofew">天井の点が少なめ · 結果はやや保守的です</string>
+    <string name="result_coverage_ceiling_low">天井は %1$d%% のみ · 抜けている可能性があります</string>
+    <string name="result_coverage_ceiling_mid">天井 %1$d%% · 両端を足してください</string>
+
+    <!-- 結果：日付名 / タイムゾーン / 年間曲線 -->
+    <string name="result_date_winter">冬至の日</string>
+    <string name="result_date_dahan">大寒の日</string>
+    <string name="result_date_equinox">春分</string>
+    <string name="result_date_summer">夏至の日</string>
+    <string name="result_timezone_beijing">北京時間</string>
+    <string name="result_year_tip">くぼみを見る</string>
+    <string name="result_year_month">%1$d月</string>
+
+    <!-- 書式 -->
+    <string name="duration_minutes_short">%1$d分</string>
+    <string name="duration_hours_short">%1$dh%2$02d</string>
+    <string name="duration_minutes_long">%1$d 分</string>
+    <string name="duration_hours_minutes_long">%1$dh %2$d分</string>
+    <string name="compass_north">北</string>
+    <string name="compass_south">南</string>
+    <string name="compass_west">西</string>
+    <string name="compass_east">東</string>
+
+    <!-- 書き出し -->
+    <string name="export_location_downloads">ダウンロード/D7</string>
+    <string name="export_location_pictures">写真/D7</string>
+    <string name="export_file_name">%1$s-日照-%2$s.%3$s</string>
+    <string name="export_csv_title">D7 日照データ</string>
+    <string name="export_csv_row_group_name">セット名</string>
+    <string name="export_csv_row_latitude">緯度</string>
+    <string name="export_csv_row_longitude">経度</string>
+    <string name="export_csv_row_timezone">タイムゾーン</string>
+    <string name="export_csv_row_mode">計算モード</string>
+    <string name="export_csv_row_date">日付</string>
+    <string name="export_csv_row_direct_duration">直射時間</string>
+    <string name="export_csv_row_direct_minutes">直射分</string>
+    <string name="export_csv_row_sunrise">日の出</string>
+    <string name="export_csv_row_sunset">日の入り</string>
+    <string name="export_csv_row_all_from_gap">すべて空白点から</string>
+    <string name="export_polar_day_short">白夜</string>
+    <string name="export_yes">はい</string>
+    <string name="export_no">いいえ</string>
+    <string name="export_csv_section_points">撮影点</string>
+    <string name="export_csv_points_header">分区,番号,方位角,仰角,右隣との接続,撮影時刻</string>
+    <string name="export_region_external">外部</string>
+    <string name="export_region_ceiling">天井</string>
+    <string name="export_seg_via_horizon">地平線経由</string>
+    <string name="export_seg_direct">直接結線</string>
+    <string name="export_csv_section_visibility">分ごとの可視性（1 = 直射）</string>
+    <string name="export_csv_visibility_header">分,時刻,可視</string>
+
+    <!-- 画像書き出し (PNG) -->
+    <string name="export_png_title">%1$s · 日照の目安図</string>
+    <string name="export_png_direct">%1$s 直射 %2$s</string>
+    <string name="export_png_gap_note">（すべて空白点から）</string>
+    <string name="export_png_winter">冬至（最も低い日）直射 %1$s</string>
+    <string name="export_png_gb">大寒 8–16 の有効直射 %1$s</string>
+    <string name="export_png_footer">七日 D7 · 端末内で計算 · 方位 2–4°、仰角 1° 程度の誤差 · 参考用で、正式の日照調査報告の代わりにはなりません</string>
+
+    <!-- 点の編集 -->
+    <string name="result_edit_points">編集</string>
+    <string name="point_edit_title">%1$d 点目 · %2$s</string>
+    <string name="point_edit_az">方位角（0–360）</string>
+    <string name="point_edit_el">仰角（0–90）</string>
+    <string name="point_edit_invalid">有効な角度を入力：方位角は数値、仰角は 0–90</string>
+    <string name="bulk_edit_title">点の列を編集</string>
+    <string name="bulk_edit_az_offset">方位のずらし</string>
+    <string name="bulk_edit_el_offset">仰角のずらし</string>
+    <string name="bulk_edit_apply_offset">ずらしを適用</string>
+    <string name="bulk_edit_offset_invalid">ずらしは数値で入力（例：-2、1.5）</string>
+    <string name="bulk_edit_hint">1行に1点：「方位角 仰角」。horizon（h、0 でも同じ）は前の行と地平線経由でつなぎます（1行目は不可）。写真は角度で引き継ぎ、合わなければ順引き。追加した行には写真がありません。空にするとその区分の点がすべて消えます。</string>
+    <string name="bulk_edit_first_horizon">1行目には前の行がないので horizon は指定できません</string>
+    <string name="bulk_edit_clear_title">分区を空にする</string>
+    <string name="bulk_edit_clear_message">%1$d つの区分の点をすべて削除しますか？\n写真はギャラリーに残りますが、角度は復元できません。</string>
+    <string name="bulk_edit_parse_error">%1$d 行目が読めません。「236.2 18.4」または「236.2 18.4 horizon」</string>
+</resources>
