@@ -153,6 +153,9 @@
     <string name="result_seg_direct">Direct</string>
     <string name="result_seg_horizon">Horizon</string>
     <string name="result_delete">Sup</string>
+    <string name="result_photo_view">Photo prise</string>
+    <string name="result_photo_close_hint">Toucher pour fermer</string>
+    <string name="result_photo_missing">Photo introuvable dans la galerie</string>
     <string name="result_export_csv">CSV</string>
     <string name="result_export_image">Image</string>
     <string name="result_go_capture">Reprendre</string>

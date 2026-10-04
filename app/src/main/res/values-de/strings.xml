@@ -153,6 +153,9 @@
     <string name="result_seg_direct">Direkt</string>
     <string name="result_seg_horizon">Horizont</string>
     <string name="result_delete">Lö</string>
+    <string name="result_photo_view">Aufnahme</string>
+    <string name="result_photo_close_hint">Zum Schließen tippen</string>
+    <string name="result_photo_missing">Foto ist nicht mehr in der Galerie</string>
     <string name="result_export_csv">CSV</string>
     <string name="result_export_image">Bild</string>
     <string name="result_go_capture">Weiter aufnehmen</string>

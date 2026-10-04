@@ -153,6 +153,9 @@
     <string name="result_seg_direct">Directo</string>
     <string name="result_seg_horizon">Horizonte</string>
     <string name="result_delete">B</string>
+    <string name="result_photo_view">Foto tomada</string>
+    <string name="result_photo_close_hint">Toca para cerrar</string>
+    <string name="result_photo_missing">La foto ya no está en el álbum</string>
     <string name="result_export_csv">CSV</string>
     <string name="result_export_image">Imagen</string>
     <string name="result_go_capture">Seguir midiendo</string>

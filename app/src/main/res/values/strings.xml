@@ -161,6 +161,9 @@
     <string name="result_seg_direct">直接</string>
     <string name="result_seg_horizon">地平线</string>
     <string name="result_delete">删</string>
+    <string name="result_photo_view">拍摄照片</string>
+    <string name="result_photo_close_hint">点任意处关闭</string>
+    <string name="result_photo_missing">照片已不在相册</string>
     <string name="result_export_csv">导出 CSV</string>
     <string name="result_export_image">导出图片</string>
     <string name="result_go_capture">回采集续拍</string>

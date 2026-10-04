@@ -153,6 +153,9 @@
     <string name="result_seg_direct">직선</string>
     <string name="result_seg_horizon">지평선</string>
     <string name="result_delete">삭</string>
+    <string name="result_photo_view">촬영한 사진</string>
+    <string name="result_photo_close_hint">아무 곳이나 눌러 닫기</string>
+    <string name="result_photo_missing">사진이 앨범에 없습니다</string>
     <string name="result_export_csv">CSV 내보내기</string>
     <string name="result_export_image">이미지 내보내기</string>
     <string name="result_go_capture">촬영으로</string>

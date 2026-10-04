@@ -1,8 +1,10 @@
 package io.github.hecate2.D7.ui.result
 
 import android.app.AlertDialog
+import android.app.Dialog
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -22,6 +24,7 @@ import io.github.hecate2.D7.data.GroupRepository
 import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.databinding.ActivityResultBinding
+import io.github.hecate2.D7.databinding.DialogPhotoBinding
 import io.github.hecate2.D7.databinding.DialogPointAnglesBinding
 import io.github.hecate2.D7.databinding.DialogPointsBulkBinding
 import io.github.hecate2.D7.export.Exporter
@@ -34,6 +37,8 @@ import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.keepScreenOn
 import io.github.hecate2.D7.util.Summaries
+import io.github.hecate2.D7.util.decodeDownsampled
+import io.github.hecate2.D7.util.deletePointPhoto
 import io.github.hecate2.D7.util.toShotPoints
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -88,6 +93,7 @@ class ResultActivity : ComponentActivity() {
             onToggleSegment = ::toggleSegment,
             onDelete = ::deletePoint,
             onEdit = ::editPoint,
+            onShowPhoto = ::showPhoto,
         )
 
         binding.pillWinter.setOnClickListener { choosePreset(Preset.WINTER) }
@@ -378,9 +384,46 @@ class ResultActivity : ComponentActivity() {
         repository.setSegmentViaHorizon(g.id, Region.EXTERNAL, externalIndex - 1, !prev.gapAfter)
     }
 
+    /**
+     * 删单点（结果页的「删除」）：与采集页长按删除同一套语义，照片一并删掉。
+     * 删点前先把 photoUri 取出来：删完这一点就从列表里没了，拿不到。
+     */
     private fun deletePoint(region: Region, index: Int) {
         val g = group ?: return
+        val photo = g.regionList(region).getOrNull(index)?.photoUri
         repository.deletePoint(g.id, region, index)
+        lifecycleScope.launch { deletePointPhoto(this@ResultActivity, photo) }
+    }
+
+    /**
+     * 点缩略图看大图：整屏黑底、按比例缩到屏幕内，点任意处或返回键关闭。
+     *
+     * 用全屏 [Dialog] 而不是新开 Activity：不必再登记一个界面、不必再给 apply 一份语言覆写，
+     * 也不会把结果页的滚动位置丢掉。
+     *
+     * 解码按屏幕最长边降采样：原图可能四千万像素，整张解出来就是几百兆内存。
+     */
+    private fun showPhoto(uri: String) {
+        val view = DialogPhotoBinding.inflate(layoutInflater)
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.setContentView(view.root)
+        view.photoRoot.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+
+        val maxPx = maxOf(resources.displayMetrics.widthPixels, resources.displayMetrics.heightPixels)
+        lifecycleScope.launch {
+            val bitmap = withContext(Dispatchers.IO) {
+                decodeDownsampled(this@ResultActivity, Uri.parse(uri), maxPx)
+            }
+            // 用户可能在解码完成前就关掉了
+            if (!dialog.isShowing) return@launch
+            if (bitmap == null) {
+                dialog.dismiss()
+                toast(getString(R.string.result_photo_missing))
+            } else {
+                view.photoView.setImageBitmap(bitmap)
+            }
+        }
     }
 
     // ---------------- 角度编辑（强行改值；允许无图点） ----------------

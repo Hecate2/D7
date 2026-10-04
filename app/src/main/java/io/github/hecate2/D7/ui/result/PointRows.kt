@@ -1,11 +1,10 @@
 package io.github.hecate2.D7.ui.result
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.LruCache
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
@@ -14,6 +13,7 @@ import io.github.hecate2.D7.data.PointRecord
 import io.github.hecate2.D7.data.Region
 import io.github.hecate2.D7.databinding.ItemPointBinding
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.decodeDownsampled
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,6 +32,7 @@ class PointRows(
     private val onToggleSegment: (Int) -> Unit,
     private val onDelete: (Region, Int) -> Unit,
     private val onEdit: (Region, Int) -> Unit,
+    private val onShowPhoto: (String) -> Unit,
 ) {
 
     /** 一行。[segViaHorizon] 表示本点与左邻点之间的连线是否为经地平线推断段。 */
@@ -100,6 +101,11 @@ class PointRows(
         binding.root.setOnClickListener { onEdit(row.region, row.index) }
 
         bindThumb(binding.thumb, row.point.photoUri)
+        // 缩略图点开看大图。没有照片时不挂监听，也不设 clickable：否则它会吃掉
+        // 本该落到整行的点击（无图点仍应该能点开角度编辑）。
+        val photo = row.point.photoUri
+        binding.thumb.setOnClickListener(if (photo == null) null else View.OnClickListener { onShowPhoto(photo) })
+        binding.thumb.isClickable = photo != null
     }
 
     /** 缩略图：缓存命中直接贴图，未命中在 IO 线程解码后回主线程贴图。 */
@@ -116,8 +122,9 @@ class PointRows(
         thumb.setImageDrawable(null)
         val context = thumb.context
         scope.launch {
-            val bitmap = withContext(Dispatchers.IO) { loadThumbnail(context, Uri.parse(uri)) }
-                ?: return@launch
+            val bitmap = withContext(Dispatchers.IO) {
+                decodeDownsampled(context, Uri.parse(uri), THUMB_PX)
+            } ?: return@launch
             thumbs.put(uri, bitmap)
             if (thumb.tag == uri) thumb.setImageBitmap(bitmap)
         }
@@ -126,23 +133,8 @@ class PointRows(
     private companion object {
         /** 缩略图缓存上限（KB），足够放满整页点列。 */
         const val THUMB_CACHE_KB = 2048
-        const val THUMB_PX = 96
 
-        /** 降采样解码；URI 失效（照片被外部清理）时返回 null，显示占位框。 */
-        fun loadThumbnail(context: Context, uri: Uri): Bitmap? = try {
-            val resolver = context.contentResolver
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            if (bounds.outWidth <= 0) {
-                null
-            } else {
-                var sample = 1
-                while (bounds.outWidth / (sample * 2) >= THUMB_PX) sample *= 2
-                val options = BitmapFactory.Options().apply { inSampleSize = sample }
-                resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
-            }
-        } catch (_: Exception) {
-            null
-        }
+        /** 缩略图最长边（像素）。 */
+        const val THUMB_PX = 96
     }
 }

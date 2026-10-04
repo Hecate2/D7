@@ -153,6 +153,9 @@
     <string name="result_seg_direct">Прямая</string>
     <string name="result_seg_horizon">Горизонт</string>
     <string name="result_delete">Уд</string>
+    <string name="result_photo_view">Снимок</string>
+    <string name="result_photo_close_hint">Нажмите, чтобы закрыть</string>
+    <string name="result_photo_missing">Снимка больше нет в галерее</string>
     <string name="result_export_csv">CSV</string>
     <string name="result_export_image">Картинка</string>
     <string name="result_go_capture">Продолжить съёмку</string>

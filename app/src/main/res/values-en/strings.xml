@@ -153,6 +153,9 @@
     <string name="result_seg_direct">Direct</string>
     <string name="result_seg_horizon">Horizon</string>
     <string name="result_delete">Del</string>
+    <string name="result_photo_view">Shot photo</string>
+    <string name="result_photo_close_hint">Tap anywhere to close</string>
+    <string name="result_photo_missing">Photo is no longer in the album</string>
     <string name="result_export_csv">Export CSV</string>
     <string name="result_export_image">Export image</string>
     <string name="result_go_capture">Back to capture</string>

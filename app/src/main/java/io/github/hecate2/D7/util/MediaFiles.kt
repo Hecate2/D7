@@ -2,8 +2,12 @@ package io.github.hecate2.D7.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.OutputStream
 
@@ -24,6 +28,44 @@ fun deletePhoto(context: Context, uri: Uri): Boolean = if (uri.scheme == "file")
     !file.exists() || file.delete()
 } else {
     runCatching { context.contentResolver.delete(uri, null, null) > 0 }.getOrDefault(false)
+}
+
+/**
+ * 删除一个拍摄点带的照片。**uri 为空是常态，不是异常**：「不拍照」模式录的点、结果页
+ * 批量编辑新增的点、继承不到照片的点，photoUri 本来就是空的，直接跳过。
+ *
+ * 删不掉不提示，理由见 [deletePhoto]；调用方在自己的作用域里 launch 它即可。
+ */
+suspend fun deletePointPhoto(context: Context, uri: String?) {
+    if (uri.isNullOrEmpty()) return
+    val target = Uri.parse(uri)
+    runCatching { withContext(Dispatchers.IO) { deletePhoto(context, target) } }
+}
+
+/**
+ * 降采样解码一张图，最长边不超过 [maxPx]。URI 失效（照片被外部清理、条目已不在相册）
+ * 时返回 null，由调用方决定显示占位框还是提示。
+ *
+ * 缩略图与点开看大图共用这一份：两处的差别只有 [maxPx]。按**最长边**降采样而不是宽度：
+ * 竖拍照片的高远大于宽，只看宽度会解出一张高得多的图，大图尤其吃亏。
+ *
+ * 必须在 IO 线程调用：读流与解码都是真 IO 与 CPU。
+ */
+fun decodeDownsampled(context: Context, uri: Uri, maxPx: Int): Bitmap? = try {
+    val resolver = context.contentResolver
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    val longest = maxOf(bounds.outWidth, bounds.outHeight)
+    if (longest <= 0) {
+        null
+    } else {
+        var sample = 1
+        while (longest / (sample * 2) >= maxPx) sample *= 2
+        val options = BitmapFactory.Options().apply { inSampleSize = sample }
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+    }
+} catch (_: Exception) {
+    null
 }
 
 /**

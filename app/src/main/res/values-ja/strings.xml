@@ -153,6 +153,9 @@
     <string name="result_seg_direct">直接</string>
     <string name="result_seg_horizon">地平線</string>
     <string name="result_delete">削</string>
+    <string name="result_photo_view">撮影した写真</string>
+    <string name="result_photo_close_hint">どこでもタップして閉じる</string>
+    <string name="result_photo_missing">写真はアルバムにありません</string>
     <string name="result_export_csv">CSV書き出し</string>
     <string name="result_export_image">画像書き出し</string>
     <string name="result_go_capture">撮影に戻る</string>

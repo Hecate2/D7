@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  点开看大图：黑底、图片按比例缩到整屏内，点画面任意处或返回键关闭。
+  整屏用一个 FrameLayout 而不是 AlertDialog 的白框，是因为照片本身要比界面大得多，
+  铺满能把每一像素都用在图上。窗口底色交给 Theme_Black_NoTitleBar_Fullscreen——它本来就是
+  黑的，自己再铺一层 ink 只是多一次全屏重绘（lint 的 Overdraw 也是这么说的）。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/photoRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/photoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="10dp"
+        android:contentDescription="@string/result_photo_view"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/photoHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="18dp"
+        android:text="@string/result_photo_close_hint"
+        android:textColor="@color/smoke"
+        android:textSize="11sp" />
+
+</FrameLayout>

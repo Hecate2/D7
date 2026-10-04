@@ -1,6 +1,7 @@
 package io.github.hecate2.D7
 
 import android.content.ContentResolver
+import android.graphics.Bitmap
 import android.content.ContentValues
 import android.net.Uri
 import android.os.Environment
@@ -34,7 +35,12 @@ object TestSupport {
         waitFor(timeoutMs) { condition().takeIf { it } }
     }
 
-    /** 往 Pictures/D7/<组名>/ 插入一张测试图片，返回其 MediaStore URI。 */
+    /**
+     * 往 Pictures/D7/<组名>/ 插入一张测试图片，返回其 MediaStore URI。
+     *
+     * 写的是真正能解码的 PNG（8×8 实色）：只塞几个字节也能让「条目在不在」这类断言通过，
+     * 但任何要真去解码它的用例（缩略图、点开看大图）都只能拿到 null，白跑一场。
+     */
     fun insertTestImage(resolver: ContentResolver, groupName: String): Uri {
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, "D7_test_${System.currentTimeMillis()}.jpg")
@@ -46,7 +52,8 @@ object TestSupport {
         }
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             ?: throw AssertionError("MediaStore 插入测试图片失败")
-        resolver.openOutputStream(uri)?.use { it.write(byteArrayOf(1, 2, 3)) }
+        val bitmap = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF3366CC.toInt()) }
+        resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         return uri
     }
 
