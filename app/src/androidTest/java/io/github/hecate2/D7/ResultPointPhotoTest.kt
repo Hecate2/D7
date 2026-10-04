@@ -33,6 +33,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.ZoneId
+import kotlin.math.abs
 
 /**
  * 结果页点列的照片行为：删除单点时连带删照片、点缩略图看大图。
@@ -142,6 +143,40 @@ class ResultPointPhotoTest {
         onView(withId(R.id.photoRoot)).inRoot(isDialog()).perform(click())
         onView(inRow(0, R.id.delete)).perform(scrollTo(), click())
         TestSupport.waitFor { repository.get(groupId)?.external?.takeIf { it.size == 1 } }
+    }
+
+    /**
+     * 大图正中的准星，位置必须与照片中心重合。
+     *
+     * 拍照记录的方位与仰角取的是后摄视轴，针孔投影下它对应的就是画面正中；大图上这个准星
+     * 就是「当时对着的那一点」。照片按 fitCenter 居中缩放，所以照片中心等于 ImageView 的中心；
+     * 哪天换成 fitStart、或给某一侧加了内边距，准星就会从瞄准点上偏走，这条会红。
+     */
+    @Test
+    fun photoCrosshair_sitsOnThePhotoCenter() {
+        seedTwoPhotoPoints()
+
+        onView(inRow(0, R.id.thumb)).perform(scrollTo(), click())
+
+        onView(withId(R.id.photoCrosshair)).inRoot(isDialog())
+            .check(matches(allOf(isDisplayed(), centeredOnPhoto())))
+    }
+
+    /** 控件的中心与同一窗口里照片的中心重合（容许 1 px 取整误差）。 */
+    private fun centeredOnPhoto(): Matcher<View> = object : TypeSafeMatcher<View>() {
+        override fun describeTo(description: Description) {
+            description.appendText("中心落在照片中心上")
+        }
+
+        override fun matchesSafely(item: View): Boolean {
+            val photo = item.rootView.findViewById<View>(R.id.photoView) ?: return false
+            val mine = IntArray(2)
+            val theirs = IntArray(2)
+            item.getLocationOnScreen(mine)
+            photo.getLocationOnScreen(theirs)
+            return abs(mine[0] + item.width / 2 - (theirs[0] + photo.width / 2)) <= 1 &&
+                abs(mine[1] + item.height / 2 - (theirs[1] + photo.height / 2)) <= 1
+        }
     }
 
     /** 没有照片的点，缩略图不该吃掉本该落到整行的点击：点它仍然打开角度编辑。 */

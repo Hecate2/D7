@@ -120,6 +120,9 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
     private val density = resources.displayMetrics.density
     private fun dp(v: Float): Float = v * density
 
+    /** 中心十字线的画法；结果页的大图查看复用同一份，见 [AimCrosshair]。 */
+    private val crosshair = AimCrosshair(context)
+
     private val colorPaper = ContextCompat.getColor(context, R.color.paper)
     private val colorMoon = ContextCompat.getColor(context, R.color.moon)
     private val colorSmoke = ContextCompat.getColor(context, R.color.smoke)
@@ -154,7 +157,6 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         color = colorSmoke
         pathEffect = DashPathEffect(floatArrayOf(dp(3f), dp(3f)), 0f)
     }
-    private val crossPaint = Paint(solidLine)
     private val pressTrackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = dp(2.5f)
@@ -175,10 +177,6 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         style = Paint.Style.STROKE
         strokeWidth = dp(1f)
         color = Color.BLACK
-    }
-    private val moonDot = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-        color = colorMoon
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = dp(8f)
@@ -280,18 +278,9 @@ class ViewfinderOverlayView(context: Context, attrs: AttributeSet? = null) : Vie
         }
     }
 
-    /** 十字线：中心留空四段短线 + 取景圆环 + 中心月灰点。 */
+    /** 十字线：画法见 [AimCrosshair]（结果页的大图用同一份）。 */
     private fun drawCrosshair(canvas: Canvas) {
-        val cx = width / 2f
-        val cy = height / 2f
-        val gap = dp(4f)
-        val len = dp(12f)
-        canvas.drawLine(cx - gap - len, cy, cx - gap, cy, crossPaint)
-        canvas.drawLine(cx + gap, cy, cx + gap + len, cy, crossPaint)
-        canvas.drawLine(cx, cy - gap - len, cx, cy - gap, crossPaint)
-        canvas.drawLine(cx, cy + gap, cx, cy + gap + len, crossPaint)
-        canvas.drawCircle(cx, cy, dp(12f), crossPaint)
-        canvas.drawCircle(cx, cy, dp(2.5f), moonDot)
+        crosshair.draw(canvas, width / 2f, height / 2f)
     }
 
     /** 按住进度：准星外侧的灰色底环 + 琥珀色进度弧（顺时针从正上方起画）。 */

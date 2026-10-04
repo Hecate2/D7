@@ -20,6 +20,17 @@
         android:contentDescription="@string/result_photo_view"
         android:scaleType="fitCenter" />
 
+    <!--
+      照片正中的准星：就是拍照时取景器十字线所指的那一点。照片按 fitCenter 居中缩放，
+      所以它的中心与这个 View 的中心重合，画在自家正中即可落在瞄准点上。
+      尺寸由 AimCrosshair 自己报（约 33dp），不跟着屏幕变。
+    -->
+    <io.github.hecate2.D7.view.AimCrosshairView
+        android:id="@+id/photoCrosshair"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
     <TextView
         android:id="@+id/photoHint"
         android:layout_width="wrap_content"
