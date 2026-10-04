@@ -84,23 +84,6 @@ class CaptureActivity : ComponentActivity() {
         /** 漂移样本少于这个数（约 3 秒）不作判定。 */
         private const val DRIFT_MIN_SAMPLES = 12
 
-        /**
-         * 「显示线」对话框的条目（文案与线色成对），下标顺序与 [CaptureSettings] 的
-         * setLineChecked/lineChecked 一致。线色与 [io.github.hecate2.D7.view.ViewfinderOverlayView]
-         * 画线时取的是同一批 @color，条目文字即用它上色，所见即所画。
-         */
-        private val LINE_ITEMS = arrayOf(
-            R.string.line_summer to R.color.summer,
-            R.string.line_equinox to R.color.equinox,
-            R.string.line_winter to R.color.winter,
-            R.string.line_today to R.color.paper,
-            R.string.line_segments to R.color.paper,
-            R.string.line_horizon to R.color.smoke,
-            R.string.line_vertical to R.color.smoke,
-            R.string.line_fill to R.color.moon,
-            R.string.line_ground to R.color.ground,
-        )
-
         // 读数精度（抖动）：最近窗口内极差的阈值与档位
         private const val JITTER_WINDOW = 24
         private const val JITTER_STEADY_DEG = 0.8
@@ -959,13 +942,14 @@ class CaptureActivity : ComponentActivity() {
     }
 
     private fun showLinesDialog() {
-        val labels: Array<CharSequence> = Array(LINE_ITEMS.size) { index ->
-            val (labelRes, colorRes) = LINE_ITEMS[index]
-            val text = getString(labelRes)
+        val lines = CaptureLine.entries
+        val labels: Array<CharSequence> = Array(lines.size) { index ->
+            val line = lines[index]
+            val text = getString(line.labelRes)
             SpannableString(text).apply {
                 // 多选对话框只收文案，文字着色只能靠 span，勾选与布局仍走平台实现
                 setSpan(
-                    ForegroundColorSpan(ContextCompat.getColor(this@CaptureActivity, colorRes)),
+                    ForegroundColorSpan(ContextCompat.getColor(this@CaptureActivity, line.colorRes)),
                     0,
                     text.length,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
@@ -974,8 +958,8 @@ class CaptureActivity : ComponentActivity() {
         }
         AlertDialog.Builder(this)
             .setTitle(R.string.lines_title)
-            .setMultiChoiceItems(labels, settings.lineChecked()) { _, which, checked ->
-                settings.setLineChecked(which, checked)
+            .setMultiChoiceItems(labels, BooleanArray(lines.size) { settings.isOn(lines[it]) }) { _, which, checked ->
+                settings.setOn(lines[which], checked)
                 applyLineSettings()
             }
             .setPositiveButton(R.string.confirm, null)

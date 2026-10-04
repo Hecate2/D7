@@ -24,6 +24,7 @@ import androidx.test.rule.GrantPermissionRule
 import io.github.hecate2.D7.data.GroupRepository
 import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
+import io.github.hecate2.D7.ui.capture.CaptureLine
 import io.github.hecate2.D7.ui.capture.CaptureSettings
 import org.junit.After
 import org.junit.Before
@@ -68,7 +69,12 @@ class CaptureLinesDialogTest {
         TestSupport.deleteAllGroups(repository)
     }
 
-    /** 该对话框的期望配色：条目文案 → 线色，锁住标签与线不再错位。 */
+    /**
+     * 该对话框的期望配色：条目文案 → 线色。
+     *
+     * 故意不读 [CaptureLine]，自己再抄一份——它要锁的正是「标签与线色不再错位」，
+     * 从被测的枚举里读期望值等于自己证明自己。
+     */
     private val expectedColors = listOf(
         R.string.line_summer to R.color.summer,
         R.string.line_equinox to R.color.equinox,
@@ -87,15 +93,24 @@ class CaptureLinesDialogTest {
         expectedColors.forEach { (labelRes, colorRes) -> assertLabelColor(labelRes, colorRes) }
     }
 
+    /** 每条线的文案都得真在对话框里，别只在颜色断言里点名。 */
+    @Test
+    fun linesDialog_listsEveryLine() {
+        openDialog()
+        CaptureLine.entries.forEach { line ->
+            onView(withText(line.labelRes)).inRoot(isDialog()).check(matches(isDisplayed()))
+        }
+    }
+
     @Test
     fun linesDialog_toggleRowStillPersists() {
         openDialog()
         onView(withText(R.string.line_summer)).inRoot(isDialog()).check(matches(isChecked()))
         onView(withText(R.string.line_summer)).inRoot(isDialog()).perform(click())
-        TestSupport.waitFor { settings.showSummer.takeIf { !it } }
+        TestSupport.waitFor { settings.isOn(CaptureLine.SUMMER).takeIf { !it } }
         onView(withText(R.string.line_summer)).inRoot(isDialog()).check(matches(isNotChecked()))
         onView(withText(R.string.line_summer)).inRoot(isDialog()).perform(click())
-        TestSupport.waitFor { settings.showSummer.takeIf { it } }
+        TestSupport.waitFor { settings.isOn(CaptureLine.SUMMER).takeIf { it } }
     }
 
     private fun openDialog() {
@@ -115,17 +130,17 @@ class CaptureLinesDialogTest {
         }
     }
 
-    /** 用例前后把持久化设置复位，避免跨用例污染。 */
+    /** 用例前后把持久化设置复位，避免跨用例污染。这里逐条写死，顺带钉住默认值。 */
     private fun resetLinePrefs() {
-        settings.showSummer = true
-        settings.showEquinox = true
-        settings.showWinter = true
-        settings.showToday = true
-        settings.showSegments = true
-        settings.showHorizon = false
-        settings.showVertical = false
-        settings.showFill = false
-        settings.showGround = true
+        settings.setOn(CaptureLine.SUMMER, true)
+        settings.setOn(CaptureLine.EQUINOX, true)
+        settings.setOn(CaptureLine.WINTER, true)
+        settings.setOn(CaptureLine.TODAY, true)
+        settings.setOn(CaptureLine.SEGMENTS, true)
+        settings.setOn(CaptureLine.HORIZON, false)
+        settings.setOn(CaptureLine.VERTICAL, false)
+        settings.setOn(CaptureLine.FILL, false)
+        settings.setOn(CaptureLine.GROUND, true)
     }
 
     private fun Int.toHex(): String = "#%06X".format(this and 0xFFFFFF)

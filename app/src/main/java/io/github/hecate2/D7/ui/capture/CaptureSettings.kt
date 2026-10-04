@@ -2,8 +2,40 @@ package io.github.hecate2.D7.ui.capture
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.ColorRes
+import androidx.annotation.StringRes
 import androidx.core.content.edit
+import io.github.hecate2.D7.R
 import io.github.hecate2.D7.view.LineVisibility
+
+/**
+ * 「显示线」的九个条目：对话框文案、线色、持久化键与默认显隐。
+ *
+ * 对话框条目顺序就是 [entries] 的顺序，设置读写也按条目本身走，所以加一项只需在这里加一行；
+ * 下标的含义不再散在三个文件里靠注释对齐。线色与
+ * [io.github.hecate2.D7.view.ViewfinderOverlayView] 画线时取的是同一批 @color，
+ * 条目文字即用它上色，所见即所画。
+ */
+enum class CaptureLine(
+    /** 对话框里的条目文案。 */
+    @StringRes val labelRes: Int,
+    /** 该线的颜色。 */
+    @ColorRes val colorRes: Int,
+    /** SharedPreferences 键；沿用历史键名，老用户的设置不会丢。 */
+    val prefKey: String,
+    /** 首次安装的默认显隐，同时也是 [LineVisibility] 各字段的默认值。 */
+    val defaultOn: Boolean,
+) {
+    SUMMER(R.string.line_summer, R.color.summer, "line_summer", true),
+    EQUINOX(R.string.line_equinox, R.color.equinox, "line_equinox", true),
+    WINTER(R.string.line_winter, R.color.winter, "line_winter", true),
+    TODAY(R.string.line_today, R.color.paper, "line_today", true),
+    SEGMENTS(R.string.line_segments, R.color.paper, "line_segments", true),
+    HORIZON(R.string.line_horizon, R.color.smoke, "line_horizon", false),
+    VERTICAL(R.string.line_vertical, R.color.smoke, "line_vertical", false),
+    FILL(R.string.line_fill, R.color.moon, "line_fill", true),
+    GROUND(R.string.line_ground, R.color.ground, "line_ground", true),
+}
 
 /**
  * 采集页的持久化设置：显示线的显隐、+180° 药丸与「不拍照」开关状态。
@@ -30,81 +62,22 @@ class CaptureSettings(context: Context) {
         get() = prefs.getBoolean("no_photo", false)
         set(value) = prefs.edit { putBoolean("no_photo", value) }
 
-    var showSummer: Boolean
-        get() = prefs.getBoolean("line_summer", true)
-        set(value) = prefs.edit { putBoolean("line_summer", value) }
+    /** 一条显示线当前开不开。 */
+    fun isOn(line: CaptureLine): Boolean = prefs.getBoolean(line.prefKey, line.defaultOn)
 
-    var showEquinox: Boolean
-        get() = prefs.getBoolean("line_equinox", true)
-        set(value) = prefs.edit { putBoolean("line_equinox", value) }
-
-    var showWinter: Boolean
-        get() = prefs.getBoolean("line_winter", true)
-        set(value) = prefs.edit { putBoolean("line_winter", value) }
-
-    var showToday: Boolean
-        get() = prefs.getBoolean("line_today", true)
-        set(value) = prefs.edit { putBoolean("line_today", value) }
-
-    var showSegments: Boolean
-        get() = prefs.getBoolean("line_segments", true)
-        set(value) = prefs.edit { putBoolean("line_segments", value) }
-
-    var showHorizon: Boolean
-        get() = prefs.getBoolean("line_horizon", false)
-        set(value) = prefs.edit { putBoolean("line_horizon", value) }
-
-    var showVertical: Boolean
-        get() = prefs.getBoolean("line_vertical", false)
-        set(value) = prefs.edit { putBoolean("line_vertical", value) }
-
-    /**
-     * 遮挡填充：默认开。
-     *
-     * 曾默认关，理由是会压低参考弧的对比度；但那层淡白（alpha 64）压不暗什么，
-     * 关掉的后果却是「拍完看不到挡在哪」——颜色不够明显该靠调 alpha 解决，
-     * 不该拿默认关闭来绕。不想要的人仍可在「显示线」里关。
-     */
-    var showFill: Boolean
-        get() = prefs.getBoolean("line_fill", true)
-        set(value) = prefs.edit { putBoolean("line_fill", value) }
-
-    /** 地面层：默认开。 */
-    var showGround: Boolean
-        get() = prefs.getBoolean("line_ground", true)
-        set(value) = prefs.edit { putBoolean("line_ground", value) }
+    /** 开关一条显示线。 */
+    fun setOn(line: CaptureLine, on: Boolean) = prefs.edit { putBoolean(line.prefKey, on) }
 
     /** 当前设置对应的显示线组合。 */
     fun lines(): LineVisibility = LineVisibility(
-        summer = showSummer,
-        equinox = showEquinox,
-        winter = showWinter,
-        today = showToday,
-        segments = showSegments,
-        horizon = showHorizon,
-        vertical = showVertical,
-        fill = showFill,
-        ground = showGround,
-    )
-
-    /** 按「显示线」对话框的条目下标写入（顺序与对话框一致）。 */
-    fun setLineChecked(which: Int, checked: Boolean) {
-        when (which) {
-            0 -> showSummer = checked
-            1 -> showEquinox = checked
-            2 -> showWinter = checked
-            3 -> showToday = checked
-            4 -> showSegments = checked
-            5 -> showHorizon = checked
-            6 -> showVertical = checked
-            7 -> showFill = checked
-            8 -> showGround = checked
-        }
-    }
-
-    /** 各条目的当前勾选状态，顺序与对话框一致。 */
-    fun lineChecked(): BooleanArray = booleanArrayOf(
-        showSummer, showEquinox, showWinter, showToday, showSegments,
-        showHorizon, showVertical, showFill, showGround,
+        summer = isOn(CaptureLine.SUMMER),
+        equinox = isOn(CaptureLine.EQUINOX),
+        winter = isOn(CaptureLine.WINTER),
+        today = isOn(CaptureLine.TODAY),
+        segments = isOn(CaptureLine.SEGMENTS),
+        horizon = isOn(CaptureLine.HORIZON),
+        vertical = isOn(CaptureLine.VERTICAL),
+        fill = isOn(CaptureLine.FILL),
+        ground = isOn(CaptureLine.GROUND),
     )
 }
