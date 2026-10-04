@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
+import android.net.Uri
 import android.os.Build
 import android.content.Context
 import android.os.Bundle
@@ -48,12 +49,15 @@ import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.ui.colorRes
 import io.github.hecate2.D7.ui.setPillSelected
 import io.github.hecate2.D7.util.Format
+import io.github.hecate2.D7.util.deletePhoto
 import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.keepScreenOn
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 采集页：取景器上直接画出太阳参考弧与已拍点连线。
@@ -704,7 +708,10 @@ class CaptureActivity : ComponentActivity() {
             val index = candidate
             candidate = -1
             if (index >= 0) {
+                // 先取照片再来删点：删完这一点就从列表里没了，拿不到它的 photoUri
+                val photo = repository.get(groupId)?.regionList(region)?.getOrNull(index)?.photoUri
                 repository.deletePoint(groupId, region, index)
+                deletePointPhoto(photo)
                 // 与快门长按同一套反馈：触觉 + 文字确认，删点是不可撤销的操作
                 binding.deleteButton.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 toast(getString(R.string.capture_deleted, index + 1))
@@ -768,6 +775,28 @@ class CaptureActivity : ComponentActivity() {
             }
         }
         return best
+    }
+
+    /**
+     * 删点时连带删掉它在相册里的照片。
+     *
+     * [uri] 为 null 是常态而不是异常：开了「不拍照」模式录的点、结果页批量编辑时增行
+     * 产生的新点、以及从别处继承不到照片的点，photoUri 本来就是空的，直接什么都不用做。
+     *
+     * 删不掉也不提示。照片可能早就被用户在相册里清掉了，而 `ContentResolver.delete`
+     * 对「本来就没有这条」与「没有权限」（Android 10 起删别家的图会抛
+     * RecoverableSecurityException）都回 0/抛异常，两者分不开——为其中一种大声报错，
+     * 用户就得天天看假警报，比沉默更糟。删组那条路径是用户主动勾选、一次可能几十张，
+     * 值得报「N 张失败」，单点删除不值得。
+     *
+     * 真正的 IO 切到 IO 线程：主线程上删相册条目会卡住取景。
+     */
+    private fun deletePointPhoto(uri: String?) {
+        if (uri.isNullOrEmpty()) return
+        val target = Uri.parse(uri)
+        lifecycleScope.launch {
+            runCatching { withContext(Dispatchers.IO) { deletePhoto(this@CaptureActivity, target) } }
+        }
     }
 
     // ---------- 闪光灯与对焦 ----------

@@ -38,6 +38,7 @@ import io.github.hecate2.D7.ui.Extras
 import io.github.hecate2.D7.ui.capture.CaptureActivity
 import io.github.hecate2.D7.ui.result.ResultActivity
 import io.github.hecate2.D7.util.CardSummary
+import io.github.hecate2.D7.util.deletePhoto
 import io.github.hecate2.D7.util.Format
 import io.github.hecate2.D7.util.Locales
 import io.github.hecate2.D7.util.keepScreenOn
@@ -46,7 +47,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
@@ -301,23 +301,12 @@ class GroupsActivity : ComponentActivity() {
         lifecycleScope.launch {
             if (alsoPhotos && photos.isNotEmpty()) {
                 val failed = withContext(Dispatchers.IO) {
-                    photos.count { !deletePhoto(Uri.parse(it)) }
+                    photos.count { !deletePhoto(this@GroupsActivity, Uri.parse(it)) }
                 }
                 if (failed > 0) toast(getString(R.string.delete_group_photos_failed, failed))
             }
             repository.deleteGroup(group.id)
         }
-    }
-
-    /**
-     * 删除一张照片，返回是否成功。content URI 走 MediaStore（失败返回 0 而非抛异常，
-     * 必须看返回值）；file URI（低版本公共目录或私有目录回退）直接删文件。
-     */
-    private fun deletePhoto(uri: Uri): Boolean = if (uri.scheme == "file") {
-        val file = uri.path?.let(::File) ?: return true
-        !file.exists() || file.delete()
-    } else {
-        runCatching { contentResolver.delete(uri, null, null) > 0 }.getOrDefault(false)
     }
 
     private fun showExportDialog(group: GroupRecord) {
